@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" style="color-scheme: dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,12 88,38 74,88 26,88 12,38' fill='%23c94c2a'/></svg>"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#070605" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#070605" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <title>Museum Collections as Blueprints for Engineered Materials — ORNL 2026</title>
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <style>
+      html, body { margin: 0; background: #070605; color: #f3eee4; min-height: 100%; color-scheme: dark; }
+      #boot {
+        position: fixed; inset: 0; z-index: 9999;
+        display: grid; place-items: center;
+        font: 500 18px/1.4 "Source Serif 4", Georgia, serif;
+        letter-spacing: 0.02em;
+        pointer-events: none;
+      }
+      #boot[data-error] {
+        place-items: start;
+        padding: 24px;
+        font: 13px/1.45 ui-monospace, Menlo, monospace;
+        white-space: pre-wrap;
+        background: #1a0a0a;
+        pointer-events: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="boot">Loading ORNL talk…</div>
+    <div id="root"></div>
+    <script>
+      window.__ornlBoot = document.getElementById('boot')
+      window.addEventListener('error', function (e) {
+        var el = window.__ornlBoot
+        if (!el) return
+        el.dataset.error = ''
+        el.textContent = 'Boot error:\n' + (e.message || e.type) + '\n' + (e.filename || '') + ':' + (e.lineno || '')
+      })
+      window.addEventListener('unhandledrejection', function (e) {
+        var el = window.__ornlBoot
+        if (!el) return
+        el.dataset.error = ''
+        el.textContent = 'Unhandled rejection:\n' + (e.reason && (e.reason.stack || e.reason.message || e.reason))
+      })
+      setTimeout(function () {
+        var el = window.__ornlBoot
+        if (el && !el.dataset.error && el.textContent.indexOf('Loading') === 0) {
+          el.dataset.error = ''
+          el.textContent = 'Still loading after 8s.\nOpen DevTools → Console and send any red errors.\nURL should be http://127.0.0.1:5173/'
+        }
+      }, 8000)
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

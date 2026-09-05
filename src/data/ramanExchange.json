@@ -1,0 +1,51 @@
+{
+  "source": "Celestian et al., J. Raman Spectrosc. 2026, 57:131–139",
+  "a1g": {
+    "xLabel": "Time (min)",
+    "yLabel": "A₁g (cm⁻¹)",
+    "yMin": 620,
+    "yMax": 670,
+    "xMax": 45,
+    "points": [
+      { "t": 0, "w": 635 },
+      { "t": 2, "w": 635 },
+      { "t": 4, "w": 642 },
+      { "t": 6, "w": 648 },
+      { "t": 8, "w": 652 },
+      { "t": 12, "w": 656 },
+      { "t": 22, "w": 656 },
+      { "t": 30, "w": 654 },
+      { "t": 42, "w": 650 }
+    ],
+    "markers": [
+      { "t": 2, "label": "Li on" },
+      { "t": 12, "label": "656 cm⁻¹" },
+      { "t": 22, "label": "symmetry breakup" }
+    ]
+  },
+  "mnLoss": {
+    "xLabel": "Li/H cycles",
+    "yLabel": "Mn loss (%)",
+    "yMax": 28,
+    "xMax": 110,
+    "fullLoad": [
+      { "n": 0, "pct": 0 },
+      { "n": 10, "pct": 2 },
+      { "n": 25, "pct": 5 },
+      { "n": 50, "pct": 10 },
+      { "n": 75, "pct": 17 },
+      { "n": 100, "pct": 24 }
+    ],
+    "partialLoad": [
+      { "n": 0, "pct": 0 },
+      { "n": 25, "pct": 0 },
+      { "n": 50, "pct": 0 },
+      { "n": 75, "pct": 0 },
+      { "n": 100, "pct": 0 }
+    ]
+  },
+  "footnotes": {
+    "raman": "A₁g Mn–O stretch tracks Li entry into H-LMO (in situ 532 nm)",
+    "durability": "Full load costs Mn. Partial load keeps the lattice intact."
+  }
+}

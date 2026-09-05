@@ -1,0 +1,202 @@
+.root {
+  position: relative;
+  flex: 1;
+  min-height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.slot {
+  position: absolute;
+  inset: 0;
+}
+
+.plane {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+.photo,
+.detail {
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.detail {
+  position: absolute;
+  object-fit: fill;
+}
+
+.orbAnchor {
+  position: absolute;
+  width: 9.5%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.orb {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  filter: blur(1.2px);
+  animation: orbPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes orbPulse {
+  0%,
+  100% {
+    filter: blur(1.2px) brightness(1);
+  }
+  50% {
+    filter: blur(2px) brightness(1.08);
+  }
+}
+
+.calloutSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.calloutLine {
+  fill: none;
+  stroke: var(--color-accent-600);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-accent) 55%, transparent));
+}
+
+.plates {
+  position: absolute;
+  left: var(--pad-x);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: max-content max-content;
+  column-gap: clamp(0.7rem, 1.5vw, 1.2rem);
+  row-gap: 0;
+  pointer-events: none;
+}
+
+.plateWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.plateWrap:nth-child(1) {
+  margin-top: 0;
+}
+
+.plateWrap:nth-child(2) {
+  margin-top: clamp(2.8rem, 7vh, 5rem);
+}
+
+.plateWrap:nth-child(3) {
+  margin-top: clamp(-0.4rem, -1vh, 0);
+}
+
+.plateWrap:nth-child(4) {
+  margin-top: clamp(1.8rem, 5vh, 3.6rem);
+}
+
+.plate {
+  width: clamp(200px, 26vw, 300px);
+  overflow: visible;
+  background: transparent;
+}
+
+.plateMedia {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  transform-origin: center;
+  filter: drop-shadow(0 8px 18px #070605);
+  transition:
+    filter 1.15s var(--ease-out),
+    transform 1.15s var(--ease-out);
+}
+
+.plates[data-blur] {
+  overflow: visible;
+}
+
+.plates[data-blur] .plate {
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+.plates[data-blur] .plateMedia {
+  filter: blur(38px) saturate(1.4) brightness(1.08);
+  transform: scale(1.55);
+}
+
+.plateLabel {
+  font-family: var(--font-heading);
+  font-size: clamp(0.88rem, 1.35vw, 1.1rem);
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: var(--color-accent);
+}
+
+.facts {
+  position: absolute;
+  left: var(--pad-x);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  margin: 0;
+  padding: 0 0.4rem;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.1rem, 2.4vh, 1.8rem);
+  width: calc(clamp(200px, 26vw, 300px) * 2 + clamp(0.7rem, 1.5vw, 1.2rem));
+  max-width: min(52vw, 620px);
+  pointer-events: none;
+}
+
+.fact {
+  font-family: var(--font-heading);
+  font-size: clamp(1.2rem, 2.3vw, 1.85rem);
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.25;
+  color: var(--color-text);
+  text-wrap: balance;
+  text-shadow:
+    0 0 16px #070605,
+    0 0 32px #070605,
+    0 2px 10px #070605;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plane,
+  .orb {
+    will-change: auto;
+    animation: none;
+  }
+
+  .plateMedia {
+    transition: none;
+  }
+}

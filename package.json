@@ -1,0 +1,32 @@
+{
+  "name": "ornl-2026",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "offline": "tsc -b && node scripts/packageOffline.mjs",
+    "preview": "vite preview",
+    "stage": "node scripts/stage.mjs",
+    "parse-cif": "node scripts/parseCif.mjs && node scripts/parseRowleyiteVoid.mjs && node scripts/parseRowleyiteFramework.mjs && node scripts/placeRowleyiteGuests.mjs"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.0.6",
+    "@react-three/fiber": "^9.1.2",
+    "framer-motion": "^12.6.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.175.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@types/three": "^0.175.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright-core": "^1.55.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  }
+}

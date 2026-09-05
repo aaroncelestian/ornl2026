@@ -1,0 +1,15 @@
+{
+  "name": "ORNL 2026",
+  "short_name": "ORNL 2026",
+  "display": "standalone",
+  "background_color": "#070605",
+  "theme_color": "#070605",
+  "start_url": "./?present=1",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,12 88,38 74,88 26,88 12,38' fill='%23d4a04a'/></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

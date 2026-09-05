@@ -1,0 +1,46 @@
+{
+  "source": "Kampf et al., Am. Mineral. 2017, 102:1037–1044",
+  "unit": "polyhedra / 1000 Å³",
+  "caption": "Framework density — lower is more porous",
+  "rings": {
+    "large": { "label": "Large↔large 12MR", "value": 9.7, "unit": "Å" },
+    "small": { "label": "Large↔small effective", "value": 4.1, "unit": "Å" }
+  },
+  "materials": [
+    {
+      "id": "ucr20",
+      "label": "UCR-20 (synth.)",
+      "density": 4.6,
+      "kind": "synthetic",
+      "note": "Chalcogenide zeolite analog"
+    },
+    {
+      "id": "rowleyite",
+      "label": "Rowleyite",
+      "density": 9.8,
+      "kind": "highlight",
+      "note": "Lowest known natural framework"
+    },
+    {
+      "id": "traskite",
+      "label": "Traskite",
+      "density": 11.7,
+      "kind": "natural",
+      "note": "Lowest natural heterosilicate"
+    },
+    {
+      "id": "tschortnerite",
+      "label": "Tschörtnerite",
+      "density": 12.1,
+      "kind": "natural",
+      "note": "Lowest natural zeolite"
+    },
+    {
+      "id": "phosphovanadylite",
+      "label": "Phosphovanadylite",
+      "density": 13.0,
+      "kind": "natural",
+      "note": "Related V–P framework"
+    }
+  ]
+}

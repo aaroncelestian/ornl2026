@@ -1,0 +1,39 @@
+{
+  "cageVolume": 420,
+  "unit": "Å³ (approx. cage free volume)",
+  "structureNote": "Rowleyite Fd̅3m a=31.704 Å · FD 9.8 /1000 Å³ · 12MR 9.7 Å (Kampf et al. 2017)",
+  "guests": [
+    {
+      "id": "dox",
+      "label": "Doxorubicin",
+      "volume": 380,
+      "fit": 0.9,
+      "mechanism": "Anthracycline · DNA intercalation",
+      "color": "#e07050"
+    },
+    {
+      "id": "vin",
+      "label": "Vincristine",
+      "volume": 460,
+      "fit": 0.72,
+      "mechanism": "Vinca alkaloid · mitosis arrest",
+      "color": "#7ec4d4"
+    },
+    {
+      "id": "cis",
+      "label": "Cisplatin",
+      "volume": 95,
+      "fit": 1,
+      "mechanism": "Pt crosslinker · small guest",
+      "color": "#d4a04a"
+    },
+    {
+      "id": "tmz",
+      "label": "Temozolomide",
+      "volume": 160,
+      "fit": 1,
+      "mechanism": "Alkylator · CNS permeable",
+      "color": "#c4899a"
+    }
+  ]
+}

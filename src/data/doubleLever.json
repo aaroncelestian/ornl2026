@@ -1,0 +1,23 @@
+{
+  "source": "Lively & Celestian, PLoS ONE 2024, 19(3): e0298661",
+  "callouts": [
+    { "id": "cage", "label": "Cage", "value": "~207 Å³" },
+    { "id": "ring", "label": "7MR axes", "value": "~6.5 × 5 Å" },
+    { "id": "oh", "label": "O3···H", "value": "~4.2 Å" },
+    { "id": "hydrate", "label": "Δhydr", "value": "K −321 · Na −405 kJ/mol" }
+  ],
+  "phases": {
+    "idle": {
+      "title": "CZS-(Na,H) · 7-ring window",
+      "foot": "Partial protonation opens the door for K⁺"
+    },
+    "enter": {
+      "title": "Lever 1 · K⁺ hydrates in the 7MR",
+      "foot": "Incoming K⁺ meets channel water · H₂O begins to rotate"
+    },
+    "torque": {
+      "title": "Lever 2 · framework OH torques the 3MR",
+      "foot": "Rotated H₂O forces Zr–OH repulsion · dihedral opens · K locks"
+    }
+  }
+}

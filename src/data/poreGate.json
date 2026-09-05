@@ -1,0 +1,12 @@
+{
+  "poreA": 3.0,
+  "caption": "~3 Å effective filter · 7MR K⁺-selective channel",
+  "structureNote": "CZS 7MR ~6.5×5 Å O–O; protonated O3···H ~4.2 Å; cage ~207 Å³ (Lively & Celestian 2024)",
+  "ions": [
+    { "id": "Na", "label": "Na⁺", "hydrated": 2.76, "crystal": 1.02, "pass": true, "note": "Excluded from H-forms" },
+    { "id": "Ca", "label": "Ca²⁺", "hydrated": 2.72, "crystal": 1.0, "pass": true, "note": "Permitted" },
+    { "id": "Mg", "label": "Mg²⁺", "hydrated": 2.0, "crystal": 0.72, "pass": true, "note": "Permitted" },
+    { "id": "K", "label": "K⁺", "hydrated": 3.31, "crystal": 1.38, "pass": false, "note": "Captured · irreversible" },
+    { "id": "Cs", "label": "Cs⁺", "hydrated": 3.29, "crystal": 1.67, "pass": false, "note": "Related CST chemistry" }
+  ]
+}
