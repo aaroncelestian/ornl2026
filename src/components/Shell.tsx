@@ -5,9 +5,9 @@ import { useActiveSlide, usePrefersReducedMotion } from '../hooks/useActiveSlide
 import { SceneProvider, useSceneController } from '../hooks/useSceneBeats'
 import { useViewportHeight } from '../hooks/useViewportHeight'
 import { NavContext } from '../hooks/useSlideNav'
-import { exitPresent, fillAvailableScreen, isPresentMode, openPresentWindow } from '../lib/asset'
+import { exitPresent, fillAvailableScreen, isCaptureMode, isPresentMode, captureBeatIndex, openPresentWindow } from '../lib/asset'
 import { openPrintView } from '../lib/printDocument'
-import { spokenAlt } from '../lib/script'
+import { beatRoute, scriptBeats, spokenAlt } from '../lib/script'
 import { DepthField, type PlateMode } from './layouts/DepthField'
 import { SlideView } from './layouts/SlideView'
 import styles from './Shell.module.css'
@@ -242,13 +242,54 @@ export function Shell() {
   useViewportHeight()
 
   const presenting = isPresentMode()
+  const capturing = isCaptureMode()
+  const captureBeat = captureBeatIndex()
+  const stageMode = presenting || capturing
 
   useEffect(() => {
-    if (!presenting) return
+    if (!presenting && !capturing) return
     document.documentElement.setAttribute('data-present', '')
-    fillAvailableScreen()
-    return () => document.documentElement.removeAttribute('data-present')
-  }, [presenting])
+    if (capturing) document.documentElement.setAttribute('data-capture', '')
+    if (presenting && !capturing) fillAvailableScreen()
+    return () => {
+      document.documentElement.removeAttribute('data-present')
+      document.documentElement.removeAttribute('data-capture')
+    }
+  }, [presenting, capturing])
+
+  useEffect(() => {
+    if (!capturing) return
+    const total = scriptBeats().length
+    ;(window as Window & { __ornlBeatCount?: number; __ornlCaptureReady?: boolean }).__ornlBeatCount =
+      total
+    ;(window as Window & { __ornlCaptureReady?: boolean }).__ornlCaptureReady = false
+  }, [capturing, captureBeat])
+
+  useEffect(() => {
+    if (!capturing || captureBeat == null) return
+    const route = beatRoute(captureBeat)
+    if (!route) return
+    goTo(route.slide, 'auto', true)
+  }, [capturing, captureBeat, goTo])
+
+  useEffect(() => {
+    if (!capturing || captureBeat == null) return
+    const route = beatRoute(captureBeat)
+    if (!route || activeIndex !== route.slide) return
+    sceneRef.current.go(route.scene)
+    setCopyOn(true)
+    setBlackout(false)
+    setBlackoutCut(true)
+    const win = window as Window & { __ornlCaptureReady?: boolean }
+    win.__ornlCaptureReady = false
+    const timer = window.setTimeout(() => {
+      win.__ornlCaptureReady = true
+    }, 1400)
+    return () => {
+      window.clearTimeout(timer)
+      win.__ornlCaptureReady = false
+    }
+  }, [capturing, captureBeat, activeIndex])
 
   useEffect(() => {
     let timer = 0
@@ -344,7 +385,7 @@ export function Shell() {
         return
       }
 
-      if ((e.key === 'n' || e.key === 'N') && !presenting) {
+      if ((e.key === 'n' || e.key === 'N') && !stageMode) {
         e.preventDefault()
         setNotesOpen((open) => !open)
         return
@@ -361,11 +402,11 @@ export function Shell() {
       // Native fullscreen breaks Zoom window-share. Shift+F only, if you
       // are projecting the laptop itself and not sharing a window.
       if (e.shiftKey) void toggleFullscreen()
-      else if (!presenting) openPresentWindow()
+      else if (!stageMode) openPresentWindow()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [presenting, pickerOpen, resourcesOpen, notesOpen, toggleFullscreen])
+  }, [presenting, stageMode, pickerOpen, resourcesOpen, notesOpen, toggleFullscreen])
 
   useEffect(() => {
     setPickerOpen(false)
@@ -536,7 +577,7 @@ export function Shell() {
               : `${activeIndex + 1} / ${slides.length}`}
           </button>
         </div>
-        {!presenting && (
+        {!stageMode && (
           <button
             type="button"
             className={styles.fullscreenBtn}
@@ -582,7 +623,7 @@ export function Shell() {
             Resources
           </button>
         </div>
-        {!presenting && (
+        {!stageMode && (
           <button
             type="button"
             className={styles.fullscreenBtn}
@@ -594,7 +635,7 @@ export function Shell() {
             Notes
           </button>
         )}
-        {!presenting && (
+        {!stageMode && (
           <button
             type="button"
             className={styles.fullscreenBtn}
@@ -605,7 +646,7 @@ export function Shell() {
             Print
           </button>
         )}
-        {!presenting && fullscreen && (
+        {!stageMode && fullscreen && (
           <button
             type="button"
             className={styles.fullscreenBtn}
@@ -620,7 +661,7 @@ export function Shell() {
         <div id="talk-transport" className={styles.transportSlot} />
       </div>
 
-      {!presenting && notesOpen && (
+      {!stageMode && notesOpen && (
         <aside className={styles.notes} aria-label="Speaker notes">
           <h2 className={styles.notesTitle}>
             {scene.beat ? `${slide.label} · ${scene.beat.label}` : slide.label}

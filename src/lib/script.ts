@@ -19,6 +19,16 @@ export interface ScriptBeat {
   onScreen: string[]
   notes?: string
   sceneLabel?: string
+  /** Visual card for the print / script preview. */
+  card: {
+    layout: string
+    kicker?: string
+    title?: string
+    subtitle?: string
+    brand?: string
+    motif?: string
+    image?: { src: string; alt: string }
+  }
 }
 
 export function chapterTitle(id: ChapterId) {
@@ -31,6 +41,7 @@ export function spokenAlt(slide: Slide, beat?: Pick<SceneBeat, 'notes'> | null):
 }
 
 export function beatPreview(beat: ScriptBeat): { src: string; alt: string } | null {
+  if (beat.card.image) return beat.card.image
   const layer = beat.slide.layers?.find(
     (item) =>
       (item.kind === 'image' || item.kind === 'video' || item.kind === 'slideshow') &&
@@ -56,6 +67,60 @@ export function beatPreview(beat: ScriptBeat): { src: string; alt: string } | nu
   return { src, alt }
 }
 
+function activeMotif(slide: Slide, beat?: SceneBeat): string | undefined {
+  if (beat?.layers && slide.layers) {
+    for (const id of beat.layers) {
+      const layer = slide.layers.find((item) => item.id === id)
+      if (layer?.kind === 'motif' && layer.motif) return layer.motif
+    }
+  }
+  return slide.motif
+}
+
+function activeImage(
+  slide: Slide,
+  beat?: SceneBeat,
+): { src: string; alt: string } | undefined {
+  if (beat?.layers && slide.layers) {
+    for (const id of beat.layers) {
+      const layer = slide.layers.find((item) => item.id === id)
+      if (!layer) continue
+      if (layer.kind === 'image' && layer.src) {
+        return { src: layer.src, alt: layer.alt || '' }
+      }
+      if (layer.kind === 'video' && (layer.poster || layer.src)) {
+        return { src: layer.poster || layer.src!, alt: layer.alt || '' }
+      }
+      if (layer.kind === 'slideshow' && layer.slides?.[0]?.src) {
+        return { src: layer.slides[0].src, alt: layer.slides[0].alt }
+      }
+    }
+  }
+  if (slide.image?.src) return { src: slide.image.src, alt: slide.image.alt }
+  return undefined
+}
+
+function beatCard(slide: Slide, beat?: SceneBeat): ScriptBeat['card'] {
+  const title = (beat?.title ?? slide.displayTitle ?? slide.title)?.replace(/\n/g, ' ')
+  const fallbackLayer = slide.layers?.find((l) => l.kind === 'image' && l.src)
+  const image =
+    activeImage(slide, beat) ??
+    (slide.image?.src
+      ? { src: slide.image.src, alt: slide.image.alt }
+      : fallbackLayer?.src
+        ? { src: fallbackLayer.src, alt: fallbackLayer.alt || '' }
+        : undefined)
+  return {
+    layout: slide.layout,
+    kicker: beat?.kicker ?? slide.kicker,
+    title,
+    subtitle: beat?.subtitle ?? slide.subtitle,
+    brand: slide.brand,
+    motif: activeMotif(slide, beat),
+    image,
+  }
+}
+
 function motifLine(slide: Slide): string | undefined {
   if (slide.motif === 'prep-modes') return undefined
   if (slide.motif === 'ion-chart') return 'Motif: ion-exchange chart'
@@ -72,13 +137,13 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: Li⁺ selectivity plume versus ionic radius'
   }
   if (slide.motif === 'pore-gate') {
-    return 'Motif: hydrated ion diameters versus ~3 Å pore gate'
+    return 'Motif: hydrated ions sized against the ~3 Å aperture'
   }
   if (slide.motif === 'framework-lineage') {
     return 'Motif: natural → synthetic framework lineage'
   }
   if (slide.motif === 'void-fit') {
-    return 'Motif: chemotherapeutic volumes versus rowleyite cage volume'
+    return 'Motif: guest orbs sized against the rowleyite cage'
   }
   if (slide.motif === 'raman-exchange') {
     return 'Motif: LMO A₁g Raman shift and Mn-loss durability'
@@ -87,7 +152,10 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: CZS double-lever K⁺ exchange mechanism'
   }
   if (slide.motif === 'framework-density') {
-    return 'Motif: framework density — rowleyite vs natural and synthetic peers'
+    return 'Motif: porosity as luminous voids — rowleyite as the hero hole'
+  }
+  if (slide.motif === 'crystal-viewer') {
+    return 'Motif: ZS-9 structure from CIF — 7MR windows and exchange'
   }
   return undefined
 }
@@ -178,7 +246,20 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'pore-gate') {
-        lines.push('Motif: pore gate — hydrated diameters versus ~3 Å K⁺-selective window')
+        lines.push('Motif: ion aperture — hydrated spheres sized against the ~3 Å window')
+      }
+      if (layer?.kind === 'motif' && layer.motif === 'crystal-viewer') {
+        lines.push(
+          beat?.id === 'pore'
+            ? 'Motif: ZS-9 CIF — 7-membered-ring windows lit'
+            : beat?.id === 'protons'
+              ? 'Motif: ZS-9 CIF — protons point into the empty site'
+              : beat?.id === 'lock'
+                ? 'Motif: ZS-9 CIF — H leaves; K locks'
+                : beat?.id === 'patients'
+                  ? 'Motif: ZS-9 CIF — K locked; geometry as drug'
+                  : 'Motif: ZS-9 structure from CIF — drag to orbit',
+        )
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-lineage') {
         lines.push(
@@ -190,7 +271,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'void-fit') {
-        lines.push('Motif: void fit — guest molecular volumes versus rowleyite cage volume')
+        lines.push('Motif: guest orbs sized against the rowleyite cage void')
       }
       if (layer?.kind === 'motif' && layer.motif === 'raman-exchange') {
         lines.push(
@@ -199,16 +280,9 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
             : 'Motif: Raman exchange — A₁g 635→656 cm⁻¹ during Li uptake into H-LMO',
         )
       }
-      if (layer?.kind === 'motif' && layer.motif === 'double-lever') {
-        lines.push(
-          beat?.id === 'lock'
-            ? 'Motif: double-lever — OH torque opens 3MR; K⁺ locks in the 7MR'
-            : 'Motif: double-lever — K⁺ hydrates in 7MR; channel H₂O rotates toward framework OH',
-        )
-      }
       if (layer?.kind === 'motif' && layer.motif === 'framework-density') {
         lines.push(
-          'Motif: framework density — rowleyite 9.8 (lowest natural) · 12MR 9.7 Å / 4.1 Å windows',
+          'Motif: porosity voids — rowleyite as the luminous hole · 12MR 9.7 Å / 4.1 Å',
         )
       }
     }
@@ -238,6 +312,7 @@ export function scriptBeats(): ScriptBeat[] {
           onScreen: onScreenLines(slide, beat),
           notes: beat.notes,
           sceneLabel: beat.label,
+          card: beatCard(slide, beat),
         })
       }
     } else {
@@ -247,10 +322,29 @@ export function scriptBeats(): ScriptBeat[] {
         chapter: slide.chapter,
         onScreen: onScreenLines(slide),
         notes: slide.notes,
+        card: beatCard(slide),
       })
     }
   }
   return beats
+}
+
+/** Flat script-beat index → slide index + in-scene beat index for deep links / capture. */
+export function beatRoute(flatIndex: number): { slide: number; scene: number } | null {
+  let cursor = 0
+  for (let slide = 0; slide < slides.length; slide++) {
+    const sceneCount = slides[slide].scene?.length ?? 0
+    const span = Math.max(1, sceneCount)
+    if (flatIndex < cursor + span) {
+      return { slide, scene: sceneCount ? flatIndex - cursor : 0 }
+    }
+    cursor += span
+  }
+  return null
+}
+
+export function previewPath(beatIndex: number) {
+  return `previews/beat-${String(beatIndex).padStart(3, '0')}.png`
 }
 
 export function scriptMarkdown(): string {

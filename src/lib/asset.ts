@@ -18,6 +18,19 @@ export function isPrintMode(): boolean {
   return new URLSearchParams(window.location.search).has('print')
 }
 
+export function isCaptureMode(): boolean {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).has('capture')
+}
+
+export function captureBeatIndex(): number | null {
+  if (typeof window === 'undefined') return null
+  const raw = new URLSearchParams(window.location.search).get('beat')
+  if (raw == null || raw === '') return null
+  const n = Number(raw)
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null
+}
+
 export function printUrl(): string {
   const url = new URL(window.location.href)
   url.searchParams.delete('present')

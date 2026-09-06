@@ -401,6 +401,12 @@
   display: none;
 }
 
+:global(html[data-capture]) .chrome,
+:global(html[data-capture]) .buildId,
+:global(html[data-capture]) .notes {
+  display: none !important;
+}
+
 :global(html[data-present]) .shell {
   scrollbar-width: none;
 }

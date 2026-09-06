@@ -160,6 +160,14 @@ a {
   }
 }
 
+html[data-capture] *,
+html[data-capture] *::before,
+html[data-capture] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
 /* Print view: unlock the deck's locked dark viewport before the print dialog. */
 html[data-print] {
   color-scheme: light;

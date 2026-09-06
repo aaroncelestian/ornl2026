@@ -38,11 +38,11 @@ const LEGEND = [
 ] as const
 
 const CAPTION: Record<CrystalPhase, string> = {
-  k: 'ZS-9 · K⁺ in the channels · drag to orbit',
-  pore: 'ZS-9 · ~3 Å 7-ring · drag to orbit',
-  'h-point': 'H in · the cell contracts',
+  k: 'ZS-9 from CIF · K⁺ in the channels · drag to orbit',
+  pore: 'ZS-9 from CIF · 7-ring windows lit · drag to orbit',
+  'h-point': 'H in · protons point at the empty site',
   exchange: 'H out · the cell opens · K locks',
-  locked: 'K locked · cell restored',
+  locked: 'K locked · size-selective exchange as a drug',
 }
 
 const PORE_COLOR = '#f3cc7a'

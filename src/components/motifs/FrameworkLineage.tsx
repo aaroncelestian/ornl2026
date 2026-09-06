@@ -162,10 +162,10 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
                 animate={{ opacity: active && show ? 1 : 0 }}
                 transition={{ delay: reduced ? 0 : 0.4 + i * 0.1 }}
               >
-                <text x={(s.end?.[0] ?? 0) + 10} y={(s.end?.[1] ?? 0) + 4} className={styles.plotHiLabel}>
+                <text x={(s.end?.[0] ?? 0) + 10} y={(s.end?.[1] ?? 0) + 4} className={styles.plotAnnotate}>
                   {s.label}
                 </text>
-                <text x={(s.end?.[0] ?? 0) + 10} y={(s.end?.[1] ?? 0) + 20} className={styles.plotHiSub}>
+                <text x={(s.end?.[0] ?? 0) + 10} y={(s.end?.[1] ?? 0) + 22} className={styles.plotTick}>
                   {s.kind}
                 </text>
               </motion.g>
@@ -173,13 +173,6 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
           )
         })}
       </svg>
-      <p className={styles.plotFoot}>
-        {phase === 'converge'
-          ? 'Unrelated frameworks. Same channel answer. Physics left one door.'
-          : phase === 'synthetic'
-            ? 'Natural geometry rediscovered under synthetic and regulatory control'
-            : 'Museum specimens preserved the topologies before anyone needed the drug'}
-      </p>
     </div>
   )
 }

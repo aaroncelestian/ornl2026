@@ -4,156 +4,142 @@ import { useScene } from '../../hooks/useSceneBeats'
 import data from '../../data/poreGate.json'
 import styles from './Motifs.module.css'
 
-const W = 880
-const H = 480
-const PAD = { t: 72, r: 40, b: 72, l: 72 }
+/** Hydrated diameters staged against a circular aperture. CIF 7MR arrives on the next beat. */
+const PORE_R = 108
+const CX = 620
+const CY = 255
 
-type Phase = 'scale' | 'gate' | 'k' | 'exchange'
+type Phase = 'scale' | 'gate' | 'k'
 
 function phaseForBeat(id?: string): Phase {
   if (id === 'pore' || id === 'gate') return 'gate'
   if (id === 'lock' || id === 'k' || id === 'capture') return 'k'
-  if (id === 'protons' || id === 'exchange') return 'exchange'
   return 'scale'
+}
+
+function ionRadius(hydrated: number) {
+  return (hydrated / data.poreA) * PORE_R * 0.88
 }
 
 export function PoreGate({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
   const phase = phaseForBeat(scene.beat?.id)
-
-  const maxR = Math.max(...data.ions.map((i) => i.hydrated)) * 1.08
-  const plotW = W - PAD.l - PAD.r
-  const plotH = H - PAD.t - PAD.b
-  const sx = (r: number) => PAD.l + (r / maxR) * plotW
-  const gateX = sx(data.poreA)
-  const rowH = plotH / data.ions.length
-
-  const emphasizeK = phase === 'k' || phase === 'exchange'
+  const emphasizeK = phase === 'k'
   const showGate = phase !== 'scale'
 
+  // Ions stay in the right half — clear of stageCopy on the left.
+  const arc = data.ions.map((ion, i) => {
+    const t = i / (data.ions.length - 1)
+    const angle = -Math.PI * 0.72 + t * Math.PI * 0.95
+    const r = ionRadius(ion.hydrated)
+    const blocked = !ion.pass
+    const dist =
+      emphasizeK && ion.id === 'K'
+        ? PORE_R * 0.2
+        : PORE_R + 78 + (blocked ? 18 : 0) + Math.abs(t - 0.5) * 36
+    return {
+      ...ion,
+      r,
+      x: CX + Math.cos(angle) * dist,
+      y: CY + Math.sin(angle) * dist * 0.92,
+      blocked,
+      hot: emphasizeK && ion.id === 'K',
+    }
+  })
+
   return (
-    <div className={styles.plot} aria-label={label || 'Pore gate versus hydrated ion diameter'}>
-      <svg viewBox={`0 0 ${W} ${H}`} className={styles.plotSvg} role="img">
-        <text x={PAD.l} y={32} className={styles.plotHiLabel}>
-          Hydrated diameter vs channel window
-        </text>
-        <text x={PAD.l} y={54} className={styles.plotHiSub}>
-          {data.caption}
-        </text>
-
-        {/* gate band */}
-        <motion.rect
-          x={gateX}
-          y={PAD.t}
-          width={Math.max(2, sx(maxR) - gateX)}
-          height={plotH}
-          fill="rgba(208, 80, 50, 0.12)"
-          initial={false}
-          animate={{ opacity: active && showGate ? 1 : 0 }}
-        />
-        <motion.line
-          x1={gateX}
-          x2={gateX}
-          y1={PAD.t - 8}
-          y2={PAD.t + plotH + 8}
-          stroke="rgba(243,238,228,0.75)"
-          strokeWidth={2}
-          initial={false}
-          animate={{ opacity: active && showGate ? 1 : 0 }}
-        />
-        <motion.text
-          x={gateX + 10}
-          y={PAD.t - 14}
-          className={styles.plotAnnotate}
-          initial={false}
-          animate={{ opacity: active && showGate ? 1 : 0 }}
-        >
-          {data.poreA.toFixed(1)} Å pore
-        </motion.text>
-
-        {data.ions.map((ion, i) => {
-          const y = PAD.t + rowH * i + rowH * 0.5
-          const barW = sx(ion.hydrated) - PAD.l
-          const isK = ion.id === 'K'
-          const dim = emphasizeK && !isK
-          const hot = emphasizeK && isK
-          return (
-            <g key={ion.id} opacity={dim ? 0.28 : 1}>
-              <text x={PAD.l - 14} y={y + 5} textAnchor="end" className={styles.plotTick}>
-                {ion.label}
-              </text>
-              <motion.rect
-                x={PAD.l}
-                y={y - 10}
-                height={20}
-                rx={0}
-                fill={
-                  ion.pass
-                    ? 'url(#passGrad)'
-                    : hot
-                      ? '#e07040'
-                      : 'rgba(224, 112, 64, 0.55)'
-                }
-                initial={false}
-                animate={{ width: active ? barW : 0 }}
-                transition={{
-                  duration: reduced ? 0 : 0.75,
-                  delay: reduced || !active ? 0 : 0.08 + i * 0.1,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-              />
-              <motion.text
-                x={PAD.l + barW + 10}
-                y={y + 5}
-                className={styles.plotAnnotate}
-                initial={false}
-                animate={{ opacity: active ? 1 : 0 }}
-                transition={{ delay: reduced ? 0 : 0.35 + i * 0.08 }}
-              >
-                {ion.hydrated.toFixed(2)} Å · {ion.note}
-              </motion.text>
-            </g>
-          )
-        })}
-
+    <div className={styles.theater} aria-label={label || 'Hydrated ions approaching a channel aperture'}>
+      <svg viewBox="0 0 920 500" className={styles.theaterSvg} role="img">
         <defs>
-          <linearGradient id="passGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#7ec4d4" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#7ec4d4" stopOpacity="0.35" />
-          </linearGradient>
+          <radialGradient id="apertureGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(243,204,122,0.2)" />
+            <stop offset="55%" stopColor="rgba(243,204,122,0.05)" />
+            <stop offset="100%" stopColor="rgba(243,204,122,0)" />
+          </radialGradient>
+          <radialGradient id="ionPass" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#a8dce8" />
+            <stop offset="100%" stopColor="#4a8a98" />
+          </radialGradient>
+          <radialGradient id="ionHot" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#f0a878" />
+            <stop offset="100%" stopColor="#c05028" />
+          </radialGradient>
         </defs>
 
-        <line
-          x1={PAD.l}
-          y1={PAD.t + plotH}
-          x2={PAD.l + plotW}
-          y2={PAD.t + plotH}
-          stroke="rgba(243,238,228,0.22)"
+        <motion.circle
+          cx={CX}
+          cy={CY}
+          r={PORE_R * 2.2}
+          fill="url(#apertureGlow)"
+          initial={false}
+          animate={{ opacity: active ? 1 : 0 }}
         />
-        {[1, 2, 3, 3.5].map((t) => (
-          <g key={t}>
-            <line
-              x1={sx(t)}
-              y1={PAD.t + plotH}
-              x2={sx(t)}
-              y2={PAD.t + plotH + 6}
-              stroke="rgba(243,238,228,0.35)"
-            />
-            <text x={sx(t)} y={H - 28} textAnchor="middle" className={styles.plotTick}>
-              {t}
-            </text>
-          </g>
-        ))}
-        <text x={PAD.l + plotW / 2} y={H - 8} textAnchor="middle" className={styles.plotAxis}>
-          Hydrated diameter (Å)
+
+        <motion.circle
+          cx={CX}
+          cy={CY}
+          r={PORE_R}
+          fill="rgba(243,238,228,0.03)"
+          stroke="rgba(243,238,228,0.85)"
+          strokeWidth={2.5}
+          strokeDasharray={showGate ? '0' : '7 9'}
+          initial={false}
+          animate={{ opacity: active ? 1 : 0, r: active ? PORE_R : PORE_R * 0.55 }}
+          transition={{ duration: reduced ? 0 : 0.8, ease: [0.16, 1, 0.3, 1] }}
+        />
+        <text x={CX} y={CY + 6} textAnchor="middle" className={styles.theaterMark}>
+          ~{data.poreA.toFixed(1)} Å
         </text>
+        <text x={CX} y={CY + PORE_R + 26} textAnchor="middle" className={styles.theaterMark}>
+          effective window
+        </text>
+
+        {arc.map((ion, i) => (
+          <motion.g
+            key={ion.id}
+            initial={false}
+            animate={{ opacity: active ? (emphasizeK && !ion.hot ? 0.28 : 1) : 0 }}
+            transition={{
+              duration: reduced ? 0 : 0.5,
+              delay: reduced || !active ? 0 : 0.05 + i * 0.06,
+            }}
+          >
+            <motion.circle
+              cx={ion.x}
+              cy={ion.y}
+              r={ion.r}
+              fill={ion.hot || ion.blocked ? 'url(#ionHot)' : 'url(#ionPass)'}
+              fillOpacity={0.9}
+              initial={false}
+              animate={{
+                cx: active ? ion.x : ion.x + 36,
+                scale: ion.hot && active ? 1.06 : 1,
+              }}
+              style={{ transformOrigin: `${ion.x}px ${ion.y}px` }}
+              transition={{
+                duration: reduced ? 0 : 0.85,
+                delay: reduced || !active ? 0 : 0.06 + i * 0.07,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            />
+            <text
+              x={ion.x}
+              y={ion.y + 5}
+              textAnchor="middle"
+              className={styles.theaterIon}
+              style={{ fill: ion.hot ? '#1a1210' : '#f3eee4' }}
+            >
+              {ion.label}
+            </text>
+            {ion.hot && (
+              <text x={ion.x} y={ion.y + ion.r + 20} textAnchor="middle" className={styles.theaterCall}>
+                cargo
+              </text>
+            )}
+          </motion.g>
+        ))}
       </svg>
-      <p className={styles.plotFoot}>
-        {phase === 'exchange'
-          ? 'Protons reorient · K⁺ locks · size-selective capture, not a soak'
-          : 'Physics leaves one answer for selective monovalent transport'}
-      </p>
     </div>
   )
 }

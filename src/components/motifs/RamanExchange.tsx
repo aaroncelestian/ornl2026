@@ -50,13 +50,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const leftOpacity = phase === 'both' ? 1 : showLeft ? 1 : 0.18
   const rightOpacity = phase === 'both' ? 1 : showRight ? 1 : 0.18
 
-  const foot =
-    phase === 'durability'
-      ? data.footnotes.durability
-      : phase === 'raman'
-        ? data.footnotes.raman
-        : 'In situ Raman mechanism · cycle protocol decides lattice survival'
-
   return (
     <div className={styles.plot} aria-label={label || 'LMO Raman A1g shift and Mn loss versus cycles'}>
       <svg viewBox={`0 0 ${W} ${H}`} className={styles.plotSvg} role="img">
@@ -69,10 +62,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
         {/* Left panel — A1g */}
         <g opacity={leftOpacity}>
-          <text x={PAD.l} y={32} className={styles.plotHiLabel}>
+          <text x={PAD.l} y={32} className={styles.plotAnnotate}>
             A₁g during Li uptake
           </text>
-          <text x={PAD.l} y={54} className={styles.plotHiSub}>
+          <text x={PAD.l} y={52} className={styles.plotTick}>
             H-LMO → Li · 635 → 656 cm⁻¹
           </text>
 
@@ -156,10 +149,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
         {/* Right panel — Mn loss */}
         <g opacity={rightOpacity}>
-          <text x={ox + PAD.l} y={32} className={styles.plotHiLabel}>
+          <text x={ox + PAD.l} y={32} className={styles.plotAnnotate}>
             Mn loss vs protocol
           </text>
-          <text x={ox + PAD.l} y={54} className={styles.plotHiSub}>
+          <text x={ox + PAD.l} y={52} className={styles.plotTick}>
             Full load vs stop-before-max
           </text>
 
@@ -253,7 +246,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           </text>
         </g>
       </svg>
-      <p className={styles.plotFoot}>{foot}</p>
     </div>
   )
 }

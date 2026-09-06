@@ -7,7 +7,7 @@ import styles from './Motifs.module.css'
 
 const W = 920
 const H = 520
-const PAD = { t: 56, r: 48, b: 56, l: 64 }
+const PAD = { t: 56, r: 40, b: 56, l: 200 }
 
 function catmullRom(points: [number, number][]) {
   if (points.length < 2) return ''
@@ -204,10 +204,10 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
           animate={{ opacity: active && showHi ? 1 : 0 }}
           transition={{ delay: reduced ? 0 : 0.35 }}
         >
-          <text x={sx(0.76) + 14} y={sy(5.8) - 8} className={styles.plotHiLabel}>
+          <text x={sx(0.76) + 14} y={sy(5.8) - 8} className={styles.plotAnnotate}>
             {data.highlight.label}
           </text>
-          <text x={sx(0.76) + 14} y={sy(5.8) + 10} className={styles.plotHiSub}>
+          <text x={sx(0.76) + 14} y={sy(5.8) + 12} className={styles.plotTick}>
             {data.highlight.subtitle}
           </text>
         </motion.g>
@@ -238,11 +238,6 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
             </motion.g>
           ))}
       </svg>
-      <p className={styles.plotFoot}>
-        {phase === 'spinel' || phase === 'ions'
-          ? data.highlight.fromTo
-          : 'Candidate sorbents as translucent paths — geometry, not luck'}
-      </p>
     </div>
   )
 }

@@ -532,25 +532,25 @@ export const slides: Slide[] = [
         title: 'Hydrated diameters\nare the real players.',
         layers: ['gate'],
         notes:
-          'Crystal radii mislead in water. Hydrated diameters: Na⁺ ~2.8 Å, Ca²⁺ ~2.7 Å, K⁺ ~3.3 Å. Crystallographic 7MR axes in CZS are larger — ~6.5 Å by ~5 Å oxygen-to-oxygen — and protonation shortens the O3···H contact to ~4.2 Å. The channel does not see bare Shannon radii — it sees solvated cations trying to shed water at the window, against a hydroxyl network.',
+          'Crystal radii mislead in water. Watch the spheres: Na⁺ ~2.8 Å, Ca²⁺ ~2.7 Å, K⁺ ~3.3 Å. The channel sees solvated cations shedding water at the window — not bare Shannon radii.',
       },
       {
         id: 'pore',
         label: 'Pore',
-        kicker: 'Pore physics',
+        kicker: 'From the CIF',
         title: 'A 7-ring window.\nBuilt like a K⁺ channel.',
-        layers: ['gate'],
+        layers: ['structure'],
         notes:
-          'The lattice opens a seven-membered ring — four SiO₄ and three ZrO₆ — engineered to mimic biological potassium-channel selectivity. Extremely selective over sodium; Na⁺ is all but excluded from protonated forms while K⁺ exchanges rapidly. Watch the gate line. The motif’s ~3 Å filter is the effective hydrated-ion cutoff; the crystallography is a deformable 7MR whose free diameter depends on H⁺ occupancy.',
+          'Orbit the real ZS-9 cell from CZS-K.cif. Seven-membered rings — four SiO₄ and three ZrO₆ — light up as the free aperture. Same geometric idea as a biological K⁺ channel. Effective hydrated cutoff ~3 Å; crystallographic O–O axes ~6.5 × 5 Å.',
       },
       {
         id: 'k',
         label: 'Capture',
-        kicker: 'Pore physics',
-        title: 'K⁺ is not rejected.\nK⁺ is the cargo.',
-        layers: ['gate'],
+        kicker: 'From the CIF',
+        title: 'K⁺ is the cargo.',
+        layers: ['structure'],
         notes:
-          'In Lokelma’s clinical use, potassium is captured in the gut lumen as food moves through — before a failing kidney would have to clear it. Non-absorbed. Never in blood. Never acting on the kidney tissue. The 2024 paper: partial protonation expands the unit cell, enlarges the 7MR, distorts framework polyhedra, and yields rapid, effectively irreversible K⁺ exchange. Size-selective exchange deployed exactly where the organ is failing.',
+          'Potassium sits in the channels of the same CIF model. In the clinic it is captured in the gut lumen — never in blood, never on kidney tissue. Partial protonation opens the 7MR and locks K⁺ in.',
       },
       {
         id: 'gut',
@@ -559,25 +559,25 @@ export const slides: Slide[] = [
         title: 'Not blood.\nNot kidney.\nGut.',
         layers: ['structure'],
         notes:
-          'Orbit the ZS-9 cell. Drag if you want. People often get the site of action wrong: Lokelma does not circulate. It never leaves the intestine. Clinical trials (cited in the paper) brought hyperkalemic patients (>5.1 mEq/L K) back toward normal within hours. That constraint is as structural as the pore.',
+          'Drag to orbit. Lokelma never leaves the intestine. Clinical trials brought hyperkalemic patients back toward normal within hours. Site of action is as structural as the pore.',
       },
       {
         id: 'protons',
         label: 'Protons',
         kicker: 'Exchange mechanism',
         title: 'Protons point\nat the empty site.',
-        layers: ['lever'],
+        layers: ['structure'],
         notes:
-          'Double-lever diagram from Lively & Celestian 2024. In CZS-(Na,H), hydroxyls sit on bridging O1 of the ZrO₆, pointing into the 7MR — toward the site K⁺ wants. Bond-valence sums put H there; neutron work is the planned confirmation. Watch K⁺ approach and channel water begin to rotate.',
+          'Still the CIF — now with H entering. Hydroxyls on bridging O1 of ZrO₆ point into the 7MR, toward the site K⁺ wants. Bond-valence puts H there; neutron work is next.',
       },
       {
         id: 'lock',
         label: 'Lock',
         kicker: 'Exchange mechanism',
         title: 'They bend.\nThey leave.\nK stays.',
-        layers: ['lever'],
+        layers: ['structure'],
         notes:
-          'Lever 2: rotated H₂O forces Zr–OH repulsion and torques the 3MR — the paddle-like logic of protein K⁺ channels. K⁺ hydration energy is lower than Na⁺ (−321 vs −405 kJ/mol). Cage ~207 Å³; 7MR ~6.5×5 Å; protonated O3···H ~4.2 Å. That lock is crystallography, not a marketing claim.',
+          'Watch the cell open, then lock. H leaves; K stays. Hydration energy favors K over Na (−321 vs −405 kJ/mol). That lock is crystallography, not a marketing claim.',
       },
       {
         id: 'patients',
@@ -587,7 +587,7 @@ export const slides: Slide[] = [
         subtitle: 'On the order of 3 million patients.',
         layers: ['structure'],
         notes:
-          'Three million patients is not a brand slide. It is what happens when a channel geometry that minerals had already invented is rebuilt to pharmaceutical specification. Same crystal logic that sits behind cesium cleanup frameworks. One family of answers. Two deployment domains.',
+          'Three million patients is what happens when a channel minerals already invented is rebuilt to pharmaceutical specification. Same family as cesium cleanup frameworks. One geometry. Two deployments.',
       },
     ],
   },
@@ -650,7 +650,7 @@ export const slides: Slide[] = [
         title: 'The useful part\nis the hole.',
         layers: ['density'],
         notes:
-          'Framework density 9.8 polyhedra per 1000 Å³ — lowest of any naturally occurring crystalline framework (tschörtnerite zeolite is 12.1; traskite 11.7). Large cages connect through 12-membered rings 9.7 Å across; large-to-small cage access narrows to an effective 4.1 Å. Polyoxovanadate [V₄O₁₆] units linked by (P,As)O₄. The empty volume is the scientific object.',
+          'Bigger glow means more empty. Rowleyite at FD 9.8 — lowest natural crystalline framework. 12MR windows 9.7 Å; salt-cage access 4.1 Å. The empty volume is the scientific object.',
       },
       {
         id: 'voids-view',
@@ -659,23 +659,17 @@ export const slides: Slide[] = [
         title: 'Cages you can\norbit.',
         layers: ['voids'],
         notes:
-          'Drag to orbit the void map. Two cage types and a connected channel network — salt-templated small cages and open large cages. This is the geometry the density plot quantified.',
+          'Drag the void map. Salt-templated small cages and open large cages — the geometry the glow just named.',
       },
       {
         id: 'cargo',
         label: 'Cargo',
         kicker: 'Host–guest hypothesis',
-        title: 'Doxorubicin. Vincristine.\nCisplatin. Temozolomide.',
+        title: 'Four guests.\nOne scaffold idea.',
         layers: ['voids'],
         guests: true,
-        bullets: [
-          'Doxorubicin — anthracycline; intercalates DNA',
-          'Vincristine — vinca alkaloid; mitosis arrest',
-          'Cisplatin — platinum crosslinker',
-          'Temozolomide — CNS-permeable alkylator',
-        ],
         notes:
-          'Four chemotherapeutics placed as guests in openings on the near face of the cell. This is not in the 2017 mineral description — it is the materials hypothesis built on that porosity. Cage free volumes are in the same ballpark as these molecular volumes. Four mechanisms, many diseases. The mineral is not the drug. The mineral is the scaffold idea — and the paper already flagged POM frameworks for ionic transport and mesoporosity.',
+          'Doxorubicin, vincristine, cisplatin, temozolomide — placed as guests on the near face. Not in the 2017 mineral paper: a materials hypothesis built on that porosity. The mineral is the scaffold idea, not the drug.',
       },
       {
         id: 'mismatch',
@@ -684,7 +678,7 @@ export const slides: Slide[] = [
         title: 'Match is a filter.\nNot a finished medicine.',
         layers: ['fit'],
         notes:
-          'Approximate cage free volume ~420 Å³ against guest molecular volumes. Cisplatin and temozolomide sit comfortably inside. Doxorubicin is near the edge. Vincristine is tight — and that tension is useful. Crystallographic priors from the paper: 9.7 Å 12-rings between large cages, 4.1 Å effective window into the salt-templated small cage. Void matching is how you generate candidates and reject fantasies. It is not how you ship a vial.',
+          'Cage ~420 Å³. Cisplatin and temozolomide fit. Doxorubicin is near the edge. Vincristine overflows — useful tension. Void matching generates candidates; it does not ship a vial.',
       },
       {
         id: 'scaffold',
@@ -693,7 +687,7 @@ export const slides: Slide[] = [
         title: 'Natural geometry.\nPharmaceutical-grade analog.',
         layers: ['fit'],
         notes:
-          'Rowleyite is a salt-inclusion solid: a 3D [Na(NH₄,K)₉Cl₄] salt net apparently templated the porous [V₂(P,As)O₈] framework — kinship with Queen et al.’s synthetic POV SIS frameworks, but formed in a low-temperature mine assemblage, not >600 °C. Regulatory reality: you will not put a hand specimen from Arizona into an oncology ward. You will synthesize a clean, characterized, batch-reproducible analog of the cage–channel architecture. Same pattern as Lokelma and λ-MnO₂.',
+          'You will not put Arizona hand-specimen into an oncology ward. You synthesize a clean analog of the cage–channel architecture. Same pattern as Lokelma and λ-MnO₂.',
       },
       {
         id: 'lead',

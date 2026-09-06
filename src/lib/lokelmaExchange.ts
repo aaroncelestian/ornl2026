@@ -98,6 +98,7 @@ export function phaseForBeat(id?: string): CrystalPhase {
   if (id === 'protons') return 'h-point'
   if (id === 'lock') return 'exchange'
   if (id === 'patients') return 'locked'
+  if (id === 'k' || id === 'gut') return 'k'
   return 'k'
 }
 

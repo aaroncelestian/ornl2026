@@ -250,12 +250,17 @@
 .scene[data-motif='void-fit'] .stageCopy,
 .scene[data-motif='raman-exchange'] .stageCopy,
 .scene[data-motif='double-lever'] .stageCopy,
-.scene[data-motif='framework-density'] .stageCopy {
-  max-width: min(34ch, 38vw);
-  bottom: auto;
+.scene[data-motif='framework-density'] .stageCopy,
+.scene[data-motif='crystal-viewer'] .stageCopy,
+.scene[data-motif='void-viewer'] .stageCopy {
+  position: absolute;
+  max-width: min(24ch, 30vw);
   top: var(--pad-y);
   left: var(--pad-x);
   right: auto;
+  bottom: auto;
+  margin: 0;
+  padding: 0;
 }
 
 .scene[data-motif='selectivity-plume'] .stageScrim,
@@ -264,13 +269,20 @@
 .scene[data-motif='void-fit'] .stageScrim,
 .scene[data-motif='raman-exchange'] .stageScrim,
 .scene[data-motif='double-lever'] .stageScrim,
-.scene[data-motif='framework-density'] .stageScrim {
+.scene[data-motif='framework-density'] .stageScrim,
+.scene[data-motif='crystal-viewer'] .stageScrim,
+.scene[data-motif='void-viewer'] .stageScrim {
   background: linear-gradient(
     105deg,
-    color-mix(in srgb, var(--color-bg) 72%, transparent) 0%,
-    color-mix(in srgb, var(--color-bg) 28%, transparent) 42%,
-    transparent 68%
+    color-mix(in srgb, var(--color-bg) 78%, transparent) 0%,
+    color-mix(in srgb, var(--color-bg) 32%, transparent) 38%,
+    transparent 64%
   );
+}
+
+.scene[data-motif='crystal-viewer'] .stageCopy,
+.scene[data-motif='void-viewer'] .stageCopy {
+  max-width: min(26ch, 32vw);
 }
 
 .scene[data-motif='prep-modes'] .stageCopy {
