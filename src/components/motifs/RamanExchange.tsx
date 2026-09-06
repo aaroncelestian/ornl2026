@@ -7,7 +7,7 @@ import styles from './Motifs.module.css'
 const W = 960
 const H = 500
 const GAP = 36
-const PAD = { t: 56, r: 28, b: 52, l: 48 }
+const PAD = { t: 72, r: 28, b: 52, l: 48 }
 
 type Phase = 'raman' | 'both' | 'durability'
 
@@ -69,10 +69,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
         {/* Left panel — A1g */}
         <g opacity={leftOpacity}>
-          <text x={PAD.l} y={28} className={styles.plotHiLabel}>
+          <text x={PAD.l} y={32} className={styles.plotHiLabel}>
             A₁g during Li uptake
           </text>
-          <text x={PAD.l} y={46} className={styles.plotHiSub}>
+          <text x={PAD.l} y={54} className={styles.plotHiSub}>
             H-LMO → Li · 635 → 656 cm⁻¹
           </text>
 
@@ -156,10 +156,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
         {/* Right panel — Mn loss */}
         <g opacity={rightOpacity}>
-          <text x={ox + PAD.l} y={28} className={styles.plotHiLabel}>
+          <text x={ox + PAD.l} y={32} className={styles.plotHiLabel}>
             Mn loss vs protocol
           </text>
-          <text x={ox + PAD.l} y={46} className={styles.plotHiSub}>
+          <text x={ox + PAD.l} y={54} className={styles.plotHiSub}>
             Full load vs stop-before-max
           </text>
 

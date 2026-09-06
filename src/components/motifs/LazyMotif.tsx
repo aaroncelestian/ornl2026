@@ -19,6 +19,12 @@ const loaders: Partial<Record<MotifKind, () => Promise<{ default: ComponentType<
     import('../motifs/FrameworkLineage').then((m) => ({ default: m.FrameworkLineage })),
   'void-fit': () => import('../motifs/VoidFit').then((m) => ({ default: m.VoidFit })),
   'ion-chart': () => import('../motifs/IonChart').then((m) => ({ default: m.IonChart })),
+  'raman-exchange': () =>
+    import('../motifs/RamanExchange').then((m) => ({ default: m.RamanExchange })),
+  'double-lever': () =>
+    import('../motifs/DoubleLever').then((m) => ({ default: m.DoubleLever })),
+  'framework-density': () =>
+    import('../motifs/FrameworkDensity').then((m) => ({ default: m.FrameworkDensity })),
 }
 
 const cache = new Map<MotifKind, ComponentType<MotifProps>>()

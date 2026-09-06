@@ -80,6 +80,15 @@ function motifLine(slide: Slide): string | undefined {
   if (slide.motif === 'void-fit') {
     return 'Motif: chemotherapeutic volumes versus rowleyite cage volume'
   }
+  if (slide.motif === 'raman-exchange') {
+    return 'Motif: LMO A₁g Raman shift and Mn-loss durability'
+  }
+  if (slide.motif === 'double-lever') {
+    return 'Motif: CZS double-lever K⁺ exchange mechanism'
+  }
+  if (slide.motif === 'framework-density') {
+    return 'Motif: framework density — rowleyite vs natural and synthetic peers'
+  }
   return undefined
 }
 
@@ -182,6 +191,25 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       }
       if (layer?.kind === 'motif' && layer.motif === 'void-fit') {
         lines.push('Motif: void fit — guest molecular volumes versus rowleyite cage volume')
+      }
+      if (layer?.kind === 'motif' && layer.motif === 'raman-exchange') {
+        lines.push(
+          beat?.id === 'durability' || beat?.id === 'recycle'
+            ? 'Motif: Raman exchange — Mn loss vs cycle protocol (full load 24% vs partial ~0%)'
+            : 'Motif: Raman exchange — A₁g 635→656 cm⁻¹ during Li uptake into H-LMO',
+        )
+      }
+      if (layer?.kind === 'motif' && layer.motif === 'double-lever') {
+        lines.push(
+          beat?.id === 'lock'
+            ? 'Motif: double-lever — OH torque opens 3MR; K⁺ locks in the 7MR'
+            : 'Motif: double-lever — K⁺ hydrates in 7MR; channel H₂O rotates toward framework OH',
+        )
+      }
+      if (layer?.kind === 'motif' && layer.motif === 'framework-density') {
+        lines.push(
+          'Motif: framework density — rowleyite 9.8 (lowest natural) · 12MR 9.7 Å / 4.1 Å windows',
+        )
       }
     }
   } else if (slide.image) {

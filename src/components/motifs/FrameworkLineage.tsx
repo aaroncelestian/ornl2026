@@ -7,7 +7,7 @@ import styles from './Motifs.module.css'
 
 const W = 920
 const H = 500
-const PAD = { t: 40, r: 160, b: 52, l: 56 }
+const PAD = { t: 48, r: 160, b: 52, l: 56 }
 
 function catmullRom(points: [number, number][]) {
   if (points.length < 2) return ''

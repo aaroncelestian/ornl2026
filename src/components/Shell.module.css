@@ -73,16 +73,18 @@
 
 .buildId {
   position: fixed;
-  top: 14px;
-  left: 16px;
+  top: 12px;
+  left: 14px;
   z-index: 80;
-  font-family: var(--font-body);
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  background: color-mix(in srgb, #070605 72%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
   font-weight: 600;
   font-feature-settings: 'tnum' 1;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 42%, transparent);
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-text) 58%, transparent);
   pointer-events: none;
   user-select: none;
 }

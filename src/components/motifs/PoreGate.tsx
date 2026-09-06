@@ -6,7 +6,7 @@ import styles from './Motifs.module.css'
 
 const W = 880
 const H = 480
-const PAD = { t: 48, r: 40, b: 72, l: 72 }
+const PAD = { t: 72, r: 40, b: 72, l: 72 }
 
 type Phase = 'scale' | 'gate' | 'k' | 'exchange'
 
@@ -35,10 +35,10 @@ export function PoreGate({ active, label }: { active: boolean; label?: string })
   return (
     <div className={styles.plot} aria-label={label || 'Pore gate versus hydrated ion diameter'}>
       <svg viewBox={`0 0 ${W} ${H}`} className={styles.plotSvg} role="img">
-        <text x={PAD.l} y={28} className={styles.plotHiLabel}>
+        <text x={PAD.l} y={32} className={styles.plotHiLabel}>
           Hydrated diameter vs channel window
         </text>
-        <text x={PAD.l} y={48} className={styles.plotHiSub}>
+        <text x={PAD.l} y={54} className={styles.plotHiSub}>
           {data.caption}
         </text>
 

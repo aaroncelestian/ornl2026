@@ -24,6 +24,9 @@ export type MotifKind =
   | 'pore-gate'
   | 'framework-lineage'
   | 'void-fit'
+  | 'raman-exchange'
+  | 'double-lever'
+  | 'framework-density'
 
 export type ChapterId = 'open' | 'spinel' | 'lokelma' | 'rowleyite' | 'pipeline' | 'close'
 
@@ -302,6 +305,11 @@ export const slides: Slide[] = [
         kind: 'motif',
         motif: 'lithium-cycle',
       },
+      {
+        id: 'raman',
+        kind: 'motif',
+        motif: 'raman-exchange',
+      },
     ],
     scene: [
       {
@@ -368,6 +376,15 @@ export const slides: Slide[] = [
           'Li₄Mn₅O₁₂ — size-selective uptake. In situ Raman: the A₁g Mn–O mode shifts from 635 to 656 cm⁻¹ in about twelve minutes as Li enters. Mechanism from the 2026 paper: Li first occupies tetrahedral interstitial voids (8a), then migrates into interstitial sites between Mn octahedra (cubane 8b). Larger seawater cations do not fit that gate. Raman + XRD + XPS is the ORNL characterization half of the pipeline.',
       },
       {
+        id: 'raman',
+        label: 'Raman',
+        kicker: 'J. Raman Spectrosc. 2026',
+        title: 'Watch the lattice\ntake the lithium.',
+        layers: ['raman'],
+        notes:
+          'Left panel: A₁g climbs from 635 to 656 cm⁻¹ as Li enters H-LMO; by ~22 min local Mn–O symmetry breaks. Right panel stays soft until the durability beat. This is the operando half of the ORNL story — not a capacity claim, a mechanism claim.',
+      },
+      {
         id: 'air',
         label: 'Air',
         kicker: 'Process loop',
@@ -402,7 +419,16 @@ export const slides: Slide[] = [
         title: 'The spinel comes back.',
         layers: ['cycle'],
         notes:
-          'Recyclable sorbent — empty spinel back to brine. Durability caveat from the Raman study: after 100 full Li/H cycles, up to 24% Mn loss and a secondary MnOx phase appear. Partial loading — stop before maximum capacity — showed no measurable Mn loss at 100 cycles. Geometry wins, and cycle protocol decides whether the lattice survives. Same selectivity logic does not stop at lithium.',
+          'Recyclable sorbent — empty spinel back to brine. Durability caveat next. Geometry wins — and cycle protocol decides whether the lattice survives.',
+      },
+      {
+        id: 'durability',
+        label: 'Durability',
+        kicker: 'J. Raman Spectrosc. 2026',
+        title: 'Full load costs Mn.\nPartial load keeps it.',
+        layers: ['raman'],
+        notes:
+          'Right panel hard: after 100 full Li/H cycles, up to 24% Mn loss and a secondary MnOx phase. Partial loading — stop before maximum capacity — showed no measurable Mn loss at 100 cycles. Same selectivity logic does not stop at lithium.',
       },
     ],
   },
@@ -446,6 +472,11 @@ export const slides: Slide[] = [
         id: 'structure',
         kind: 'motif',
         motif: 'crystal-viewer',
+      },
+      {
+        id: 'lever',
+        kind: 'motif',
+        motif: 'double-lever',
       },
     ],
     scene: [
@@ -535,18 +566,18 @@ export const slides: Slide[] = [
         label: 'Protons',
         kicker: 'Exchange mechanism',
         title: 'Protons point\nat the empty site.',
-        layers: ['structure'],
+        layers: ['lever'],
         notes:
-          'Press H if you want the exchange animation. In CZS-(Na,H), hydroxyls sit on bridging O1 of the ZrO₆, pointing into the 7MR — toward the site K⁺ wants. Bond-valence sums put H there; neutron work is the planned confirmation. The framework is doing directed exchange, not a passive soak. Watch the cell expand under partial protonation.',
+          'Double-lever diagram from Lively & Celestian 2024. In CZS-(Na,H), hydroxyls sit on bridging O1 of the ZrO₆, pointing into the 7MR — toward the site K⁺ wants. Bond-valence sums put H there; neutron work is the planned confirmation. Watch K⁺ approach and channel water begin to rotate.',
       },
       {
         id: 'lock',
         label: 'Lock',
         kicker: 'Exchange mechanism',
         title: 'They bend.\nThey leave.\nK stays.',
-        layers: ['structure'],
+        layers: ['lever'],
         notes:
-          'Double-lever mechanism from the paper: incoming K⁺ hydrates in the 7MR, repels H on channel water, rotates that water into the framework OH, and torques the 3MR — the same logic as paddle mechanisms in protein K⁺ channels. K⁺ hydration energy is lower than Na⁺ (−321 vs −405 kJ/mol), so K wins the desolvation contest. Protons reorient; the window closes behind K. That lock is crystallography, not a marketing claim.',
+          'Lever 2: rotated H₂O forces Zr–OH repulsion and torques the 3MR — the paddle-like logic of protein K⁺ channels. K⁺ hydration energy is lower than Na⁺ (−321 vs −405 kJ/mol). Cage ~207 Å³; 7MR ~6.5×5 Å; protonated O3···H ~4.2 Å. That lock is crystallography, not a marketing claim.',
       },
       {
         id: 'patients',
@@ -596,6 +627,11 @@ export const slides: Slide[] = [
         kind: 'motif',
         motif: 'void-fit',
       },
+      {
+        id: 'density',
+        kind: 'motif',
+        motif: 'framework-density',
+      },
     ],
     scene: [
       {
@@ -612,9 +648,18 @@ export const slides: Slide[] = [
         label: 'Void space',
         kicker: 'Architecture',
         title: 'The useful part\nis the hole.',
+        layers: ['density'],
+        notes:
+          'Framework density 9.8 polyhedra per 1000 Å³ — lowest of any naturally occurring crystalline framework (tschörtnerite zeolite is 12.1; traskite 11.7). Large cages connect through 12-membered rings 9.7 Å across; large-to-small cage access narrows to an effective 4.1 Å. Polyoxovanadate [V₄O₁₆] units linked by (P,As)O₄. The empty volume is the scientific object.',
+      },
+      {
+        id: 'voids-view',
+        label: 'Channels',
+        kicker: 'Architecture',
+        title: 'Cages you can\norbit.',
         layers: ['voids'],
         notes:
-          'Polyoxovanadate [V₄O₁₆] units linked by (P,As)O₄ tetrahedra into a 3D framework with two cage types and large interconnected channels. Framework density 9.8 polyhedra per 1000 Å³ — lowest of any naturally occurring crystalline framework (tschörtnerite zeolite is 12.1). Large cages connect through 12-membered rings 9.7 Å across; large-to-small cage access narrows to an effective 4.1 Å. Drag to orbit. The empty volume is the scientific object.',
+          'Drag to orbit the void map. Two cage types and a connected channel network — salt-templated small cages and open large cages. This is the geometry the density plot quantified.',
       },
       {
         id: 'cargo',

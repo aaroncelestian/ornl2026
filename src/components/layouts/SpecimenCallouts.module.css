@@ -61,7 +61,7 @@
 
 .title {
   font-family: var(--font-heading);
-  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
   font-weight: 500;
   font-style: italic;
   letter-spacing: 0.02em;
@@ -72,7 +72,7 @@
 .formula {
   margin-top: 0.2rem;
   font-family: var(--font-body);
-  font-size: clamp(0.72rem, 1.05vw, 0.88rem);
+  font-size: clamp(1rem, 1.55vw, 1.25rem);
   font-weight: 600;
   font-feature-settings: 'tnum' 1, 'ss01' 1;
   letter-spacing: 0.01em;
@@ -83,11 +83,11 @@
 .body {
   margin-top: 0.18rem;
   font-family: var(--font-body);
-  font-size: clamp(0.72rem, 1.05vw, 0.86rem);
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 500;
   letter-spacing: 0.02em;
   line-height: 1.35;
-  color: color-mix(in srgb, var(--color-text) 68%, transparent);
+  color: color-mix(in srgb, var(--color-text) 72%, transparent);
   text-shadow: 0 0 16px #070605;
 }
 

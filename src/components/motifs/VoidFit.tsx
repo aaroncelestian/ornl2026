@@ -6,7 +6,7 @@ import styles from './Motifs.module.css'
 
 const W = 880
 const H = 460
-const PAD = { t: 36, r: 40, b: 48, l: 48 }
+const PAD = { t: 72, r: 40, b: 48, l: 48 }
 
 type Phase = 'cage' | 'guests' | 'mismatch' | 'synthetic'
 
@@ -33,10 +33,10 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
   return (
     <div className={styles.plot} aria-label={label || 'Guest molecular volume versus rowleyite cage volume'}>
       <svg viewBox={`0 0 ${W} ${H}`} className={styles.plotSvg} role="img">
-        <text x={PAD.l} y={24} className={styles.plotHiLabel}>
+        <text x={PAD.l} y={32} className={styles.plotHiLabel}>
           Cage free volume vs chemotherapeutic guests
         </text>
-        <text x={PAD.l} y={44} className={styles.plotHiSub}>
+        <text x={PAD.l} y={54} className={styles.plotHiSub}>
           {data.unit}
         </text>
 

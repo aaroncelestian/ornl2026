@@ -3,6 +3,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 function buildStamp() {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const stamp =
+    process.env.VITE_BUILD_TIME ||
+    `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`
   const sha = (
     process.env.VITE_BUILD_SHA ||
     process.env.GITHUB_SHA ||
@@ -12,12 +17,12 @@ function buildStamp() {
           .toString()
           .trim()
       } catch {
-        return 'unknown'
+        return 'local'
       }
     })()
   ).slice(0, 7)
-  const num = process.env.VITE_BUILD_NUM || process.env.GITHUB_RUN_NUMBER || 'local'
-  return `${num} · ${sha}`
+  const num = process.env.VITE_BUILD_NUM || process.env.GITHUB_RUN_NUMBER
+  return num ? `b${num} · ${stamp} · ${sha}` : `${stamp} · ${sha}`
 }
 
 const offline = process.env.OFFLINE === '1'
