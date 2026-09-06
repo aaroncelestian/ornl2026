@@ -140,7 +140,7 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: hydrated ions sized against the ~3 Å aperture'
   }
   if (slide.motif === 'framework-lineage') {
-    return 'Motif: natural → synthetic framework lineage'
+    return 'Motif: OpenAlex literature mentions versus year'
   }
   if (slide.motif === 'void-fit') {
     return 'Motif: guest orbs sized against the rowleyite cage'
@@ -264,10 +264,10 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'framework-lineage') {
         lines.push(
           beat?.id === 'zs9' || beat?.id === 'patients'
-            ? 'Motif: framework lineage — ZS-9 / Lokelma highlighted'
+            ? 'Motif: OpenAlex mentions/year — SZC / ZS-9 / Lokelma highlighted on shared axis'
             : beat?.id === 'converge'
-              ? 'Motif: framework lineage — convergent natural → synthetic paths'
-              : 'Motif: framework lineage — georgechaoite, umbite, sitinakite',
+              ? 'Motif: OpenAlex mentions/year — lumped industrials + mineral-only georgechaoite/umbite'
+              : 'Motif: OpenAlex mentions/year — zorite/ETS-4 · sitinakite/CST/ETS-10 · georgechaoite · umbite · SZC/ZS-9/Lokelma',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'void-fit') {
@@ -275,7 +275,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       }
       if (layer?.kind === 'motif' && layer.motif === 'raman-exchange') {
         lines.push(
-          beat?.id === 'durability' || beat?.id === 'recycle'
+          beat?.id === 'durability'
             ? 'Motif: Raman exchange — Mn loss vs cycle protocol (full load 24% vs partial ~0%)'
             : 'Motif: Raman exchange — A₁g 635→656 cm⁻¹ during Li uptake into H-LMO',
         )

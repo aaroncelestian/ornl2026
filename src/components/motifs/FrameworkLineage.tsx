@@ -7,7 +7,7 @@ import styles from './Motifs.module.css'
 
 const W = 920
 const H = 500
-const PAD = { t: 48, r: 160, b: 52, l: 56 }
+const PAD = { t: 48, r: 220, b: 56, l: 64 }
 
 function catmullRom(points: [number, number][]) {
   if (points.length < 2) return ''
@@ -29,12 +29,12 @@ function catmullRom(points: [number, number][]) {
   return d
 }
 
-function heatColor(t: number) {
-  const c = Math.max(0, Math.min(1, t))
-  const r = Math.round(255)
-  const g = Math.round(210 - c * 140)
-  const b = Math.round(50 + c * 20)
-  return `rgb(${r},${g},${b})`
+const STROKE: Record<string, string> = {
+  zorite_ets4: '#8fd4a8',
+  sitinakite_cst: '#6ebf8a',
+  georgechaoite: '#7ec4d4',
+  umbite: '#5aa8c4',
+  szc: '#f0c878',
 }
 
 type Phase = 'cloud' | 'natural' | 'synthetic' | 'converge'
@@ -54,34 +54,43 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
   const years = data.years
   const xMin = years[0]
   const xMax = years[years.length - 1]
-  const yMax = 4.5
+  const yMax = data.yMax
   const plotW = W - PAD.l - PAD.r
   const plotH = H - PAD.t - PAD.b
-  const sx = (y: number) => PAD.l + ((y - xMin) / (xMax - xMin)) * plotW
+  const sx = (yr: number) => PAD.l + ((yr - xMin) / (xMax - xMin)) * plotW
   const sy = (v: number) => PAD.t + plotH - (v / yMax) * plotH
 
-  const bg = useMemo(
+  const named = useMemo(
     () =>
-      data.background.map((s) => {
-        const pts: [number, number][] = years.map((yr, i) => [sx(yr), sy(s.vals[i] ?? 0)])
-        const peak = Math.max(...s.vals)
-        return { id: s.id, d: catmullRom(pts), color: heatColor(peak / yMax) }
+      data.named.map((s, idx) => {
+        const start = years.findIndex((_, i) => (s.vals[i] ?? 0) > 0 || years[i] >= s.discovery)
+        const sliceFrom = Math.max(0, start)
+        const pts: [number, number][] = years
+          .slice(sliceFrom)
+          .map((yr, i) => [sx(yr), sy(s.vals[sliceFrom + i] ?? 0)])
+        const last = pts[pts.length - 1]
+        const labelLift = (data.named.length - 1 - idx) * 22
+        return {
+          ...s,
+          d: catmullRom(pts),
+          end: last,
+          labelY: (last?.[1] ?? 0) - labelLift,
+          stroke: STROKE[s.id] ?? '#7ec4d4',
+          focus: s.id === 'szc',
+          isMineral: s.family === 'mineral',
+        }
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
-  const named = data.named.map((s) => {
-    const pts: [number, number][] = years.map((yr, i) => [sx(yr), sy(s.vals[i] ?? 0)])
-    return { ...s, d: catmullRom(pts), end: pts[pts.length - 1] }
-  })
-
-  const showNatural = phase === 'natural' || phase === 'synthetic' || phase === 'converge'
-  const showSynthetic = phase === 'synthetic' || phase === 'converge'
-  const dimBg = phase !== 'cloud'
+  const yTicks = [0, Math.round(yMax / 3), Math.round((2 * yMax) / 3), Math.round(yMax)]
 
   return (
-    <div className={styles.plot} aria-label={label || 'Natural to synthetic framework lineage'}>
+    <div
+      className={styles.plot}
+      aria-label={label || 'OpenAlex literature mentions versus year'}
+    >
       <svg viewBox={`0 0 ${W} ${H}`} className={styles.plotSvg} role="img">
         <line
           x1={PAD.l}
@@ -97,7 +106,7 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
           y2={PAD.t + plotH}
           stroke="rgba(243,238,228,0.22)"
         />
-        {years.map((yr) => (
+        {data.xTicks.map((yr) => (
           <g key={yr}>
             <line
               x1={sx(yr)}
@@ -106,66 +115,58 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
               y2={PAD.t + plotH + 6}
               stroke="rgba(243,238,228,0.35)"
             />
-            <text x={sx(yr)} y={H - 16} textAnchor="middle" className={styles.plotTick}>
+            <text x={sx(yr)} y={H - 18} textAnchor="middle" className={styles.plotTick}>
               {yr}
             </text>
           </g>
         ))}
-        <text x={16} y={PAD.t + plotH / 2} textAnchor="middle" className={styles.plotAxis}
-          transform={`rotate(-90 16 ${PAD.t + plotH / 2})`}>
+        {yTicks.map((v) => (
+          <text key={v} x={PAD.l - 10} y={sy(v) + 4} textAnchor="end" className={styles.plotTick}>
+            {v}
+          </text>
+        ))}
+        <text x={PAD.l + plotW / 2} y={H - 2} textAnchor="middle" className={styles.plotAxis}>
+          {data.xLabel}
+        </text>
+        <text
+          x={14}
+          y={PAD.t + plotH / 2}
+          textAnchor="middle"
+          className={styles.plotAxis}
+          transform={`rotate(-90 14 ${PAD.t + plotH / 2})`}
+        >
           {data.yLabel}
         </text>
 
-        {bg.map((p, i) => (
-          <motion.path
-            key={p.id}
-            d={p.d}
-            fill="none"
-            stroke={p.color}
-            strokeWidth={1.05}
-            initial={false}
-            animate={{
-              pathLength: active ? 1 : 0,
-              opacity: active ? (dimBg ? 0.12 : 0.4) : 0,
-            }}
-            transition={{
-              duration: reduced ? 0 : 1.0,
-              delay: reduced || !active ? 0 : i * 0.03,
-            }}
-          />
-        ))}
-
         {named.map((s, i) => {
-          const isZs = s.id === 'zs9'
-          const show = isZs ? showSynthetic : showNatural
-          const strong = phase === 'converge' || (isZs && showSynthetic) || (!isZs && phase === 'natural')
+          const dimOthers = phase === 'synthetic' && !s.focus
           return (
             <g key={s.id}>
               <motion.path
                 d={s.d}
                 fill="none"
-                stroke={isZs ? '#f0c878' : '#7ec4d4'}
-                strokeWidth={isZs ? 3.2 : 2.2}
+                stroke={s.stroke}
+                strokeWidth={s.focus ? 3.2 : s.isMineral ? 1.8 : 2.2}
                 strokeLinecap="round"
                 initial={false}
                 animate={{
-                  pathLength: active && show ? 1 : 0,
-                  opacity: active && show ? (strong ? 1 : 0.55) : 0,
+                  pathLength: active ? 1 : 0,
+                  opacity: active ? (dimOthers ? 0.28 : 1) : 0,
                 }}
                 transition={{
                   duration: reduced ? 0 : 1.05,
-                  delay: reduced || !active ? 0 : 0.15 + i * 0.12,
+                  delay: reduced || !active ? 0 : 0.1 + i * 0.08,
                 }}
               />
               <motion.g
                 initial={false}
-                animate={{ opacity: active && show ? 1 : 0 }}
-                transition={{ delay: reduced ? 0 : 0.4 + i * 0.1 }}
+                animate={{ opacity: active ? (dimOthers ? 0.35 : 1) : 0 }}
+                transition={{ delay: reduced ? 0 : 0.3 + i * 0.06 }}
               >
-                <text x={(s.end?.[0] ?? 0) + 10} y={(s.end?.[1] ?? 0) + 4} className={styles.plotAnnotate}>
+                <text x={(s.end?.[0] ?? 0) + 10} y={s.labelY + 4} className={styles.plotAnnotate}>
                   {s.label}
                 </text>
-                <text x={(s.end?.[0] ?? 0) + 10} y={(s.end?.[1] ?? 0) + 22} className={styles.plotTick}>
+                <text x={(s.end?.[0] ?? 0) + 10} y={s.labelY + 20} className={styles.plotTick}>
                   {s.kind}
                 </text>
               </motion.g>

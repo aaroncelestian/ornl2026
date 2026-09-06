@@ -60,7 +60,7 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     strictPort: true,
-    watch: null,
+    watch: { usePolling: true, interval: 1000 },
     fs: {
       // iCloud "Mobile Documents" realpath can diverge from the workspace path.
       strict: false,

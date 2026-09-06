@@ -255,19 +255,17 @@ export const slides: Slide[] = [
       'Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented, spanning framework chemistries you would not assemble from scratch in a materials lab without years and a small fortune. Comparative depth is the point: when a channel geometry shows up in one place, you can ask whether related topologies elsewhere in the collection already solved a neighboring problem.',
   },
   {
-    id: 'map',
-    label: 'Roadmap',
+    id: 'turn',
+    label: 'The turn',
     chapter: 'open',
-    layout: 'litany',
-    kicker: 'Three geometries. One pipeline.',
-    bullets: [
-      'Spinel interstitial chemistry → engineered λ-MnO₂ / Li₄Mn₅O₁₂ for direct lithium extraction',
-      'Zirconosilicate channels → CZS-(Na,H) / Lokelma’s 7-ring K⁺ binder',
-      'Rowleyite vanadium-phosphate cages (FD 9.8) → synthetic drug-delivery scaffold',
-      'Then: museum + national-lab characterization as one discovery loop',
-    ],
+    layout: 'void',
+    camera: 'drift',
+    title: 'The next sorbent\nis already in a drawer.',
+    exitHold: 1.2,
+    enterHit: true,
+    copySnap: true,
     notes:
-      'Three case studies, then the collaboration model. Each case has a paper behind it: Celestian et al. J. Raman Spectrosc. 2026 (LMO mechanism); Lively & Celestian PLoS ONE 2024 (CZS/Lokelma exchange); Kampf et al. Am. Mineral. 2017 (rowleyite structure). In each case the natural specimen supplied the geometry; regulatory and engineering requirements demanded the synthesis. We’re going deep on mechanism — not a highlight reel.',
+      'Hard cut. No roadmap. The collection is not a museum of finished answers — it is a drawer of geometries waiting for the right problem. We’re going deep on three of them, mechanism first: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017). Nature supplied the geometry; regulation and engineering demanded the synthesis.',
   },
 
   // ── 01 Spinel → DLE ───────────────────────────────────
@@ -376,15 +374,6 @@ export const slides: Slide[] = [
           'Li₄Mn₅O₁₂ — size-selective uptake. In situ Raman: the A₁g Mn–O mode shifts from 635 to 656 cm⁻¹ in about twelve minutes as Li enters. Mechanism from the 2026 paper: Li first occupies tetrahedral interstitial voids (8a), then migrates into interstitial sites between Mn octahedra (cubane 8b). Larger seawater cations do not fit that gate. Raman + XRD + XPS is the ORNL characterization half of the pipeline.',
       },
       {
-        id: 'raman',
-        label: 'Raman',
-        kicker: 'J. Raman Spectrosc. 2026',
-        title: 'Watch the lattice\ntake the lithium.',
-        layers: ['raman'],
-        notes:
-          'Left panel: A₁g climbs from 635 to 656 cm⁻¹ as Li enters H-LMO; by ~22 min local Mn–O symmetry breaks. Right panel stays soft until the durability beat. This is the operando half of the ORNL story — not a capacity claim, a mechanism claim.',
-      },
-      {
         id: 'air',
         label: 'Air',
         kicker: 'Process loop',
@@ -419,7 +408,16 @@ export const slides: Slide[] = [
         title: 'The spinel comes back.',
         layers: ['cycle'],
         notes:
-          'Recyclable sorbent — empty spinel back to brine. Durability caveat next. Geometry wins — and cycle protocol decides whether the lattice survives.',
+          'Recyclable sorbent — empty spinel back to brine. Next: the operando Raman that proves Li actually entered the lattice — then the durability caveat. Geometry wins — and cycle protocol decides whether the lattice survives.',
+      },
+      {
+        id: 'raman',
+        label: 'Raman',
+        kicker: 'J. Raman Spectrosc. 2026',
+        title: 'Watch the lattice\ntake the lithium.',
+        layers: ['raman'],
+        notes:
+          'Left panel: A₁g climbs from 635 to 656 cm⁻¹ as Li enters H-LMO; by ~22 min local Mn–O symmetry breaks. Right panel stays soft until the durability beat. This is the operando half of the ORNL story — not a capacity claim, a mechanism claim.',
       },
       {
         id: 'durability',
@@ -491,21 +489,21 @@ export const slides: Slide[] = [
       },
       {
         id: 'cloud',
-        label: 'Topology cloud',
+        label: 'Quiet literature',
         kicker: 'Framework lineage',
-        title: 'Porous frameworks\nare a crowded sky.',
+        title: 'Natural names barely\nmove the literature.',
         layers: ['lineage'],
         notes:
-          'Decades of microporous chemistry. Many channels. Soft selectivity. The translucent paths are the background noise of framework discovery — compositions that almost work, or work for the wrong ion.',
+          'Same axis for all. Lump only where mineral = industrial rebuild: zorite/ETS-4; sitinakite/CST/ETS-10. Georgechaoite has no trade name — stays on the floor. Umbite may have one; we do not know it, so it stays mineral-only. SZC / ZS-9 / Lokelma are one product under three names — that is the curve that detonates.',
       },
       {
         id: 'precedents',
         label: 'Precedents',
         kicker: 'Natural teachers',
-        title: 'Georgechaoite.\nUmbite.\nSitinakite.',
+        title: 'Same pore.\nMineral name, then trade name.',
         layers: ['lineage'],
         notes:
-          'These are the minerals that taught the pore. Georgechaoite and umbite — natural zirconosilicates with Na/K sitting in Zr–Si channels. The Lokelma Raman paper uses georgechaoite (NaKZrSi₃O₉·2H₂O) as the DFT vibrational analog for the synthetic cubic zirconium silicate 3-membered rings. Sitinakite — the titanosilicate cousin, and the geometric relative of crystalline silicotitanate used for radioactive cesium cleanup, including Fukushima-scale wastewater. Same family of answers: a cage that discriminates monovalent cations by size.',
+          'Where the mapping is known, mineral and industry share a line: zorite → ETS-4; sitinakite → CST / ETS-10. Georgechaoite taught the Zr–Si 3MR (DFT analog in the Lokelma Raman paper) but never got a product name. Umbite is the other natural Zr teacher — industrial alias unknown. The product that did get named is SZC / ZS-9 / Lokelma.',
       },
       {
         id: 'converge',
@@ -520,10 +518,10 @@ export const slides: Slide[] = [
         id: 'zs9',
         label: 'ZS-9',
         kicker: 'Synthetic rebuild',
-        title: 'ZS-9 / Lokelma.\nSame geometry.\nRegulatory control.',
+        title: 'Industrial use.\nSame axis.\nThe literature detonates.',
         layers: ['lineage'],
         notes:
-          'Lokelma is sodium zirconium cyclosilicate — ZS-9 / CZS-(Na,H). As-synthesized CZS-Na is Na₂ZrSi₃O₉·2.5H₂O, cubic Pa̅3, a ≈ 12.74 Å. Commercial Lokelma is the partially protonated form (~3:1 Na:H). Cage volume ≈ 207 Å³ at the intersection of three 7-membered-ring channels. The natural specimen supplied the geometric idea. FDA approval, dose uniformity, impurity profiles, and manufacturing demanded synthesis. That is the pattern of this entire talk. Paper: Lively & Celestian, PLoS ONE 19(3): e0298661, 2024.',
+          'Highlight SZC / ZS-9 / Lokelma — one material, three names. Clinical deployment is why that line leaves the mineral floor. Georgechaoite and umbite stay quiet beside it: teachers without a trade name (or without one we can cite). Paper: Lively & Celestian, PLoS ONE 19(3): e0298661, 2024.',
       },
       {
         id: 'scale',

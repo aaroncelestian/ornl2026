@@ -1,0 +1,718 @@
+{
+  "georgechaoite": {
+    "term": "georgechaoite",
+    "start": 1985,
+    "total": 11,
+    "by_year": [
+      [
+        1985,
+        2
+      ],
+      [
+        1997,
+        1
+      ],
+      [
+        2010,
+        1
+      ],
+      [
+        2015,
+        1
+      ],
+      [
+        2017,
+        2
+      ],
+      [
+        2021,
+        2
+      ],
+      [
+        2024,
+        2
+      ]
+    ],
+    "meta": {
+      "count": 11,
+      "db_response_time_ms": 11,
+      "page": 1,
+      "per_page": 200,
+      "groups_count": 7,
+      "x_query": {
+        "oql": "works where date >= (1985-01-01)\n  and full text has (georgechaoite)\n  and date <= (2026-12-31)\ngroup by year",
+        "oqo": {
+          "get_rows": "works",
+          "filter_rows": [
+            {
+              "column_id": "from_publication_date",
+              "value": "1985-01-01"
+            },
+            {
+              "column_id": "fulltext.search",
+              "value": "georgechaoite",
+              "operator": "has"
+            },
+            {
+              "column_id": "to_publication_date",
+              "value": "2026-12-31"
+            }
+          ],
+          "group_by": [
+            {
+              "column_id": "publication_year"
+            }
+          ]
+        },
+        "url": "/works?filter=from_publication_date:1985-01-01,fulltext.search:georgechaoite,to_publication_date:2026-12-31&group_by=publication_year&per_page=200"
+      },
+      "cost_usd": 0.0001
+    }
+  },
+  "umbite": {
+    "term": "umbite",
+    "start": 1983,
+    "total": 95,
+    "by_year": [
+      [
+        1985,
+        1
+      ],
+      [
+        1986,
+        1
+      ],
+      [
+        1990,
+        1
+      ],
+      [
+        1993,
+        1
+      ],
+      [
+        1995,
+        1
+      ],
+      [
+        1996,
+        1
+      ],
+      [
+        1997,
+        1
+      ],
+      [
+        1999,
+        3
+      ],
+      [
+        2000,
+        1
+      ],
+      [
+        2001,
+        2
+      ],
+      [
+        2002,
+        5
+      ],
+      [
+        2003,
+        2
+      ],
+      [
+        2004,
+        3
+      ],
+      [
+        2005,
+        2
+      ],
+      [
+        2006,
+        7
+      ],
+      [
+        2007,
+        2
+      ],
+      [
+        2008,
+        7
+      ],
+      [
+        2009,
+        3
+      ],
+      [
+        2010,
+        2
+      ],
+      [
+        2011,
+        4
+      ],
+      [
+        2012,
+        1
+      ],
+      [
+        2013,
+        4
+      ],
+      [
+        2014,
+        4
+      ],
+      [
+        2015,
+        2
+      ],
+      [
+        2016,
+        4
+      ],
+      [
+        2017,
+        3
+      ],
+      [
+        2018,
+        4
+      ],
+      [
+        2019,
+        4
+      ],
+      [
+        2020,
+        1
+      ],
+      [
+        2021,
+        4
+      ],
+      [
+        2022,
+        3
+      ],
+      [
+        2023,
+        1
+      ],
+      [
+        2024,
+        6
+      ],
+      [
+        2025,
+        2
+      ],
+      [
+        2026,
+        2
+      ]
+    ],
+    "meta": {
+      "count": 95,
+      "db_response_time_ms": 15,
+      "page": 1,
+      "per_page": 200,
+      "groups_count": 35,
+      "x_query": {
+        "oql": "works where date >= (1983-01-01)\n  and full text has (umbite)\n  and date <= (2026-12-31)\ngroup by year",
+        "oqo": {
+          "get_rows": "works",
+          "filter_rows": [
+            {
+              "column_id": "from_publication_date",
+              "value": "1983-01-01"
+            },
+            {
+              "column_id": "fulltext.search",
+              "value": "umbite",
+              "operator": "has"
+            },
+            {
+              "column_id": "to_publication_date",
+              "value": "2026-12-31"
+            }
+          ],
+          "group_by": [
+            {
+              "column_id": "publication_year"
+            }
+          ]
+        },
+        "url": "/works?filter=from_publication_date:1983-01-01,fulltext.search:umbite,to_publication_date:2026-12-31&group_by=publication_year&per_page=200"
+      },
+      "cost_usd": 0.0001
+    }
+  },
+  "sitinakite": {
+    "term": "sitinakite",
+    "start": 1989,
+    "total": 112,
+    "by_year": [
+      [
+        1996,
+        1
+      ],
+      [
+        2002,
+        1
+      ],
+      [
+        2003,
+        3
+      ],
+      [
+        2004,
+        5
+      ],
+      [
+        2005,
+        5
+      ],
+      [
+        2006,
+        4
+      ],
+      [
+        2007,
+        2
+      ],
+      [
+        2008,
+        4
+      ],
+      [
+        2009,
+        2
+      ],
+      [
+        2010,
+        4
+      ],
+      [
+        2011,
+        4
+      ],
+      [
+        2012,
+        4
+      ],
+      [
+        2013,
+        5
+      ],
+      [
+        2014,
+        2
+      ],
+      [
+        2015,
+        1
+      ],
+      [
+        2016,
+        2
+      ],
+      [
+        2017,
+        4
+      ],
+      [
+        2018,
+        6
+      ],
+      [
+        2019,
+        11
+      ],
+      [
+        2020,
+        6
+      ],
+      [
+        2021,
+        6
+      ],
+      [
+        2022,
+        5
+      ],
+      [
+        2023,
+        6
+      ],
+      [
+        2024,
+        8
+      ],
+      [
+        2025,
+        7
+      ],
+      [
+        2026,
+        4
+      ]
+    ],
+    "meta": {
+      "count": 112,
+      "db_response_time_ms": 18,
+      "page": 1,
+      "per_page": 200,
+      "groups_count": 26,
+      "x_query": {
+        "oql": "works where date >= (1989-01-01)\n  and full text has (sitinakite)\n  and date <= (2026-12-31)\ngroup by year",
+        "oqo": {
+          "get_rows": "works",
+          "filter_rows": [
+            {
+              "column_id": "from_publication_date",
+              "value": "1989-01-01"
+            },
+            {
+              "column_id": "fulltext.search",
+              "value": "sitinakite",
+              "operator": "has"
+            },
+            {
+              "column_id": "to_publication_date",
+              "value": "2026-12-31"
+            }
+          ],
+          "group_by": [
+            {
+              "column_id": "publication_year"
+            }
+          ]
+        },
+        "url": "/works?filter=from_publication_date:1989-01-01,fulltext.search:sitinakite,to_publication_date:2026-12-31&group_by=publication_year&per_page=200"
+      },
+      "cost_usd": 0.0001
+    }
+  },
+  "lokelma": {
+    "term": "Lokelma",
+    "start": 2015,
+    "total": 245,
+    "by_year": [
+      [
+        2016,
+        1
+      ],
+      [
+        2018,
+        9
+      ],
+      [
+        2019,
+        14
+      ],
+      [
+        2020,
+        22
+      ],
+      [
+        2021,
+        27
+      ],
+      [
+        2022,
+        31
+      ],
+      [
+        2023,
+        44
+      ],
+      [
+        2024,
+        38
+      ],
+      [
+        2025,
+        39
+      ],
+      [
+        2026,
+        20
+      ]
+    ],
+    "meta": {
+      "count": 245,
+      "db_response_time_ms": 18,
+      "page": 1,
+      "per_page": 200,
+      "groups_count": 10,
+      "x_query": {
+        "oql": "works where date >= (2015-01-01)\n  and full text has (Lokelma)\n  and date <= (2026-12-31)\ngroup by year",
+        "oqo": {
+          "get_rows": "works",
+          "filter_rows": [
+            {
+              "column_id": "from_publication_date",
+              "value": "2015-01-01"
+            },
+            {
+              "column_id": "fulltext.search",
+              "value": "Lokelma",
+              "operator": "has"
+            },
+            {
+              "column_id": "to_publication_date",
+              "value": "2026-12-31"
+            }
+          ],
+          "group_by": [
+            {
+              "column_id": "publication_year"
+            }
+          ]
+        },
+        "url": "/works?filter=from_publication_date:2015-01-01,fulltext.search:Lokelma,to_publication_date:2026-12-31&group_by=publication_year&per_page=200"
+      },
+      "cost_usd": 0.0001
+    }
+  },
+  "szc": {
+    "term": "sodium zirconium cyclosilicate",
+    "start": 2010,
+    "total": 1429,
+    "by_year": [
+      [
+        2010,
+        1
+      ],
+      [
+        2011,
+        2
+      ],
+      [
+        2012,
+        1
+      ],
+      [
+        2014,
+        8
+      ],
+      [
+        2015,
+        59
+      ],
+      [
+        2016,
+        36
+      ],
+      [
+        2017,
+        29
+      ],
+      [
+        2018,
+        57
+      ],
+      [
+        2019,
+        81
+      ],
+      [
+        2020,
+        108
+      ],
+      [
+        2021,
+        120
+      ],
+      [
+        2022,
+        109
+      ],
+      [
+        2023,
+        234
+      ],
+      [
+        2024,
+        233
+      ],
+      [
+        2025,
+        209
+      ],
+      [
+        2026,
+        142
+      ]
+    ],
+    "meta": {
+      "count": 1429,
+      "db_response_time_ms": 45,
+      "page": 1,
+      "per_page": 200,
+      "groups_count": 16,
+      "x_query": {
+        "oql": "works where date >= (2010-01-01)\n  and full text has (sodium zirconium cyclosilicate)\n  and date <= (2026-12-31)\ngroup by year",
+        "oqo": {
+          "get_rows": "works",
+          "filter_rows": [
+            {
+              "column_id": "from_publication_date",
+              "value": "2010-01-01"
+            },
+            {
+              "column_id": "fulltext.search",
+              "value": "sodium zirconium cyclosilicate",
+              "operator": "has"
+            },
+            {
+              "column_id": "to_publication_date",
+              "value": "2026-12-31"
+            }
+          ],
+          "group_by": [
+            {
+              "column_id": "publication_year"
+            }
+          ]
+        },
+        "url": "/works?filter=from_publication_date:2010-01-01,fulltext.search:sodium zirconium cyclosilicate,to_publication_date:2026-12-31&group_by=publication_year&per_page=200"
+      },
+      "cost_usd": 0.0001
+    }
+  },
+  "zs9": {
+    "term": "ZS-9",
+    "start": 2005,
+    "total": 288659,
+    "by_year": [
+      [
+        2005,
+        2238
+      ],
+      [
+        2006,
+        2539
+      ],
+      [
+        2007,
+        2728
+      ],
+      [
+        2008,
+        3283
+      ],
+      [
+        2009,
+        3782
+      ],
+      [
+        2010,
+        4585
+      ],
+      [
+        2011,
+        5327
+      ],
+      [
+        2012,
+        6312
+      ],
+      [
+        2013,
+        7841
+      ],
+      [
+        2014,
+        8871
+      ],
+      [
+        2015,
+        9559
+      ],
+      [
+        2016,
+        10682
+      ],
+      [
+        2017,
+        12119
+      ],
+      [
+        2018,
+        13410
+      ],
+      [
+        2019,
+        15714
+      ],
+      [
+        2020,
+        21382
+      ],
+      [
+        2021,
+        23722
+      ],
+      [
+        2022,
+        25950
+      ],
+      [
+        2023,
+        31764
+      ],
+      [
+        2024,
+        30717
+      ],
+      [
+        2025,
+        27645
+      ],
+      [
+        2026,
+        18489
+      ]
+    ],
+    "meta": {
+      "count": 288659,
+      "db_response_time_ms": 137,
+      "page": 1,
+      "per_page": 200,
+      "groups_count": 22,
+      "x_query": {
+        "oql": "works where date >= (2005-01-01)\n  and full text has (ZS-9)\n  and date <= (2026-12-31)\ngroup by year",
+        "oqo": {
+          "get_rows": "works",
+          "filter_rows": [
+            {
+              "column_id": "from_publication_date",
+              "value": "2005-01-01"
+            },
+            {
+              "column_id": "fulltext.search",
+              "value": "ZS-9",
+              "operator": "has"
+            },
+            {
+              "column_id": "to_publication_date",
+              "value": "2026-12-31"
+            }
+          ],
+          "group_by": [
+            {
+              "column_id": "publication_year"
+            }
+          ]
+        },
+        "url": "/works?filter=from_publication_date:2005-01-01,fulltext.search:ZS-9,to_publication_date:2026-12-31&group_by=publication_year&per_page=200"
+      },
+      "cost_usd": 0.0001
+    }
+  }
+}

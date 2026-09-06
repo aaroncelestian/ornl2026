@@ -29,6 +29,18 @@ function catmullRom(points: [number, number][]) {
   return d
 }
 
+function interp(xs: number[], ys: number[], x: number) {
+  if (x <= xs[0]) return ys[0]
+  if (x >= xs[xs.length - 1]) return ys[ys.length - 1]
+  for (let i = 0; i < xs.length - 1; i++) {
+    if (x >= xs[i] && x <= xs[i + 1]) {
+      const t = (x - xs[i]) / (xs[i + 1] - xs[i])
+      return ys[i] + t * (ys[i + 1] - ys[i])
+    }
+  }
+  return ys[ys.length - 1]
+}
+
 function heatColor(t: number) {
   const c = Math.max(0, Math.min(1, t))
   if (c < 0.5) {
@@ -180,7 +192,7 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
           y={PAD.t + 16}
           className={styles.plotAnnotate}
           initial={false}
-          animate={{ opacity: active && showGate ? 1 : 0 }}
+          animate={{ opacity: active && showGate && !showHi ? 1 : 0 }}
         >
           Li⁺ · 0.76 Å
         </motion.text>
@@ -201,42 +213,52 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
         />
         <motion.g
           initial={false}
-          animate={{ opacity: active && showHi ? 1 : 0 }}
+          animate={{ opacity: active && showHi && !showIons ? 1 : 0 }}
           transition={{ delay: reduced ? 0 : 0.35 }}
         >
-          <text x={sx(0.76) + 14} y={sy(5.8) - 8} className={styles.plotAnnotate}>
+          <text x={sx(0.9)} y={sy(4.2)} className={styles.plotAnnotate}>
             {data.highlight.label}
           </text>
-          <text x={sx(0.76) + 14} y={sy(5.8) + 12} className={styles.plotTick}>
+          <text x={sx(0.9)} y={sy(4.2) + 18} className={styles.plotTick}>
             {data.highlight.subtitle}
           </text>
         </motion.g>
 
-        {/* ion callouts */}
+        {/* ion callouts — sit on the curve, labels fanned off the peak */}
         {showIons &&
-          data.ions.map((ion, i) => (
-            <motion.g
-              key={ion.id}
-              initial={false}
-              animate={{ opacity: active ? 1 : 0 }}
-              transition={{ delay: reduced ? 0 : 0.1 + i * 0.08 }}
-            >
-              <circle
-                cx={sx(ion.r)}
-                cy={PAD.t + 28 + (i % 2) * 16}
-                r={3}
-                fill="rgba(243,238,228,0.7)"
-              />
-              <text
-                x={sx(ion.r)}
-                y={PAD.t + 48 + (i % 2) * 16}
-                textAnchor="middle"
-                className={styles.plotAnnotate}
+          data.ions.map((ion, i) => {
+            const y = sy(interp(data.radii, data.highlight.vals, ion.r))
+            const x = sx(ion.r)
+            const side = ion.id === 'Mg' || ion.id === 'Ca' ? -1 : 1
+            const labelX = x + side * 14
+            const labelY = y - 12 - (i % 2) * 14
+            return (
+              <motion.g
+                key={ion.id}
+                initial={false}
+                animate={{ opacity: active ? 1 : 0 }}
+                transition={{ delay: reduced ? 0 : 0.1 + i * 0.08 }}
               >
-                {ion.label}
-              </text>
-            </motion.g>
-          ))}
+                <circle cx={x} cy={y} r={4} fill="rgba(243,238,228,0.85)" />
+                <line
+                  x1={x}
+                  y1={y}
+                  x2={labelX}
+                  y2={labelY + 4}
+                  stroke="rgba(243,238,228,0.35)"
+                  strokeWidth={1}
+                />
+                <text
+                  x={labelX}
+                  y={labelY}
+                  textAnchor={side < 0 ? 'end' : 'start'}
+                  className={styles.plotAnnotate}
+                >
+                  {ion.label}
+                </text>
+              </motion.g>
+            )
+          })}
       </svg>
     </div>
   )

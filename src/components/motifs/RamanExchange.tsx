@@ -12,7 +12,7 @@ const PAD = { t: 72, r: 28, b: 52, l: 48 }
 type Phase = 'raman' | 'both' | 'durability'
 
 function phaseForBeat(id?: string): Phase {
-  if (id === 'recycle' || id === 'durability' || id === 'mn-loss') return 'durability'
+  if (id === 'durability' || id === 'mn-loss') return 'durability'
   if (id === 'raman' || id === 'mechanism') return 'raman'
   return 'both'
 }
