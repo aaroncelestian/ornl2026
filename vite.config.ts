@@ -1,6 +1,12 @@
 import { execSync } from 'node:child_process'
-import { defineConfig } from 'vite'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig, searchForWorkspaceRoot } from 'vite'
 import react from '@vitejs/plugin-react'
+
+const rootDir = path.dirname(fileURLToPath(import.meta.url))
+const realRoot = fs.realpathSync.native(rootDir)
 
 function buildStamp() {
   const now = new Date()
@@ -56,6 +62,9 @@ export default defineConfig({
     strictPort: true,
     watch: null,
     fs: {
+      // iCloud "Mobile Documents" realpath can diverge from the workspace path.
+      strict: false,
+      allow: [searchForWorkspaceRoot(process.cwd()), rootDir, realRoot],
       deny: ['**/offline/**', '**/dist/**'],
     },
   },
