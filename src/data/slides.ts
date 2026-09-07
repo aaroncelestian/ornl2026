@@ -341,7 +341,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Li removed. Connected pore channels of the Mn–O framework — tubular 8a→16c→8a along ⟨111⟩ — drawn as a translucent void surface around Mn and O. That tunnel geometry is the product: the gate brine Li has to fit.',
+          'Li removed. Accessible void = places a 0.4 Å probe sphere fits without overlapping Mn/O hard spheres — the connected 8a→16c→8a channel tubing along ⟨111⟩. Drawn as a 2×2×2 void block around one Mn–O cell. That tunnel geometry is the product.',
       },
       {
         id: '8a',

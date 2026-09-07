@@ -7,13 +7,14 @@ import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
 import styles from './Motifs.module.css'
 
-const SCALE = 0.55
+const SCALE = 0.42
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
-/** Pull back so the full channel network + framework reads as one composition */
-const VOID_HOME = new THREE.Vector3(6.2, 4.0, 6.8)
+/** Pull back for 2×2×2 void tubing + central Mn–O */
+const VOID_HOME = new THREE.Vector3(7.4, 5.0, 8.2)
 const POLY_COLOR = '#9a6ab8'
-const VOID_PORE = '#a8c0d0'
-const VOID_IN = '#e0b15c'
+const VOID_OUT = '#9eb4c6'
+const VOID_IN = '#e8eef2'
+const VOID_GHOST = '#e0b15c'
 const LI_COLOR = '#6ecf7a'
 const MN_COLOR = '#8b5cad'
 const O_COLOR = '#c45a3a'
@@ -31,7 +32,7 @@ function phaseForBeat(id?: string): Phase {
 
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · MnO₆ polyhedra · drag to orbit',
-  voids: 'Pore channels · Mn–O framework · Li removed',
+  voids: 'Probe void tubing · Mn–O · Li removed · 0.4 Å',
   lithium: 'Li in tetrahedral 8a voids',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
@@ -153,31 +154,31 @@ function VoidSurface({ pore }: { pore: boolean }) {
     return geo
   }, [])
 
-  // Voids beat: translucent blue channel network (matches spinel reference PNG)
+  // Tubing: blue outer wall + pale inner wall (cut-open channel look from the reference)
   if (pore) {
     return (
       <group>
         <mesh geometry={geometry} renderOrder={1}>
           <meshPhysicalMaterial
-            color={VOID_PORE}
+            color={VOID_OUT}
             transparent
-            opacity={0.38}
-            roughness={0.48}
-            metalness={0.05}
-            transmission={0.35}
-            thickness={0.7}
-            side={THREE.FrontSide}
+            opacity={0.72}
+            roughness={0.42}
+            metalness={0.08}
+            clearcoat={0.25}
+            clearcoatRoughness={0.4}
+            side={THREE.BackSide}
             depthWrite={false}
           />
         </mesh>
         <mesh geometry={geometry} renderOrder={1}>
           <meshPhysicalMaterial
-            color="#d8e4ec"
+            color={VOID_IN}
             transparent
-            opacity={0.22}
-            roughness={0.55}
-            metalness={0.02}
-            side={THREE.BackSide}
+            opacity={0.55}
+            roughness={0.5}
+            metalness={0.04}
+            side={THREE.FrontSide}
             depthWrite={false}
           />
         </mesh>
@@ -188,7 +189,7 @@ function VoidSurface({ pore }: { pore: boolean }) {
   return (
     <mesh geometry={geometry}>
       <meshPhysicalMaterial
-        color={VOID_IN}
+        color={VOID_GHOST}
         transparent
         opacity={0.28}
         roughness={0.4}
@@ -495,8 +496,8 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
       </group>
       <OrbitControls
         enablePan={false}
-        minDistance={cell * (cubaneFocus ? 0.85 : poreView ? 1.6 : 1.25)}
-        maxDistance={cell * 4.5}
+        minDistance={cell * (cubaneFocus ? 0.85 : poreView ? 2.2 : 1.25)}
+        maxDistance={cell * (poreView ? 7 : 4.5)}
         makeDefault
       />
     </>
@@ -546,7 +547,7 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
         : phase === 'lithium'
           ? [
               { color: POLY_COLOR, label: 'MnO₆' },
-              { color: VOID_IN, label: 'void' },
+              { color: VOID_GHOST, label: 'void' },
               { color: LI_COLOR, label: 'Li (8a)' },
             ]
           : [
