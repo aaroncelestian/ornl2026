@@ -1,10 +1,11 @@
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import data from '../../data/lmoSpinel.json'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
+import { ExchangeIons, H_COLOR, HomeOxygen, type RideState } from './LmoExchange'
 import styles from './Motifs.module.css'
 
 const SCALE = 0.42
@@ -21,11 +22,12 @@ const O_COLOR = '#c45a3a'
 const ARROW_MN = '#c4894a'
 const ARROW_O = '#7ec4d4'
 
-type Phase = 'framework' | 'voids' | 'lithium' | 'cubane'
+type Phase = 'framework' | 'voids' | 'hydrogen' | 'lithium' | 'cubane'
 
 function phaseForBeat(id?: string): Phase {
   if (id === 'voids') return 'voids'
-  if (id === '8a') return 'lithium'
+  if (id === '8a') return 'hydrogen'
+  if (id === 'li-in') return 'lithium'
   if (id === 'cubane') return 'cubane'
   return 'framework'
 }
@@ -33,7 +35,8 @@ function phaseForBeat(id?: string): Phase {
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · MnO₆ polyhedra · drag to orbit',
   voids: 'VdW empty space · Mn/O spheres · Li removed',
-  lithium: 'Li in tetrahedral 8a voids',
+  hydrogen: 'H enters · sits on O · OH → 8a',
+  lithium: 'Li in · H out the pore',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
 
@@ -145,6 +148,8 @@ function Polyhedron({
   )
 }
 
+type VoidCaps = { positions: number[]; normals: number[]; index: number[] }
+
 function VoidSurface({ pore }: { pore: boolean }) {
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
@@ -154,29 +159,44 @@ function VoidSurface({ pore }: { pore: boolean }) {
     return geo
   }, [])
 
-  // Two passes: steel outside, warm channel interior. Sides are assigned
-  // to match the clipped cluster (blue skin, cream when a tube is cut open).
+  const capGeometry = useMemo(() => {
+    const caps = (data.void as { caps?: VoidCaps }).caps
+    if (!caps?.positions?.length || !caps.index.length) return null
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(caps.positions, 3))
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(caps.normals, 3))
+    geo.setIndex(caps.index)
+    return geo
+  }, [])
+
+  // Tube wall stays steel on both sides. Cream is reserved for the
+  // planar discs that seal the spherical clip (CrystalMaker mouths).
   if (pore) {
     return (
       <group>
         <mesh geometry={geometry} renderOrder={1}>
           <meshStandardMaterial
             color={VOID_OUT}
-            roughness={0.32}
+            roughness={0.34}
             metalness={0.08}
-            side={THREE.BackSide}
+            side={THREE.DoubleSide}
           />
         </mesh>
-        <mesh geometry={geometry} renderOrder={2}>
-          <meshStandardMaterial
-            color={VOID_IN}
-            emissive={VOID_IN}
-            emissiveIntensity={0.14}
-            roughness={0.38}
-            metalness={0.04}
-            side={THREE.FrontSide}
-          />
-        </mesh>
+        {capGeometry && (
+          <mesh geometry={capGeometry} renderOrder={3}>
+            <meshStandardMaterial
+              color={VOID_IN}
+              emissive={VOID_IN}
+              emissiveIntensity={0.28}
+              roughness={0.4}
+              metalness={0.02}
+              side={THREE.DoubleSide}
+              polygonOffset
+              polygonOffsetFactor={-1}
+              polygonOffsetUnits={-1}
+            />
+          </mesh>
+        )}
       </group>
     )
   }
@@ -441,24 +461,39 @@ function CubaneUnit({
   )
 }
 
-function Scene({ active, phase }: { active: boolean; phase: Phase }) {
+function Scene({
+  active,
+  phase,
+  ride,
+}: {
+  active: boolean
+  phase: Phase
+  ride: MutableRefObject<RideState>
+}) {
   const group = useRef<THREE.Group>(null)
   const reduced = usePrefersReducedMotion()
   const cell = data.cell.a * SCALE
   const poreView = phase === 'voids'
   const cubaneFocus = phase === 'cubane'
+  const exchange = phase === 'hydrogen' || phase === 'lithium'
 
-  const showVoids = phase === 'voids' || phase === 'lithium'
-  const showLi = phase === 'lithium'
+  const showVoids = phase === 'voids'
   const showCubane = phase === 'cubane'
-  const showPoly = phase === 'framework' || phase === 'lithium'
+  const showPoly = phase === 'framework' || exchange
   const showAtoms = phase === 'voids'
-  const polyOpacity = phase === 'framework' ? 0.72 : 0.32
+  const polyOpacity = phase === 'framework' ? 0.72 : exchange ? 0.58 : 0.32
   const heroCubane = data.cubanes[0] as CubaneData
+  const controls = useRef<{ enabled: boolean } | null>(null)
+
+  useEffect(() => {
+    if (exchange && group.current) group.current.rotation.set(0, 0, 0)
+  }, [exchange, phase])
 
   useFrame((_, dt) => {
     const root = group.current
+    if (controls.current) controls.current.enabled = !ride.current.following
     if (!root || !active || reduced) return
+    if (exchange) return
     if (cubaneFocus) root.rotation.y += dt * 0.12
     else root.rotation.y += dt * (poreView ? 0.055 : 0.1)
   })
@@ -485,27 +520,25 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
             <Polyhedron key={i} vertices={poly.vertices} faces={poly.faces} opacity={polyOpacity} />
           ))}
         {showAtoms && <FrameworkAtoms />}
+        {exchange && <HomeOxygen />}
         {showVoids && <VoidSurface pore={poreView} />}
-        {showLi &&
-          data.lithium.map((li, i) => (
-            <mesh key={i} position={[li.x, li.y, li.z]}>
-              <sphereGeometry args={[0.42, 18, 18]} />
-              <meshStandardMaterial
-                color={LI_COLOR}
-                emissive={LI_COLOR}
-                emissiveIntensity={0.45}
-                roughness={0.3}
-                metalness={0.1}
-                transparent
-                opacity={0.92}
-              />
-            </mesh>
-          ))}
+        {exchange && (
+          <ExchangeIons
+            phase={phase}
+            active={active}
+            reduced={reduced}
+            scale={SCALE}
+            ride={ride}
+          />
+        )}
         {showCubane && heroCubane && (
           <CubaneUnit cubane={heroCubane} active={active} reduced={reduced} />
         )}
       </group>
       <OrbitControls
+        ref={(el) => {
+          controls.current = el
+        }}
         enablePan={false}
         minDistance={cell * (cubaneFocus ? 0.85 : poreView ? 1.6 : 1.25)}
         maxDistance={cell * (poreView ? 5.5 : 4.5)}
@@ -515,12 +548,17 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
   )
 }
 
-function CameraHome({ phase }: { phase: Phase }) {
+function CameraHome({
+  phase,
+  ride,
+}: {
+  phase: Phase
+  ride: MutableRefObject<RideState>
+}) {
   const prev = useRef<Phase | null>(null)
   const cubaneHome = useMemo(() => {
     const c = data.cubanes[0]?.center
     if (!c) return new THREE.Vector3(3.2, 2.4, 4.2)
-    // Orbit a bit off the cubane center
     return new THREE.Vector3(c[0] * SCALE + 2.8, c[1] * SCALE + 2.2, c[2] * SCALE + 3.4)
   }, [])
   const cubaneTarget = useMemo(() => {
@@ -530,6 +568,17 @@ function CameraHome({ phase }: { phase: Phase }) {
   }, [])
 
   useFrame(({ camera }) => {
+    if (phase === 'lithium' && ride.current.following) {
+      camera.position.lerp(ride.current.pos, 0.14)
+      camera.lookAt(ride.current.look)
+      prev.current = null
+      return
+    }
+    if (phase === 'lithium' && ride.current.done) {
+      camera.position.lerp(HOME, 0.04)
+      camera.lookAt(0, 0, 0)
+      return
+    }
     if (prev.current === phase) return
     const targetPos = phase === 'voids' ? VOID_HOME : phase === 'cubane' ? cubaneHome : HOME
     const look = phase === 'cubane' ? cubaneTarget : new THREE.Vector3(0, 0, 0)
@@ -546,6 +595,12 @@ function CameraHome({ phase }: { phase: Phase }) {
 export function LmoSpinel({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const phase = phaseForBeat(scene.beat?.id)
+  const ride = useRef<RideState>({
+    following: false,
+    done: false,
+    pos: new THREE.Vector3(),
+    look: new THREE.Vector3(),
+  })
 
   const legend =
     phase === 'framework'
@@ -557,18 +612,24 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
             { color: VOID_OUT, label: 'void out' },
             { color: VOID_IN, label: 'void in' },
           ]
-        : phase === 'lithium'
+        : phase === 'hydrogen'
           ? [
               { color: POLY_COLOR, label: 'MnO₆' },
-              { color: VOID_GHOST, label: 'void' },
-              { color: LI_COLOR, label: 'Li (8a)' },
-            ]
-          : [
-              { color: MN_COLOR, label: 'Mn' },
               { color: O_COLOR, label: 'O' },
-              { color: ARROW_MN, label: 'A₁g Mn' },
-              { color: ARROW_O, label: 'A₁g O' },
+              { color: H_COLOR, label: 'H' },
             ]
+          : phase === 'lithium'
+            ? [
+                { color: POLY_COLOR, label: 'MnO₆' },
+                { color: H_COLOR, label: 'H' },
+                { color: LI_COLOR, label: 'Li' },
+              ]
+            : [
+                { color: MN_COLOR, label: 'Mn' },
+                { color: O_COLOR, label: 'O' },
+                { color: ARROW_MN, label: 'A₁g Mn' },
+                { color: ARROW_O, label: 'A₁g O' },
+              ]
 
   return (
     <div
@@ -590,8 +651,8 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
         style={{ width: '100%', height: '100%' }}
       >
         <Suspense fallback={null}>
-          <CameraHome phase={phase} />
-          <Scene active={active} phase={phase} />
+          <CameraHome phase={phase} ride={ride} />
+          <Scene active={active} phase={phase} ride={ride} />
         </Suspense>
       </Canvas>
       {phase === 'voids' && (

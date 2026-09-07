@@ -22,11 +22,15 @@ const MN_O_MAX = 2.25
  * Polyhedra are display-only — they are not subtracted from the field.
  */
 const GRID = 96
-const PROBE = 0.18
+/** Near the true VdW surface so the 8a→16c tubes stay fat. */
+const PROBE = 0.05
 const MIN_VOID_VOXELS = 40
 const SMOOTH_ITERS = 8
 const BOUNDARY_SMOOTH = 16
 const RADII = { Mn: 2.0, O: 1.52 }
+/** Keep only channel mouths (Å from loop centroid). */
+const CAP_MIN_R = 0.32
+const CAP_MAX_R = 3.8
 const VOID_SUPERCELL = 2
 /** Spherical cluster, CrystalMaker range-style. Just inside the 2×2×2 box. */
 const CLIP_RADIUS = 7.7
@@ -630,6 +634,24 @@ function taubinSmooth(pos, faces, iterations, lambda = 0.5, mu = -0.53) {
   }
 }
 
+/** Move the wall toward the atoms so the 8a→16c tubes read as fat channels. */
+function fattenVoid(pos, amount, skip = null) {
+  const step = A / n
+  for (let i = 0; i < pos.length; i += 3) {
+    if (skip?.has(i / 3)) continue
+    const x = pos[i] + A * 0.5
+    const y = pos[i + 1] + A * 0.5
+    const z = pos[i + 2] + A * 0.5
+    const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
+    const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
+    const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
+    const glen = Math.hypot(gx, gy, gz) || 1
+    pos[i] -= (amount * gx) / glen
+    pos[i + 1] -= (amount * gy) / glen
+    pos[i + 2] -= (amount * gz) / glen
+  }
+}
+
 function projectToIso(pos, iters = 8, skip = null) {
   const step = A / n
   for (let k = 0; k < iters; k++) {
@@ -775,6 +797,179 @@ function clipMeshToSphere(pos, faces, radius) {
   return compactMesh(newPos, newFaces)
 }
 
+function boundaryLoops(faces) {
+  const keyOf = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`)
+  const count = new Map()
+  const directed = []
+  for (let t = 0; t < faces.length; t += 3) {
+    const ring = [
+      [faces[t], faces[t + 1]],
+      [faces[t + 1], faces[t + 2]],
+      [faces[t + 2], faces[t]],
+    ]
+    for (const [a, b] of ring) {
+      directed.push([a, b])
+      const k = keyOf(a, b)
+      count.set(k, (count.get(k) ?? 0) + 1)
+    }
+  }
+  const nexts = new Map()
+  for (const [a, b] of directed) {
+    if (count.get(keyOf(a, b)) !== 1) continue
+    const list = nexts.get(a)
+    if (list) list.push(b)
+    else nexts.set(a, [b])
+  }
+  const used = new Set()
+  const loops = []
+  for (const [start, outs] of nexts) {
+    for (const first of outs) {
+      const mark0 = `${start}>${first}`
+      if (used.has(mark0)) continue
+      const loop = [start]
+      let prev = start
+      let cur = first
+      used.add(mark0)
+      let guard = 0
+      while (cur !== start && guard++ < 20000) {
+        loop.push(cur)
+        const cands = nexts.get(cur) || []
+        let nxt = cands.find((cand) => cand !== prev && !used.has(`${cur}>${cand}`))
+        if (nxt == null) nxt = cands.find((cand) => !used.has(`${cur}>${cand}`))
+        if (nxt == null) break
+        used.add(`${cur}>${nxt}`)
+        prev = cur
+        cur = nxt
+      }
+      if (cur === start && loop.length >= 6) loops.push(loop)
+    }
+  }
+  return loops
+}
+
+function loopCentroid(pos, loop) {
+  let cx = 0
+  let cy = 0
+  let cz = 0
+  for (const i of loop) {
+    cx += pos[i * 3]
+    cy += pos[i * 3 + 1]
+    cz += pos[i * 3 + 2]
+  }
+  const inv = 1 / loop.length
+  return [cx * inv, cy * inv, cz * inv]
+}
+
+function loopRadius(pos, loop, c) {
+  let r = 0
+  for (const i of loop) {
+    r += Math.hypot(pos[i * 3] - c[0], pos[i * 3 + 1] - c[1], pos[i * 3 + 2] - c[2])
+  }
+  return r / loop.length
+}
+
+function loopSpread(pos, loop, c, meanR) {
+  let acc = 0
+  for (const i of loop) {
+    const r = Math.hypot(pos[i * 3] - c[0], pos[i * 3 + 1] - c[1], pos[i * 3 + 2] - c[2])
+    acc += (r - meanR) ** 2
+  }
+  return Math.sqrt(acc / loop.length) / Math.max(meanR, 1e-6)
+}
+
+/** Pull each mouth toward a circle on the clip sphere so caps read as clean discs. */
+function circularizeLoopsOnSphere(pos, loops, radius, mix = 0.78) {
+  let n = 0
+  for (const loop of loops) {
+    const c = loopCentroid(pos, loop)
+    const meanR = loopRadius(pos, loop, c)
+    if (meanR < CAP_MIN_R || meanR > CAP_MAX_R) continue
+    if (loopSpread(pos, loop, c, meanR) > 0.32) continue
+    const nlen = Math.hypot(c[0], c[1], c[2]) || 1
+    const nx = c[0] / nlen
+    const ny = c[1] / nlen
+    const nz = c[2] / nlen
+    let ax = 0
+    let ay = 1
+    let az = 0
+    if (Math.abs(ny) > 0.9) {
+      ax = 1
+      ay = 0
+    }
+    let ux = ny * az - nz * ay
+    let uy = nz * ax - nx * az
+    let uz = nx * ay - ny * ax
+    const ul = Math.hypot(ux, uy, uz) || 1
+    ux /= ul
+    uy /= ul
+    uz /= ul
+    const vx = ny * uz - nz * uy
+    const vy = nz * ux - nx * uz
+    const vz = nx * uy - ny * ux
+    for (const i of loop) {
+      const dx = pos[i * 3] - c[0]
+      const dy = pos[i * 3 + 1] - c[1]
+      const dz = pos[i * 3 + 2] - c[2]
+      const x = dx * ux + dy * uy + dz * uz
+      const y = dx * vx + dy * vy + dz * vz
+      const ang = Math.atan2(y, x)
+      const tx = c[0] + (ux * Math.cos(ang) + vx * Math.sin(ang)) * meanR
+      const ty = c[1] + (uy * Math.cos(ang) + vy * Math.sin(ang)) * meanR
+      const tz = c[2] + (uz * Math.cos(ang) + vz * Math.sin(ang)) * meanR
+      let px = pos[i * 3] * (1 - mix) + tx * mix
+      let py = pos[i * 3 + 1] * (1 - mix) + ty * mix
+      let pz = pos[i * 3 + 2] * (1 - mix) + tz * mix
+      const r = Math.hypot(px, py, pz) || 1
+      const s = radius / r
+      pos[i * 3] = px * s
+      pos[i * 3 + 1] = py * s
+      pos[i * 3 + 2] = pz * s
+    }
+    n++
+  }
+  return n
+}
+
+/** Planar discs that seal each spherical cut — CrystalMaker-style channel mouths. */
+function capSphereLoops(pos, loops) {
+  const capPos = []
+  const capNorm = []
+  const capIndex = []
+  let count = 0
+  for (const loop of loops) {
+    const c = loopCentroid(pos, loop)
+    const meanR = loopRadius(pos, loop, c)
+    if (meanR < CAP_MIN_R || meanR > CAP_MAX_R) continue
+    if (loopSpread(pos, loop, c, meanR) > 0.32) continue
+    const cr = Math.hypot(c[0], c[1], c[2]) || 1
+    if (Math.abs(cr - CLIP_RADIUS) > 0.55) continue
+    const out = [c[0] / cr, c[1] / cr, c[2] / cr]
+    // Lift the disc slightly so it does not z-fight the rim.
+    const lift = 0.02
+    const cx = c[0] + out[0] * lift
+    const cy = c[1] + out[1] * lift
+    const cz = c[2] + out[2] * lift
+    const base = capPos.length / 3
+    capPos.push(r3(cx), r3(cy), r3(cz))
+    capNorm.push(r3(out[0]), r3(out[1]), r3(out[2]))
+    const rim = capPos.length / 3
+    for (const i of loop) {
+      capPos.push(r3(pos[i * 3]), r3(pos[i * 3 + 1]), r3(pos[i * 3 + 2]))
+      capNorm.push(r3(out[0]), r3(out[1]), r3(out[2]))
+    }
+    for (let k = 0; k < loop.length; k++) {
+      const a = rim + k
+      const b = rim + ((k + 1) % loop.length)
+      const v0 = [capPos[a * 3] - cx, capPos[a * 3 + 1] - cy, capPos[a * 3 + 2] - cz]
+      const v1 = [capPos[b * 3] - cx, capPos[b * 3 + 1] - cy, capPos[b * 3 + 2] - cz]
+      if (dot(cross(v0, v1), out) >= 0) capIndex.push(base, a, b)
+      else capIndex.push(base, b, a)
+    }
+    count++
+  }
+  return { positions: capPos, normals: capNorm, index: capIndex, count }
+}
+
 function boundaryVerts(faces, nV) {
   const edgeCount = new Map()
   const add = (a, b) => {
@@ -863,10 +1058,9 @@ console.log(
 sdfStats(positions, 'before smooth')
 taubinSmooth(positions, index, SMOOTH_ITERS)
 sdfStats(positions, 'after Taubin')
-projectToIso(positions)
+projectToIso(positions, 3)
 sdfStats(positions, 'after project')
-taubinSmooth(positions, index, 4)
-projectToIso(positions, 6)
+taubinSmooth(positions, index, 8)
 sdfStats(positions, 'after second smooth')
 
 // Keep only the dominant connected channel network (drop tiny cavities)
@@ -934,8 +1128,10 @@ sdfStats(positions, 'after second smooth')
   }
 }
 
-projectToIso(positions, 6)
-sdfStats(positions, 'after extra project')
+taubinSmooth(positions, index, 4)
+fattenVoid(positions, 0.32)
+taubinSmooth(positions, index, 6)
+sdfStats(positions, 'after fatten')
 
 {
   const clipped = clipMeshToSphere(positions, index, CLIP_RADIUS)
@@ -950,7 +1146,7 @@ sdfStats(positions, 'after extra project')
     if (Math.abs(r - CLIP_RADIUS) <= rimTol) bound.add(i)
   }
   for (const i of boundaryVerts(index, positions.length / 3)) bound.add(i)
-  taubinSmooth(positions, index, 6)
+  taubinSmooth(positions, index, 8)
   for (const i of bound) {
     const x = positions[i * 3]
     const y = positions[i * 3 + 1]
@@ -962,10 +1158,11 @@ sdfStats(positions, 'after extra project')
     positions[i * 3 + 2] = z * s
   }
   smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, BOUNDARY_SMOOTH)
-  projectToIso(positions, 6, bound)
-  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, 8)
+  const mouths = boundaryLoops(index)
+  const rounded = circularizeLoopsOnSphere(positions, mouths, CLIP_RADIUS, 0.88)
+  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, 10)
   console.log(
-    `  clipped to ${CLIP_RADIUS} Å sphere · ${bound.size} rim verts smoothed`,
+    `  clipped to ${CLIP_RADIUS} Å sphere · ${bound.size} rim verts · ${mouths.length} loops · ${rounded} circularized`,
   )
 }
 
@@ -1001,6 +1198,9 @@ for (let i = 0; i < positions.length; i += 3) {
 for (let i = 0; i < normals.length; i++) normals[i] = r3(normals[i])
 for (let i = 0; i < positions.length; i++) positions[i] = r3(positions[i])
 
+const voidCaps = capSphereLoops(positions, boundaryLoops(index))
+console.log(`  capped ${voidCaps.count} channel mouths (${voidCaps.positions.length / 3} cap verts)`)
+
 function mean(xs) {
   return xs.reduce((s, v) => s + v, 0) / Math.max(1, xs.length)
 }
@@ -1023,10 +1223,15 @@ const payload = {
     supercell: sc,
     box: A,
     clipRadius: CLIP_RADIUS,
-    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Li removed`,
+    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Li removed; spherical cuts capped`,
     positions,
     normals,
     index,
+    caps: {
+      positions: voidCaps.positions,
+      normals: voidCaps.normals,
+      index: voidCaps.index,
+    },
   },
   stats: {
     counts,
@@ -1038,6 +1243,7 @@ const payload = {
     cubaneCount: cubaneUnique.length,
     voidVerts: positions.length / 3,
     voidTris: index.length / 3,
+    voidCaps: voidCaps.count,
     voidFraction: r3(voidCount / totalSamples),
     voidComponents: sizes.filter((c) => c.size >= MIN_VOID_VOXELS).length,
     voidAtomCount: voidAtoms.length,
@@ -1048,5 +1254,5 @@ mkdirSync(dirname(outPath), { recursive: true })
 writeFileSync(outPath, JSON.stringify(payload))
 console.log(
   `LMO: ${polyhedra.length} MnO₆ · ${lithium.length} Li(8a) · ${cubaneUnique.length} cubanes · ` +
-    `void ${payload.stats.voidVerts}v/${payload.stats.voidTris}t · Mn–O ${payload.stats.mnOMean} Å`,
+    `void ${payload.stats.voidVerts}v/${payload.stats.voidTris}t · ${payload.stats.voidCaps} caps · Mn–O ${payload.stats.mnOMean} Å`,
 )

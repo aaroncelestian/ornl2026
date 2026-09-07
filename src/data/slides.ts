@@ -345,12 +345,21 @@ export const slides: Slide[] = [
       },
       {
         id: '8a',
+        label: 'Acid prime',
+        kicker: 'Acid prime',
+        title: 'H takes the oxygen.\nOH points at 8a.',
+        layers: ['lmo'],
+        notes:
+          'Acid prime. Protons enter the 8a→16c pores and sit on framework oxygen — the OH vector points into the tetrahedral 8a cavity. That is the primed exchange site, not a random surface proton.',
+      },
+      {
+        id: 'li-in',
         label: '8a sites',
         kicker: 'First landing',
         title: 'Li lands in 8a first.',
         layers: ['lmo'],
         notes:
-          'Paper mechanism: Li first occupies structural interstitial tetrahedral (8a) voids — stable, back-exchangeable, no Mn loss yet. A₁g HWHM narrows as Li fills 8a. Later migration into cubane 8b is what stresses the lattice.',
+          'Paper mechanism: Li first occupies structural interstitial tetrahedral (8a) voids — stable, back-exchangeable, no Mn loss yet. A₁g HWHM narrows as Li fills 8a. Each inbound Li pushes the priming H back out the same channel. Later migration into cubane 8b is what stresses the lattice.',
       },
       {
         id: 'cloud',
