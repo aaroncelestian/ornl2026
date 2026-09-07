@@ -468,7 +468,7 @@ export const slides: Slide[] = [
         title: 'Li returns.\nRaman returns — changed.',
         layers: ['raman'],
         notes:
-          'As Li goes back in, XRD is still good. Raman pattern comes back — not identical to as-synthesized. Fig 5: A₁g climbs ~645→657 cm⁻¹, FWHM narrows, then breakup near 29 min. Operando proof Li entered the lattice, not a capacity claim.',
+          'As Li goes back in, XRD is still good. Raman pattern comes back — not identical to as-synthesized. licl2-1 Fit Series (Fig 5): A₁g jumps ~645→657 cm⁻¹ by ~3 min, FWHM narrows to ~8, then breakup near 28 min (peak ~632, FWHM ~53). Operando proof Li entered the lattice, not a capacity claim.',
       },
       {
         id: 'cubane',

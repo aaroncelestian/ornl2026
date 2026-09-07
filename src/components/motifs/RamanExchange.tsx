@@ -360,7 +360,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 A₁g peak · Li back in
               </text>
               <text x={leftOx + PAD.l} y={48} className={styles.plotTick}>
-                Fig 5B · Raman returns — changed · XRD still good
+                Fig 5B · licl2-1 fit · Raman returns — changed
               </text>
               <line
                 x1={leftOx + PAD.l}
@@ -459,7 +459,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 A₁g FWHM
               </text>
               <text x={rightOx + PAD.l} y={48} className={styles.plotTick}>
-                Fig 5A · pattern back · then breakup broadening
+                Fig 5A · licl2-1 FWHM · narrows then breakup spike
               </text>
               <line
                 x1={rightOx + PAD.l}
