@@ -22,8 +22,8 @@ const MN_O_MAX = 2.25
  * Polyhedra are display-only — they are not subtracted from the field.
  */
 const GRID = 96
-/** Near the true VdW surface so the 8a→16c tubes stay fat. */
-const PROBE = 0.05
+/** Clearance outside the VdW spheres — the wall must never enter an atom. */
+const PROBE = 0.18
 const MIN_VOID_VOXELS = 40
 const SMOOTH_ITERS = 8
 const BOUNDARY_SMOOTH = 16
@@ -634,24 +634,6 @@ function taubinSmooth(pos, faces, iterations, lambda = 0.5, mu = -0.53) {
   }
 }
 
-/** Move the wall toward the atoms so the 8a→16c tubes read as fat channels. */
-function fattenVoid(pos, amount, skip = null) {
-  const step = A / n
-  for (let i = 0; i < pos.length; i += 3) {
-    if (skip?.has(i / 3)) continue
-    const x = pos[i] + A * 0.5
-    const y = pos[i + 1] + A * 0.5
-    const z = pos[i + 2] + A * 0.5
-    const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
-    const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
-    const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
-    const glen = Math.hypot(gx, gy, gz) || 1
-    pos[i] -= (amount * gx) / glen
-    pos[i + 1] -= (amount * gy) / glen
-    pos[i + 2] -= (amount * gz) / glen
-  }
-}
-
 function projectToIso(pos, iters = 8, skip = null) {
   const step = A / n
   for (let k = 0; k < iters; k++) {
@@ -668,6 +650,28 @@ function projectToIso(pos, iters = 8, skip = null) {
       pos[i] -= (s * gx) / len
       pos[i + 1] -= (s * gy) / len
       pos[i + 2] -= (s * gz) / len
+    }
+  }
+}
+
+/** Newton-push any leftover verts out of the atom spheres onto the iso. */
+function enforceOutsideAtoms(pos, skip = null) {
+  const step = A / n
+  for (let i = 0; i < pos.length; i += 3) {
+    if (skip?.has(i / 3)) continue
+    for (let k = 0; k < 16; k++) {
+      const x = pos[i] + A * 0.5
+      const y = pos[i + 1] + A * 0.5
+      const z = pos[i + 2] + A * 0.5
+      const s = sdfAt(x, y, z) - iso
+      if (s >= -1e-4) break
+      const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
+      const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
+      const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
+      const glen = Math.hypot(gx, gy, gz) || 1
+      pos[i] -= (s * gx) / glen
+      pos[i + 1] -= (s * gy) / glen
+      pos[i + 2] -= (s * gz) / glen
     }
   }
 }
@@ -1058,9 +1062,10 @@ console.log(
 sdfStats(positions, 'before smooth')
 taubinSmooth(positions, index, SMOOTH_ITERS)
 sdfStats(positions, 'after Taubin')
-projectToIso(positions, 3)
+projectToIso(positions)
 sdfStats(positions, 'after project')
-taubinSmooth(positions, index, 8)
+taubinSmooth(positions, index, 4)
+projectToIso(positions, 6)
 sdfStats(positions, 'after second smooth')
 
 // Keep only the dominant connected channel network (drop tiny cavities)
@@ -1128,10 +1133,9 @@ sdfStats(positions, 'after second smooth')
   }
 }
 
-taubinSmooth(positions, index, 4)
-fattenVoid(positions, 0.32)
-taubinSmooth(positions, index, 6)
-sdfStats(positions, 'after fatten')
+projectToIso(positions, 6)
+enforceOutsideAtoms(positions)
+sdfStats(positions, 'after extra project')
 
 {
   const clipped = clipMeshToSphere(positions, index, CLIP_RADIUS)
@@ -1146,7 +1150,7 @@ sdfStats(positions, 'after fatten')
     if (Math.abs(r - CLIP_RADIUS) <= rimTol) bound.add(i)
   }
   for (const i of boundaryVerts(index, positions.length / 3)) bound.add(i)
-  taubinSmooth(positions, index, 8)
+  taubinSmooth(positions, index, 4)
   for (const i of bound) {
     const x = positions[i * 3]
     const y = positions[i * 3 + 1]
@@ -1158,12 +1162,102 @@ sdfStats(positions, 'after fatten')
     positions[i * 3 + 2] = z * s
   }
   smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, BOUNDARY_SMOOTH)
+  projectToIso(positions, 6, bound)
+  enforceOutsideAtoms(positions, bound)
   const mouths = boundaryLoops(index)
-  const rounded = circularizeLoopsOnSphere(positions, mouths, CLIP_RADIUS, 0.88)
-  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, 10)
+  const rounded = circularizeLoopsOnSphere(positions, mouths, CLIP_RADIUS, 0.55)
+  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, 8)
+  projectToIso(positions, 4, bound)
+  enforceOutsideAtoms(positions)
+  for (const i of bound) {
+    const x = positions[i * 3]
+    const y = positions[i * 3 + 1]
+    const z = positions[i * 3 + 2]
+    const r = Math.hypot(x, y, z) || 1
+    const s = CLIP_RADIUS / r
+    positions[i * 3] = x * s
+    positions[i * 3 + 1] = y * s
+    positions[i * 3 + 2] = z * s
+  }
   console.log(
     `  clipped to ${CLIP_RADIUS} Å sphere · ${bound.size} rim verts · ${mouths.length} loops · ${rounded} circularized`,
   )
+}
+
+enforceOutsideAtoms(positions)
+sdfStats(positions, 'final')
+{
+  const drop = new Uint8Array(positions.length / 3)
+  let nDrop = 0
+  for (let i = 0; i < positions.length; i += 3) {
+    if (sdfAt(positions[i] + A * 0.5, positions[i + 1] + A * 0.5, positions[i + 2] + A * 0.5) < 0) {
+      drop[i / 3] = 1
+      nDrop++
+    }
+  }
+  if (nDrop) {
+    const remap = new Int32Array(drop.length).fill(-1)
+    const newPos = []
+    for (let i = 0; i < drop.length; i++) {
+      if (drop[i]) continue
+      remap[i] = newPos.length / 3
+      newPos.push(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
+    }
+    const newIndex = []
+    for (let t = 0; t < index.length; t += 3) {
+      const a0 = remap[index[t]]
+      const a1 = remap[index[t + 1]]
+      const a2 = remap[index[t + 2]]
+      if (a0 < 0 || a1 < 0 || a2 < 0) continue
+      newIndex.push(a0, a1, a2)
+    }
+    positions.length = 0
+    for (const v of newPos) positions.push(v)
+    index.length = 0
+    for (const v of newIndex) index.push(v)
+    console.log(`  culled ${nDrop} verts still inside a VdW sphere`)
+  }
+}
+
+/** Drop any triangle that chords through a VdW sphere. Atoms fill those holes. */
+{
+  const samples = [0.25, 0.5, 0.75]
+  const insideSeg = (ia, ib) => {
+    for (const t of samples) {
+      const x = positions[ia * 3] * (1 - t) + positions[ib * 3] * t
+      const y = positions[ia * 3 + 1] * (1 - t) + positions[ib * 3 + 1] * t
+      const z = positions[ia * 3 + 2] * (1 - t) + positions[ib * 3 + 2] * t
+      if (sdfAt(x + A * 0.5, y + A * 0.5, z + A * 0.5) < 0) return true
+    }
+    return false
+  }
+  const kept = []
+  let dropped = 0
+  for (let t = 0; t < index.length; t += 3) {
+    const a0 = index[t]
+    const a1 = index[t + 1]
+    const a2 = index[t + 2]
+    const cx = (positions[a0 * 3] + positions[a1 * 3] + positions[a2 * 3]) / 3
+    const cy = (positions[a0 * 3 + 1] + positions[a1 * 3 + 1] + positions[a2 * 3 + 1]) / 3
+    const cz = (positions[a0 * 3 + 2] + positions[a1 * 3 + 2] + positions[a2 * 3 + 2]) / 3
+    if (
+      sdfAt(cx + A * 0.5, cy + A * 0.5, cz + A * 0.5) < 0 ||
+      insideSeg(a0, a1) ||
+      insideSeg(a1, a2) ||
+      insideSeg(a2, a0)
+    ) {
+      dropped++
+      continue
+    }
+    kept.push(a0, a1, a2)
+  }
+  const compact = compactMesh(positions, kept)
+  positions.length = 0
+  for (const v of compact.pos) positions.push(v)
+  index.length = 0
+  for (const v of compact.faces) index.push(v)
+  console.log(`  dropped ${dropped} triangles that cut a VdW sphere`)
+  sdfStats(positions, 'after atom-safe drop')
 }
 
 const voidAtoms = []

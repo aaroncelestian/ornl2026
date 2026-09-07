@@ -220,8 +220,12 @@ function VoidSurface({ pore }: { pore: boolean }) {
 
 type VoidAtom = { element: string; x: number; y: number; z: number }
 
-/** Display radii — short of full VdW so the pore surface stays readable. */
-const ATOM_DRAW = { Mn: 0.58, O: 0.4 }
+/** Match the void-field VdW radii, slightly short so the wall sits just outside. */
+const VOID_RADII = (data.void as { radii?: { Mn: number; O: number } }).radii
+const ATOM_DRAW = {
+  Mn: (VOID_RADII?.Mn ?? 2.0) * 0.9,
+  O: (VOID_RADII?.O ?? 1.52) * 0.9,
+}
 
 function FrameworkAtoms() {
   const atoms = (data as { voidAtoms?: VoidAtom[] }).voidAtoms
