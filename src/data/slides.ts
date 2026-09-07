@@ -341,7 +341,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Li removed from the model — what remains is the interstitial void network. Tetrahedral 8a sites and the 8a→16c→8a channels along [111]. That is the gate the brine Li has to fit.',
+          'Li removed. Probe-accessible void surface of the Mn–O framework only — tubular 8a→16c→8a channels along ⟨111⟩. That tunnel geometry is the product: the gate brine Li has to fit.',
       },
       {
         id: '8a',
@@ -404,7 +404,7 @@ export const slides: Slide[] = [
         title: 'The spinel takes\nthe lithium.',
         layers: ['cycle'],
         notes:
-          'Li₄Mn₅O₁₂ — size-selective uptake. In situ Raman: the A₁g Mn–O mode shifts from 635 to 656 cm⁻¹ in about twelve minutes as Li enters. Mechanism from the 2026 paper: Li first occupies tetrahedral interstitial voids (8a), then migrates into interstitial sites between Mn octahedra (cubane 8b). Larger seawater cations do not fit that gate. Raman + XRD + XPS is the ORNL characterization half of the pipeline.',
+          'Li₄Mn₅O₁₂ — size-selective uptake. Characterization punchline from the 2026 paper: as-synthesized LMO has good XRD and good Raman; H-exchanged keeps good XRD but Raman is basically gone; as Li goes back in, XRD stays good and the Raman pattern returns — changed. Larger seawater cations do not fit the interstitial gate.',
       },
       {
         id: 'air',
@@ -441,16 +441,34 @@ export const slides: Slide[] = [
         title: 'The spinel comes back.',
         layers: ['cycle'],
         notes:
-          'Recyclable sorbent — empty spinel back to brine. Next: the operando Raman that proves Li actually entered the lattice — then the durability caveat. Geometry wins — and cycle protocol decides whether the lattice survives.',
+          'Recyclable sorbent — empty spinel back to brine. Next: the XRD/Raman punchline — long-range order can look fine while the local cubane reporter goes dark, then comes back changed when Li returns.',
       },
       {
-        id: 'raman',
-        label: 'Raman',
-        kicker: 'J. Raman Spectrosc. 2026 · Figs 4–5',
-        title: 'Watch the lattice\ntake the lithium.',
+        id: 'as-synth',
+        label: 'As-synth',
+        kicker: 'J. Raman Spectrosc. 2026',
+        title: 'As-synthesized:\ngood XRD, good Raman.',
         layers: ['raman'],
         notes:
-          'Fig 5 dual panel (digitized): A₁g peak jumps ~645→657 cm⁻¹ by ~5 min as Li fills 8a; FWHM narrows to ~8 cm⁻¹ with it. Near 29 min the mode breaks — peak dips to ~632 and FWHM spikes to ~53 cm⁻¹ as Li migrates toward cubane 8b (Fig 4 / Model 3). Operando mechanism, not a capacity claim.',
+          'Start state. Spinel XRD is sharp. Raman shows a strong A₁g — the Mn₄O₄ cubane stretch is alive. Long-range order and local Mn–O order agree.',
+      },
+      {
+        id: 'h-ex',
+        label: 'H-exchange',
+        kicker: 'The trap',
+        title: 'H-exchange blanks\nthe Raman.',
+        layers: ['raman'],
+        notes:
+          'Acid prime / H-exchange: XRD stays good — the spinel framework is still there. But the Raman is basically gone. Diffraction would say “fine.” Local cubane symmetry says otherwise. That is why Raman is the reporter.',
+      },
+      {
+        id: 'li-return',
+        label: 'Li returns',
+        kicker: 'Figs 4–5 · operando',
+        title: 'Li returns.\nRaman returns — changed.',
+        layers: ['raman'],
+        notes:
+          'As Li goes back in, XRD is still good. Raman pattern comes back — not identical to as-synthesized. Fig 5: A₁g climbs ~645→657 cm⁻¹, FWHM narrows, then breakup near 29 min. Operando proof Li entered the lattice, not a capacity claim.',
       },
       {
         id: 'cubane',
@@ -459,7 +477,7 @@ export const slides: Slide[] = [
         title: 'A₁g is the cubane\nbreathing.',
         layers: ['lmo'],
         notes:
-          'Fig 7–8: A₁g is the symmetric stretch of the Mn₄O₄ cubane — four face-shared MnO₆. Model 1 H-LMO matches measured 635 cm⁻¹; Model 2 Li-filled 656 cm⁻¹; Model 3 Li-in-cubane + Mn loss splits into three A₁g components (622 / 657 / 690). That is why full load costs Mn.',
+          'Why Raman cares: A₁g is the symmetric stretch of the Mn₄O₄ cubane — four face-shared MnO₆. When that local order collapses on H-exchange, Raman blanks even though XRD still sees the spinel. When Li restores it, the spectrum comes back shifted.',
       },
       {
         id: 'durability',
@@ -468,7 +486,7 @@ export const slides: Slide[] = [
         title: 'Full load costs Mn.\nPartial load keeps it.',
         layers: ['raman'],
         notes:
-          'Right panel hard: after 100 full Li/H cycles, up to 24% Mn loss and a secondary MnOx phase. Partial loading — stop before maximum capacity — showed no measurable Mn loss at 100 cycles. Same selectivity logic does not stop at lithium.',
+          'After 100 full Li/H cycles, up to 24% Mn loss and a secondary MnOx phase. Partial loading — stop before maximum capacity — showed no measurable Mn loss at 100 cycles. Same selectivity logic does not stop at lithium.',
       },
     ],
   },

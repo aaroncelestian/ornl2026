@@ -1,5 +1,59 @@
 {
-  "source": "Celestian et al., J. Raman Spectrosc. 2026, 57:131–139 · Figs 4–5, 8",
+  "source": "Celestian et al., J. Raman Spectrosc. 2026, 57:131–139",
+  "story": {
+    "note": "As-synthesized: good XRD + good Raman. H-exchange: XRD stays, Raman blanks. Li in: XRD stays, Raman returns — changed.",
+    "states": [
+      {
+        "id": "as-synth",
+        "label": "As-synthesized LMO",
+        "xrd": "sharp",
+        "raman": "strong",
+        "xrdNote": "Spinel peaks sharp",
+        "ramanNote": "A₁g cubane stretch on"
+      },
+      {
+        "id": "h-ex",
+        "label": "H-exchanged",
+        "xrd": "sharp",
+        "raman": "gone",
+        "xrdNote": "XRD still good",
+        "ramanNote": "Raman basically gone"
+      },
+      {
+        "id": "li-in",
+        "label": "Li back in",
+        "xrd": "sharp",
+        "raman": "changed",
+        "xrdNote": "XRD still good",
+        "ramanNote": "Raman returns — shifted"
+      }
+    ]
+  },
+  "xrdPeaks": [
+    { "t": 18.7, "h": 1 },
+    { "t": 36.2, "h": 0.55 },
+    { "t": 37.9, "h": 0.28 },
+    { "t": 44.1, "h": 0.42 },
+    { "t": 48.3, "h": 0.22 },
+    { "t": 58.2, "h": 0.35 },
+    { "t": 64.0, "h": 0.18 }
+  ],
+  "ramanSynth": [
+    { "w": 480, "h": 0.18 },
+    { "w": 580, "h": 0.22 },
+    { "w": 625, "h": 0.45 },
+    { "w": 648, "h": 1 },
+    { "w": 690, "h": 0.12 },
+    { "w": 750, "h": 0.08 }
+  ],
+  "ramanReturned": [
+    { "w": 480, "h": 0.14 },
+    { "w": 580, "h": 0.18 },
+    { "w": 622, "h": 0.35 },
+    { "w": 657, "h": 0.92 },
+    { "w": 690, "h": 0.4 },
+    { "w": 750, "h": 0.1 }
+  ],
   "a1g": {
     "xLabel": "Time (min)",
     "yLabel": "A₁g peak (cm⁻¹)",
@@ -31,7 +85,7 @@
       { "t": 5, "label": "Li → 8a · 657 cm⁻¹" },
       { "t": 29, "label": "A₁g breakup" }
     ],
-    "note": "Fig 5B fit — operando A₁g peak position (digitized)"
+    "note": "Fig 5B — operando as Li re-enters"
   },
   "fwhm": {
     "xLabel": "Time (min)",
@@ -59,7 +113,7 @@
       { "t": 58, "w": 20 },
       { "t": 65, "w": 19 }
     ],
-    "note": "Fig 5A — narrows as Li fills 8a, spikes as A₁g splits (Model 3)"
+    "note": "Fig 5A — width returns then spikes at breakup"
   },
   "models": {
     "source": "Fig 8 · calculated vs measured A₁g",
@@ -91,7 +145,9 @@
     ]
   },
   "footnotes": {
-    "raman": "A₁g is the Mn₄O₄ cubane stretch — Fig 5 tracks it as Li enters H-LMO (532 nm)",
+    "as-synth": "As-synthesized LMO: long-range order (XRD) and local Mn–O cubane order (Raman) both present.",
+    "h-ex": "H-exchange keeps the spinel XRD — but the Raman (local cubane stretch) is basically gone.",
+    "li-return": "Li re-enters: XRD still good. Raman pattern comes back — shifted / changed (Fig 5).",
     "durability": "Full load costs Mn (24% / 100 cycles). Partial load keeps the lattice intact."
   }
 }

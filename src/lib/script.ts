@@ -146,7 +146,7 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: guest orbs sized against the rowleyite cage'
   }
   if (slide.motif === 'raman-exchange') {
-    return 'Motif: LMO A₁g Raman (Figs 4–5) and Mn-loss durability'
+    return 'Motif: LMO XRD vs Raman story — as-synth / H-blank / Li returns'
   }
   if (slide.motif === 'lmo-spinel') {
     return 'Motif: LiMn₂O₄ CIF — MnO₆ polyhedra and interstitial voids'
@@ -280,13 +280,17 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         lines.push(
           beat?.id === 'durability'
             ? 'Motif: Raman — Mn loss vs cycle protocol (full load 24% vs partial ~0%)'
-            : 'Motif: Raman Figs 4–5 — A₁g ~645→657 cm⁻¹ + FWHM (8a fill → breakup ~29 min)',
+            : beat?.id === 'h-ex'
+              ? 'Motif: XRD still good · Raman basically gone (H-exchange)'
+              : beat?.id === 'li-return'
+                ? 'Motif: Li returns — Raman returns changed (Fig 5 operando)'
+                : 'Motif: As-synthesized LMO — good XRD + good Raman',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'lmo-spinel') {
         lines.push(
           beat?.id === 'voids'
-            ? 'Motif: LMO CIF — interstitial void network (Li removed)'
+            ? 'Motif: LMO probe void — tubular 8a→16c→8a channels along ⟨111⟩'
             : beat?.id === '8a'
               ? 'Motif: LMO CIF — Li in tetrahedral 8a voids'
               : beat?.id === 'cubane'

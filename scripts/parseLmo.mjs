@@ -13,10 +13,11 @@ const cifPath = join(root, 'docs', 'data-assets', 'LMO', 'LiMn2O4.cif')
 const outPath = join(root, 'src', 'data', 'lmoSpinel.json')
 
 const MN_O_MAX = 2.25
-const GRID = 40
-const PROBE = 0.5
-const MIN_VOID_VOXELS = 12
-const RADII = { Mn: 1.28, O: 1.24 }
+/** Finer grid → smoother tubular 8a↔16c channels along ⟨111⟩ */
+const GRID = 52
+const PROBE = 0.48
+const MIN_VOID_VOXELS = 18
+const RADII = { Mn: 1.26, O: 1.22 }
 
 function parseNum(value) {
   return Number(String(value).replace(/\([^)]*\)/g, ''))
@@ -226,7 +227,22 @@ for (const mn of mns) {
 
 const lithium = lis.map((li) => ({ x: r3(li.x), y: r3(li.y), z: r3(li.z) }))
 
-// Cubane centers ≈ midpoint of 4 nearest Mn tetrahedra (Wyckoff 8b family)
+function oxNear(mn, maxD = MN_O_MAX) {
+  const neighbors = []
+  for (const ox of oxys) {
+    const dx = minImage(ox.x - mn.x, a)
+    const dy = minImage(ox.y - mn.y, a)
+    const dz = minImage(ox.z - mn.z, a)
+    const d = Math.hypot(dx, dy, dz)
+    if (d > 1.4 && d < maxD) {
+      neighbors.push({ x: mn.x + dx, y: mn.y + dy, z: mn.z + dz, d })
+    }
+  }
+  neighbors.sort((p, q) => p.d - q.d)
+  return neighbors
+}
+
+// Cubane = face-shared Mn₄ tetrahedron + interlocking O₄ (Mn₄O₄) + terminal O of each MnO₆
 const cubanes = []
 for (let i = 0; i < mns.length; i++) {
   for (let j = i + 1; j < mns.length; j++) {
@@ -241,9 +257,66 @@ for (let i = 0; i < mns.length; i++) {
         const minD = Math.min(...dists)
         // Face-sharing Mn₄ cubane: Mn–center ~1.7–2.2 Å, nearly equal
         if (maxD > 2.35 || minD < 1.45 || maxD - minD > 0.35) continue
+
+        // Collect unique O around the four Mn
+        const oMap = new Map()
+        for (const mn of group) {
+          for (const ox of oxNear(mn)) {
+            const key = `${ox.x.toFixed(3)},${ox.y.toFixed(3)},${ox.z.toFixed(3)}`
+            const hit = oMap.get(key) ?? { x: ox.x, y: ox.y, z: ox.z, mnHits: 0 }
+            hit.mnHits++
+            oMap.set(key, hit)
+          }
+        }
+        const allO = [...oMap.values()]
+        // Core cubane O: bridge ≥3 of the 4 Mn (interlocking O₄ tetrahedron)
+        let coreO = allO.filter((o) => o.mnHits >= 3)
+        if (coreO.length < 4) {
+          // Fallback: 4 O nearest the cubane center among bridging (≥2)
+          coreO = allO
+            .filter((o) => o.mnHits >= 2)
+            .sort(
+              (p, q) =>
+                Math.hypot(p.x - cx, p.y - cy, p.z - cz) - Math.hypot(q.x - cx, q.y - cy, q.z - cz),
+            )
+            .slice(0, 4)
+        } else {
+          coreO = coreO
+            .sort(
+              (p, q) =>
+                Math.hypot(p.x - cx, p.y - cy, p.z - cz) - Math.hypot(q.x - cx, q.y - cy, q.z - cz),
+            )
+            .slice(0, 4)
+        }
+        const coreKeys = new Set(coreO.map((o) => `${o.x.toFixed(3)},${o.y.toFixed(3)},${o.z.toFixed(3)}`))
+        // Terminal O: complete each MnO₆ outside the cubane core
+        const terminalO = allO.filter((o) => !coreKeys.has(`${o.x.toFixed(3)},${o.y.toFixed(3)},${o.z.toFixed(3)}`))
+
+        const bondKeys = new Set()
+        const cleanBonds = []
+        for (let mi = 0; mi < group.length; mi++) {
+          const mn = group[mi]
+          for (const ox of [...coreO, ...terminalO]) {
+            const d = Math.hypot(ox.x - mn.x, ox.y - mn.y, ox.z - mn.z)
+            if (d >= MN_O_MAX + 0.05) continue
+            const ok = `${ox.x.toFixed(3)},${ox.y.toFixed(3)},${ox.z.toFixed(3)}`
+            const key = `${mi}|${ok}`
+            if (bondKeys.has(key)) continue
+            bondKeys.add(key)
+            cleanBonds.push({
+              mn: mi,
+              o: [r3(ox.x), r3(ox.y), r3(ox.z)],
+              core: coreKeys.has(ok),
+            })
+          }
+        }
+
         cubanes.push({
           center: [r3(cx), r3(cy), r3(cz)],
           mn: group.map((m) => [r3(m.x), r3(m.y), r3(m.z)]),
+          coreO: coreO.map((o) => [r3(o.x), r3(o.y), r3(o.z)]),
+          terminalO: terminalO.map((o) => [r3(o.x), r3(o.y), r3(o.z)]),
+          bonds: cleanBonds,
         })
       }
     }
@@ -252,11 +325,19 @@ for (let i = 0; i < mns.length; i++) {
 // Deduplicate cubane centers
 const cubaneUnique = []
 for (const c of cubanes) {
-  if (cubaneUnique.some((u) => Math.hypot(u.center[0] - c.center[0], u.center[1] - c.center[1], u.center[2] - c.center[2]) < 0.4)) {
+  if (
+    cubaneUnique.some(
+      (u) =>
+        Math.hypot(u.center[0] - c.center[0], u.center[1] - c.center[1], u.center[2] - c.center[2]) < 0.4,
+    )
+  ) {
     continue
   }
   cubaneUnique.push(c)
 }
+console.log(
+  `Cubanes: ${cubaneUnique.length} · coreO=${cubaneUnique[0]?.coreO.length} · termO=${cubaneUnique[0]?.terminalO.length} · bonds=${cubaneUnique[0]?.bonds.length}`,
+)
 
 // ── Void mesh: Mn+O framework only (Li removed → 8a interstitial network) ──
 const framework = atoms
@@ -503,7 +584,7 @@ function mean(xs) {
 
 const payload = {
   mineral: 'Lithium manganese oxide (spinel)',
-  source: 'LiMn2O4.cif · Fd-3m · MnO₆ framework + 8a interstitial voids',
+  source: 'LiMn2O4.cif · Fd-3m · MnO₆ framework + probe void (Li removed)',
   paper: 'Celestian et al., J. Raman Spectrosc. 2026, 57:131–139',
   cell: { a },
   polyhedra,
@@ -511,6 +592,8 @@ const payload = {
   cubanes: cubaneUnique.slice(0, 8),
   void: {
     probe: PROBE,
+    grid: GRID,
+    note: 'Probe-accessible void with Li removed — tubular 8a→16c→8a channels along ⟨111⟩',
     positions: [...positions],
     normals: [...normals],
     index,
@@ -524,6 +607,7 @@ const payload = {
     voidVerts: positions.length / 3,
     voidTris: index.length / 3,
     voidFraction: r3(voidCount / totalSamples),
+    voidComponents: sizes.filter((c) => c.size >= MIN_VOID_VOXELS).length,
   },
 }
 
