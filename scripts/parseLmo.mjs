@@ -362,7 +362,10 @@ console.log(
 // ── Void mesh on a 2×2×2 supercell (Li removed → continuous 8a→16c tubing) ──
 const sc = VOID_SUPERCELL
 const A = a * sc
-CLIP_HALF = A * 0.5 - 0.02
+/** Same origin as displayed Mn/O/Li (cell center). The 2×2×2 grid is [0, 2a];
+ *  subtracting the supercell half (A/2) used to shift the 8a channels onto 16d Mn. */
+const MESH_ORIGIN = a * 0.5
+CLIP_HALF = MESH_ORIGIN - 0.02
 const unitFw = atoms
   .filter((p) => p.element === 'Mn' || p.element === 'O')
   .map((p) => ({
@@ -560,7 +563,7 @@ for (let i = 0; i < n; i++) {
       const v = cubeVerts[cubeKey(i, j, k)]
       if (!v) continue
       vertId[cubeKey(i, j, k)] = positions.length / 3
-      positions.push(r3(v[0] - A * 0.5), r3(v[1] - A * 0.5), r3(v[2] - A * 0.5))
+      positions.push(r3(v[0] - MESH_ORIGIN), r3(v[1] - MESH_ORIGIN), r3(v[2] - MESH_ORIGIN))
     }
   }
 }
@@ -670,7 +673,7 @@ function constrainedSmooth(pos, faces, iterations, lambda = 0.38, skip = null) {
       const nx = pos[i * 3] + lambda * (ax * inv - pos[i * 3])
       const ny = pos[i * 3 + 1] + lambda * (ay * inv - pos[i * 3 + 1])
       const nz = pos[i * 3 + 2] + lambda * (az * inv - pos[i * 3 + 2])
-      if (hardAtomSdf(nx + A * 0.5, ny + A * 0.5, nz + A * 0.5) < iso) continue
+      if (hardAtomSdf(nx + MESH_ORIGIN, ny + MESH_ORIGIN, nz + MESH_ORIGIN) < iso) continue
       next[i * 3] = nx
       next[i * 3 + 1] = ny
       next[i * 3 + 2] = nz
@@ -684,9 +687,9 @@ function projectToIso(pos, iters = 8, skip = null) {
   for (let k = 0; k < iters; k++) {
     for (let i = 0; i < pos.length; i += 3) {
       if (skip?.has(i / 3)) continue
-      const x = pos[i] + A * 0.5
-      const y = pos[i + 1] + A * 0.5
-      const z = pos[i + 2] + A * 0.5
+      const x = pos[i] + MESH_ORIGIN
+      const y = pos[i + 1] + MESH_ORIGIN
+      const z = pos[i + 2] + MESH_ORIGIN
       const s = sdfAt(x, y, z) - iso
       const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
       const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
@@ -705,9 +708,9 @@ function enforceOutsideAtoms(pos, skip = null) {
   for (let i = 0; i < pos.length; i += 3) {
     if (skip?.has(i / 3)) continue
     for (let k = 0; k < 16; k++) {
-      const x = pos[i] + A * 0.5
-      const y = pos[i + 1] + A * 0.5
-      const z = pos[i + 2] + A * 0.5
+      const x = pos[i] + MESH_ORIGIN
+      const y = pos[i + 1] + MESH_ORIGIN
+      const z = pos[i + 2] + MESH_ORIGIN
       const s = hardAtomSdf(x, y, z) - iso
       if (s >= -1e-4) break
       const gx = hardAtomSdf(x + step, y, z) - hardAtomSdf(x - step, y, z)
@@ -1166,7 +1169,7 @@ function sdfStats(pos, label) {
   let minS = Infinity
   let maxS = -Infinity
   for (let i = 0; i < pos.length; i += 3) {
-    const s = hardAtomSdf(pos[i] + A * 0.5, pos[i + 1] + A * 0.5, pos[i + 2] + A * 0.5)
+    const s = hardAtomSdf(pos[i] + MESH_ORIGIN, pos[i + 1] + MESH_ORIGIN, pos[i + 2] + MESH_ORIGIN)
     if (s < 0) inside++
     if (s < minS) minS = s
     if (s > maxS) maxS = s
@@ -1308,7 +1311,7 @@ sdfStats(positions, 'final')
   const drop = new Uint8Array(positions.length / 3)
   let nDrop = 0
   for (let i = 0; i < positions.length; i += 3) {
-    if (hardAtomSdf(positions[i] + A * 0.5, positions[i + 1] + A * 0.5, positions[i + 2] + A * 0.5) < 0) {
+    if (hardAtomSdf(positions[i] + MESH_ORIGIN, positions[i + 1] + MESH_ORIGIN, positions[i + 2] + MESH_ORIGIN) < 0) {
       drop[i / 3] = 1
       nDrop++
     }
@@ -1345,7 +1348,7 @@ sdfStats(positions, 'final')
       const x = positions[ia * 3] * (1 - t) + positions[ib * 3] * t
       const y = positions[ia * 3 + 1] * (1 - t) + positions[ib * 3 + 1] * t
       const z = positions[ia * 3 + 2] * (1 - t) + positions[ib * 3 + 2] * t
-      if (hardAtomSdf(x + A * 0.5, y + A * 0.5, z + A * 0.5) < 0) return true
+      if (hardAtomSdf(x + MESH_ORIGIN, y + MESH_ORIGIN, z + MESH_ORIGIN) < 0) return true
     }
     return false
   }
@@ -1359,7 +1362,7 @@ sdfStats(positions, 'final')
     const cy = (positions[a0 * 3 + 1] + positions[a1 * 3 + 1] + positions[a2 * 3 + 1]) / 3
     const cz = (positions[a0 * 3 + 2] + positions[a1 * 3 + 2] + positions[a2 * 3 + 2]) / 3
     if (
-      hardAtomSdf(cx + A * 0.5, cy + A * 0.5, cz + A * 0.5) < 0 ||
+      hardAtomSdf(cx + MESH_ORIGIN, cy + MESH_ORIGIN, cz + MESH_ORIGIN) < 0 ||
       insideSeg(a0, a1) ||
       insideSeg(a1, a2) ||
       insideSeg(a2, a0)
@@ -1382,9 +1385,9 @@ const voidAtoms = []
 {
   const keep = CLIP_HALF + 0.35
   for (const atom of framework) {
-    const x = atom.x - A * 0.5
-    const y = atom.y - A * 0.5
-    const z = atom.z - A * 0.5
+    const x = atom.x - MESH_ORIGIN
+    const y = atom.y - MESH_ORIGIN
+    const z = atom.z - MESH_ORIGIN
     if (Math.abs(x) > keep || Math.abs(y) > keep || Math.abs(z) > keep) continue
     voidAtoms.push({ element: atom.element, x: r3(x), y: r3(y), z: r3(z) })
   }
@@ -1417,9 +1420,9 @@ for (let t = 0; t < index.length; t += 3) {
   normals[i2 * 3 + 2] += nz
 }
 for (let i = 0; i < positions.length; i += 3) {
-  const x = positions[i] + A * 0.5
-  const y = positions[i + 1] + A * 0.5
-  const z = positions[i + 2] + A * 0.5
+  const x = positions[i] + MESH_ORIGIN
+  const y = positions[i + 1] + MESH_ORIGIN
+  const z = positions[i + 2] + MESH_ORIGIN
   const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
   const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
   const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
@@ -1491,6 +1494,27 @@ const payload = {
     voidComponents: sizes.filter((c) => c.size >= MIN_VOID_VOXELS).length,
     voidAtomCount: voidAtoms.length,
   },
+}
+
+{
+  const minTo = (pts) => {
+    let best = Infinity
+    for (const p of pts) {
+      for (let i = 0; i < positions.length; i += 3) {
+        const r = Math.hypot(positions[i] - p.x, positions[i + 1] - p.y, positions[i + 2] - p.z)
+        if (r < best) best = r
+      }
+    }
+    return best
+  }
+  const mnGap = minTo(manganese)
+  const liGap = minTo(lithium)
+  console.log(
+    `Sanity: min Mn–void ${mnGap.toFixed(2)} Å (VdW ${RADII.Mn}) · min Li–void ${liGap.toFixed(2)} Å (should sit in the channel)`,
+  )
+  if (mnGap < RADII.Mn * 0.7) {
+    throw new Error(`Void mesh still intersects Mn (min gap ${mnGap.toFixed(2)} Å)`)
+  }
 }
 
 mkdirSync(dirname(outPath), { recursive: true })

@@ -1,4 +1,5 @@
 .plot {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -16,6 +17,42 @@
   height: auto;
   max-height: calc(100% - 48px);
   overflow: visible;
+}
+
+.plotSvg[data-playhead] {
+  cursor: grab;
+  touch-action: none;
+}
+
+.plotSvg[data-playhead]:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--color-text) 35%, transparent);
+  outline-offset: 4px;
+}
+
+.plotSvg[data-dragging] {
+  cursor: grabbing;
+}
+
+.cubaneDock {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 3;
+  width: min(240px, 26vw);
+  height: min(220px, 34vh);
+  pointer-events: none;
+}
+
+.cubaneCap {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-text) 72%, transparent);
 }
 
 .plotTick {

@@ -283,8 +283,8 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
             : beat?.id === 'h-ex'
               ? 'Motif: XRD still good · Raman basically gone (H-exchange)'
               : beat?.id === 'li-return'
-                ? 'Motif: Li returns — Raman returns changed (Fig 5 operando)'
-                : 'Motif: As-synthesized LMO — good XRD + good Raman',
+                ? 'Motif: Li returns — smoothed Fig 5 operando + cubane; drag the marker'
+                : 'Motif: As-synthesized LMO — good XRD + good Raman · cubane inset',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'lmo-spinel') {
@@ -292,7 +292,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
           beat?.id === 'voids'
             ? 'Motif: LMO van der Waals void — empty space outside Mn/O spheres (Li removed)'
             : beat?.id === '8a'
-              ? 'Motif: LMO — H enters the pores and sits on O, OH toward 8a'
+              ? 'Motif: LMO — H sits on O; OH dominates, Mn–O muted, modes go non-symmetric'
               : beat?.id === 'li-in'
                 ? 'Motif: LMO — Li lands in 8a first; H leaves the same channel'
               : beat?.id === 'cubane'

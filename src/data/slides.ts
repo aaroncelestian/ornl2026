@@ -423,7 +423,7 @@ export const slides: Slide[] = [
         title: 'H takes the oxygen.\nOH points at 8a.',
         layers: ['lmo'],
         notes:
-          'Acid prime. Protons enter the 8a→16c pores and sit on framework oxygen — the OH vector points into the tetrahedral 8a cavity. That is the primed exchange site, not a random surface proton.',
+          'Acid prime. Protons enter the 8a→16c pores and sit on framework oxygen — the OH vector points into the tetrahedral 8a cavity. Once H is bound, the OH stretch dominates and mutes the Mn–O motion at that oxygen. The cubane no longer breathes as one: a disordered array of non-symmetric vibrations. That is why Raman blanks.',
       },
       {
         id: 'li-in',
@@ -433,6 +433,15 @@ export const slides: Slide[] = [
         layers: ['lmo'],
         notes:
           'Paper mechanism: Li first occupies structural interstitial tetrahedral (8a) voids — stable, back-exchangeable, no Mn loss yet. A₁g HWHM narrows as Li fills 8a. Each inbound Li pushes the priming H back out the same channel. Later migration into cubane 8b is what stresses the lattice.',
+      },
+      {
+        id: 'li-return',
+        label: 'Li returns',
+        kicker: 'Figs 4–5 · operando',
+        title: 'Li returns.\nRaman returns — changed.',
+        layers: ['raman'],
+        notes:
+          'As Li goes back in, XRD is still good. Raman pattern comes back — not identical to as-synthesized. licl2-1 Fit Series (Fig 5): A₁g jumps ~645→657 cm⁻¹ by ~3 min, FWHM narrows to ~8, then breakup near 28 min (peak ~632, FWHM ~53). Operando proof Li entered the lattice, not a capacity claim.',
       },
       {
         id: 'cloud',
@@ -523,7 +532,7 @@ export const slides: Slide[] = [
         title: 'The spinel comes back.',
         layers: ['cycle'],
         notes:
-          'Recyclable sorbent — empty spinel back to brine. Next: the XRD/Raman punchline — long-range order can look fine while the local cubane reporter goes dark, then comes back changed when Li returns.',
+          'Recyclable sorbent — empty spinel back to brine. Next: the XRD/Raman punchline — long-range order can look fine while the local cubane reporter goes dark.',
       },
       {
         id: 'as-synth',
@@ -542,15 +551,6 @@ export const slides: Slide[] = [
         layers: ['raman'],
         notes:
           'Acid prime / H-exchange: XRD stays good — the spinel framework is still there. But the Raman is basically gone. Diffraction would say “fine.” Local cubane symmetry says otherwise. That is why Raman is the reporter.',
-      },
-      {
-        id: 'li-return',
-        label: 'Li returns',
-        kicker: 'Figs 4–5 · operando',
-        title: 'Li returns.\nRaman returns — changed.',
-        layers: ['raman'],
-        notes:
-          'As Li goes back in, XRD is still good. Raman pattern comes back — not identical to as-synthesized. licl2-1 Fit Series (Fig 5): A₁g jumps ~645→657 cm⁻¹ by ~3 min, FWHM narrows to ~8, then breakup near 28 min (peak ~632, FWHM ~53). Operando proof Li entered the lattice, not a capacity claim.',
       },
       {
         id: 'cubane',

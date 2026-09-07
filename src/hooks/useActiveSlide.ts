@@ -30,7 +30,8 @@ export function useActiveSlide(
         tag === 'TEXTAREA' ||
         tag === 'SELECT' ||
         tag === 'BUTTON' ||
-        (e.target as HTMLElement)?.isContentEditable
+        (e.target as HTMLElement)?.isContentEditable ||
+        Boolean((e.target as HTMLElement)?.closest?.('[data-playhead]'))
       if (editable) return
       if (document.documentElement.hasAttribute('data-resource')) return
 
@@ -66,7 +67,7 @@ export function useActiveSlide(
       if (!(target instanceof Element)) return false
       return Boolean(
         target.closest(
-          'button, a, input, textarea, select, [role="listbox"], [role="menu"], aside',
+          'button, a, input, textarea, select, [role="listbox"], [role="menu"], aside, [data-playhead]',
         ),
       )
     }

@@ -13,9 +13,19 @@ const OH_LEN = 0.97
 const CELL = data.cell.a
 const HERO = 7
 
-const H_STAGGER = 0.45
-const H_TRAVEL = 3.2
-const H_START = 0.35
+export const H_STAGGER = 0.45
+export const H_TRAVEL = 3.2
+export const H_START = 0.35
+const OH_STRETCH_HZ = 2.82
+const OH_BEND_HZ = 1.88
+const OH_WAG_HZ = 2.24
+
+/** 0–1 as each inbound H finishes sitting on its oxygen (matches the OH-stick fade). */
+export function protonBind(t: number, i: number) {
+  const local = (t - H_START - i * H_STAGGER) / H_TRAVEL
+  const u = Math.min(1, Math.max(0, (local - 0.78) / 0.22))
+  return u * u * (3 - 2 * u)
+}
 
 const LI_GATHER = 2.6
 const LI_STAGGER = 0.55
@@ -65,6 +75,17 @@ function len(a: Vec3) {
 function norm(a: Vec3): Vec3 {
   const d = len(a) || 1
   return scale(a, 1 / d)
+}
+
+function cross(a: Vec3, b: Vec3): Vec3 {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+}
+
+function ohBasis(n: Vec3) {
+  const axis: Vec3 = Math.abs(n[1]) < 0.85 ? [0, 1, 0] : [1, 0, 0]
+  const u = norm(cross(n, axis))
+  const v = norm(cross(n, u))
+  return { n, u, v }
 }
 
 function minImage(d: number) {
@@ -173,14 +194,20 @@ export function ExchangeIons({
   reduced,
   scale,
   ride,
+  vibeOn = true,
 }: {
   phase: 'hydrogen' | 'lithium'
   active: boolean
   reduced: boolean
   scale: number
   ride: MutableRefObject<RideState>
+  vibeOn?: boolean
 }) {
   const sites = useMemo(() => buildExchangeSites(), [])
+  const ohAxes = useMemo(
+    () => sites.map((site) => ohBasis(norm(sub(site.hHome, site.oxygen)))),
+    [sites],
+  )
   const clock = useRef(0)
   const capturing = isCaptureMode()
   const hMesh = useRef<(THREE.Mesh | null)[]>([])
@@ -302,6 +329,16 @@ export function ExchangeIons({
         }
       }
 
+      if (phase === 'hydrogen' && vibeOn && !reduced && !capturing && oop > 0.04) {
+        const ax = ohAxes[i]
+        const stretch = Math.sin(t * Math.PI * 2 * OH_STRETCH_HZ + i * 1.73) * 0.28 * oop
+        const bend = Math.sin(t * Math.PI * 2 * OH_BEND_HZ + i * 2.11) * 0.16 * oop
+        const wag = Math.sin(t * Math.PI * 2 * OH_WAG_HZ + i * 0.67) * 0.12 * oop
+        hx += ax.n[0] * stretch + ax.u[0] * bend + ax.v[0] * wag
+        hy += ax.n[1] * stretch + ax.u[1] * bend + ax.v[1] * wag
+        hz += ax.n[2] * stretch + ax.u[2] * bend + ax.v[2] * wag
+      }
+
       if (h) h.position.set(hx, hy, hz)
       if (hm) {
         hm.opacity = hop
@@ -393,7 +430,7 @@ export function ExchangeIons({
               }}
               color={OH_COLOR}
               emissive={OH_COLOR}
-              emissiveIntensity={0.2}
+              emissiveIntensity={0.38}
               transparent
               opacity={0}
               roughness={0.4}

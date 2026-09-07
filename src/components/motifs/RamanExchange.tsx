@@ -1,8 +1,17 @@
 import { motion } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
 import data from '../../data/ramanExchange.json'
+import {
+  atTime,
+  smoothSeries,
+  vibeFromTrace,
+  VIBE_HEX,
+  VIBE_SYNTH,
+  VIBE_WORN,
+} from '../../lib/smoothSeries'
+import { CubaneInset } from './CubaneUnit'
 import styles from './Motifs.module.css'
 
 const W = 960
@@ -38,25 +47,6 @@ function easeOutCubic(t: number) {
   return 1 - (1 - t) ** 3
 }
 
-function interpSeries(points: { t: number; w: number }[], u: number): { t: number; w: number } {
-  if (!points.length) return { t: 0, w: 0 }
-  if (u <= 0) return points[0]
-  if (u >= 1) return points[points.length - 1]
-  const t0 = points[0].t
-  const t1 = points[points.length - 1].t
-  const target = t0 + u * (t1 - t0)
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i]
-    const b = points[i + 1]
-    if (target >= a.t && target <= b.t) {
-      const f = (target - a.t) / Math.max(1e-6, b.t - a.t)
-      return { t: target, w: a.w + f * (b.w - a.w) }
-    }
-  }
-  return points[points.length - 1]
-}
-
-/** Lorentzian-ish peak envelope from sparse peak list */
 function spectrumPath(
   peaks: { w: number; h: number }[],
   sx: (w: number) => number,
@@ -96,6 +86,14 @@ function xrdSticks(
   })
 }
 
+function svgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
+  const rect = svg.getBoundingClientRect()
+  return {
+    x: ((clientX - rect.left) / Math.max(1, rect.width)) * W,
+    y: ((clientY - rect.top) / Math.max(1, rect.height)) * H,
+  }
+}
+
 export function RamanExchange({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
@@ -108,7 +106,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const showOperando = phase === 'li-return'
   const showMn = phase === 'durability'
 
-  const leftW = showOperando ? half : storyMode ? half : 0
+  const leftW = showOperando || storyMode ? half : 0
   const rightW = showMn ? usable : half
   const leftOx = COPY_GUTTER
   const rightOx = showMn ? COPY_GUTTER : COPY_GUTTER + leftW + GAP
@@ -117,15 +115,26 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const plotWA = Math.max(1, leftW - PAD.l - PAD.r)
   const plotWR = Math.max(1, rightW - PAD.l - PAD.r)
 
+  const aSmooth = useMemo(
+    () => smoothSeries(data.a1g.points, { sigma: 1.0, range: 2.2, breakupT: 30, breakupSigma: 2.3 }),
+    [],
+  )
+  const fSmooth = useMemo(
+    () => smoothSeries(data.fwhm.points, { sigma: 0.9, range: 3.2, breakupT: 32, breakupSigma: 1.8 }),
+    [],
+  )
   const a = data.a1g
   const f = data.fwhm
+  const tMax = aSmooth[aSmooth.length - 1]?.t ?? a.xMax
+  const t0 = aSmooth[0]?.t ?? 0
+
   const sxA = (t: number) => leftOx + PAD.l + (t / a.xMax) * plotWA
   const syA = (w: number) => PAD.t + plotH - ((w - a.yMin) / (a.yMax - a.yMin)) * plotH
-  const aPts = a.points.map((p) => ({ x: sxA(p.t), y: syA(p.w) }))
+  const aPts = aSmooth.map((p) => ({ x: sxA(p.t), y: syA(p.w) }))
 
   const sxF = (t: number) => rightOx + PAD.l + (t / f.xMax) * plotWR
   const syF = (w: number) => PAD.t + plotH - ((w - f.yMin) / (f.yMax - f.yMin)) * plotH
-  const fPts = f.points.map((p) => ({ x: sxF(p.t), y: syF(p.w) }))
+  const fPts = fSmooth.map((p) => ({ x: sxF(p.t), y: syF(p.w) }))
 
   const m = data.mnLoss
   const sxM = (n: number) => rightOx + PAD.l + (n / m.xMax) * plotWR
@@ -133,45 +142,109 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const fullPts = m.fullLoad.map((p) => ({ x: sxM(p.n), y: syM(p.pct) }))
   const partPts = m.partialLoad.map((p) => ({ x: sxM(p.n), y: syM(p.pct) }))
 
-  const [progress, setProgress] = useState(1)
+  const [playT, setPlayT] = useState(t0)
+  const [dragging, setDragging] = useState(false)
+  const grabbed = useRef(false)
+  const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
+    grabbed.current = false
+    setDragging(false)
     if (!active || !showOperando) {
-      setProgress(showOperando ? 1 : 0)
+      setPlayT(showOperando ? 8 : t0)
       return
     }
     if (reduced) {
-      setProgress(1)
+      setPlayT(8)
       return
     }
-    setProgress(0)
+    setPlayT(t0)
     const start = performance.now()
-    const dur = 2800
+    const dur = 3200
+    const endT = 32
     let raf = 0
     const tick = (now: number) => {
+      if (grabbed.current) return
       const u = easeOutCubic(Math.min(1, (now - start) / dur))
-      setProgress(u)
+      setPlayT(t0 + u * (endT - t0))
       if (u < 1) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [active, showOperando, reduced, beatKey])
+  }, [active, showOperando, reduced, beatKey, t0])
 
-  const live = interpSeries(a.points, progress)
-  const liveF = interpSeries(f.points, progress)
-  const cursor = { x: sxA(live.t), y: syA(live.w) }
-  const cursorF = { x: sxF(liveF.t), y: syF(liveF.w) }
+  const setTimeFromClient = useCallback(
+    (clientX: number, clientY: number) => {
+      const svg = svgRef.current
+      if (!svg) return
+      const { x, y } = svgPoint(svg, clientX, clientY)
+      const inY = y >= PAD.t - 8 && y <= PAD.t + plotH + 16
+      const inA = inY && x >= leftOx + PAD.l - 10 && x <= leftOx + PAD.l + plotWA + 10
+      const inF = inY && x >= rightOx + PAD.l - 10 && x <= rightOx + PAD.l + plotWR + 10
+      if (!inA && !inF) return
+      const ox = inA ? leftOx : rightOx
+      const pw = inA ? plotWA : plotWR
+      const xmax = inA ? a.xMax : f.xMax
+      const t = ((x - ox - PAD.l) / Math.max(1, pw)) * xmax
+      setPlayT(Math.max(t0, Math.min(tMax, t)))
+    },
+    [leftOx, rightOx, plotWA, plotWR, plotH, a.xMax, f.xMax, t0, tMax],
+  )
+
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!showOperando) return
+    const svg = svgRef.current
+    if (!svg) return
+    const { x, y } = svgPoint(svg, e.clientX, e.clientY)
+    const inY = y >= PAD.t - 8 && y <= PAD.t + plotH + 16
+    const inA = inY && x >= leftOx + PAD.l - 10 && x <= leftOx + PAD.l + plotWA + 10
+    const inF = inY && x >= rightOx + PAD.l - 10 && x <= rightOx + PAD.l + plotWR + 10
+    if (!inA && !inF) return
+    grabbed.current = true
+    setDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setTimeFromClient(e.clientX, e.clientY)
+  }
+
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!dragging) return
+    setTimeFromClient(e.clientX, e.clientY)
+  }
+
+  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!dragging) return
+    setDragging(false)
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    }
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
+    if (!showOperando) return
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault()
+      e.stopPropagation()
+      grabbed.current = true
+      const step = e.shiftKey ? 5 : 1
+      const next = playT + (e.key === 'ArrowRight' ? step : -step)
+      setPlayT(Math.max(t0, Math.min(tMax, next)))
+    }
+  }
+
+  const liveW = atTime(aSmooth, playT)
+  const liveFwhm = atTime(fSmooth, playT)
+  const cursor = { x: sxA(playT), y: syA(liveW) }
+  const cursorF = { x: sxF(playT), y: syF(liveFwhm) }
 
   const pathD = linePath(aPts)
   const fillD = aPts.length
-    ? `${pathD} L ${sxA(a.points[a.points.length - 1].t)} ${PAD.t + plotH} L ${sxA(a.points[0].t)} ${PAD.t + plotH} Z`
+    ? `${pathD} L ${sxA(aSmooth[aSmooth.length - 1].t)} ${PAD.t + plotH} L ${sxA(aSmooth[0].t)} ${PAD.t + plotH} Z`
     : ''
   const fPathD = linePath(fPts)
 
-  // Story panels — XRD left, Raman right
   const xrdAmp = 1
   const ramanAmp = phase === 'h-ex' ? 0.06 : 1
-  const ramanPeaks = phase === 'h-ex' ? data.ramanSynth : data.ramanSynth
+  const ramanPeaks = data.ramanSynth
   const ramanNoise = phase === 'h-ex' ? 0.08 : 0
 
   const sxXrd = (t: number) => leftOx + PAD.l + ((t - 10) / 60) * plotWA
@@ -185,12 +258,59 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const syRam = (h: number) => PAD.t + plotH - h * plotH * 0.92
   const ramanPath = spectrumPath(ramanPeaks, sxRam, syRam, 450, 800, ramanAmp, ramanNoise)
 
+  const vibe = showOperando
+    ? vibeFromTrace(liveW, liveFwhm)
+    : phase === 'h-ex'
+      ? VIBE_HEX
+      : phase === 'durability'
+        ? VIBE_WORN
+        : VIBE_SYNTH
+
+  const cubaneCaption = showOperando
+    ? vibe.mute > 0.45
+      ? `A₁g breakup · ${Math.round(liveW)} cm⁻¹`
+      : vibe.disorder > 0.45
+        ? `modes split · Γ ${Math.round(liveFwhm)}`
+        : `A₁g breathe · ${Math.round(liveW)} cm⁻¹`
+    : phase === 'h-ex'
+      ? 'OH mutes Mn–O · disordered'
+      : phase === 'durability'
+        ? 'Partial load keeps the cubane'
+        : 'A₁g · Mn₄O₄ breathe'
+
   const stateLabel =
-    phase === 'as-synth' ? 'As-synthesized LMO' : phase === 'h-ex' ? 'H-exchanged' : phase === 'li-return' ? 'Li back in' : 'Durability'
+    phase === 'as-synth'
+      ? 'As-synthesized LMO'
+      : phase === 'h-ex'
+        ? 'H-exchanged'
+        : phase === 'li-return'
+          ? 'Li back in'
+          : 'Durability'
+
+  const reveal = showOperando ? Math.max(0.2, Math.min(1, playT / 8)) : 1
 
   return (
     <div className={styles.plot} aria-label={label || 'LMO XRD stays good; Raman blanks then returns changed'}>
-      <svg viewBox={`0 0 ${W} ${H}`} className={styles.plotSvg} role="img">
+      <CubaneInset active={active} vibe={vibe} caption={cubaneCaption} />
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${W} ${H}`}
+        className={styles.plotSvg}
+        role={showOperando ? 'slider' : 'img'}
+        tabIndex={showOperando ? 0 : undefined}
+        data-playhead={showOperando || undefined}
+        data-dragging={dragging || undefined}
+        aria-valuemin={t0}
+        aria-valuemax={tMax}
+        aria-valuenow={Math.round(playT)}
+        aria-valuetext={`${playT.toFixed(0)} min · ${Math.round(liveW)} cm⁻¹ · Γ ${Math.round(liveFwhm)}`}
+        aria-label="Operando A₁g playhead. Drag to scrub time."
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onKeyDown={onKeyDown}
+      >
         <defs>
           <linearGradient id="ramanFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={C_PEAK} stopOpacity="0.38" />
@@ -208,23 +328,21 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           </clipPath>
         </defs>
 
-        {/* Story gutter */}
         {(storyMode || showOperando) && (
           <g opacity={active ? 1 : 0.45}>
-            <text x={148} y={210} textAnchor="middle" className={styles.plotAnnotate} fontSize={15}>
+            <text x={148} y={118} textAnchor="middle" className={styles.plotAnnotate} fontSize={15}>
               {stateLabel}
             </text>
-            <text x={148} y={232} textAnchor="middle" className={styles.plotTick}>
+            <text x={148} y={140} textAnchor="middle" className={styles.plotTick}>
               XRD keeps the lattice
             </text>
-            <text x={148} y={250} textAnchor="middle" className={styles.plotTick}>
+            <text x={148} y={158} textAnchor="middle" className={styles.plotTick}>
               Raman reads the cubane
             </text>
-            {/* Three-step rail */}
             {[
-              { id: 'as-synth', y: 300, label: '1 · as-synth' },
-              { id: 'h-ex', y: 340, label: '2 · H-exchange' },
-              { id: 'li-return', y: 380, label: '3 · Li returns' },
+              { id: 'as-synth', y: 188, label: '1 · as-synth' },
+              { id: 'h-ex', y: 222, label: '2 · H-exchange' },
+              { id: 'li-return', y: 256, label: '3 · Li returns' },
             ].map((step) => {
               const on = phase === step.id || (phase === 'li-return' && step.id === 'li-return')
               const done =
@@ -232,12 +350,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 (phase === 'li-return' && step.id !== 'li-return')
               return (
                 <g key={step.id} opacity={on || done ? 1 : 0.35}>
-                  <circle
-                    cx={60}
-                    cy={step.y}
-                    r={5}
-                    fill={on ? C_PEAK : done ? C_XRD : C_GONE}
-                  />
+                  <circle cx={60} cy={step.y} r={5} fill={on ? C_PEAK : done ? C_XRD : C_GONE} />
                   <text x={74} y={step.y + 4} className={styles.plotTick} fill={on ? '#f3eee4' : undefined}>
                     {step.label}
                   </text>
@@ -247,7 +360,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           </g>
         )}
 
-        {/* ── Story: XRD | Raman ───────────────────────── */}
         {storyMode && (
           <>
             <g>
@@ -264,13 +376,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 y2={PAD.t + plotH}
                 stroke={C_AXIS}
               />
-              <line
-                x1={leftOx + PAD.l}
-                y1={PAD.t}
-                x2={leftOx + PAD.l}
-                y2={PAD.t + plotH}
-                stroke={C_AXIS}
-              />
+              <line x1={leftOx + PAD.l} y1={PAD.t} x2={leftOx + PAD.l} y2={PAD.t + plotH} stroke={C_AXIS} />
               {sticks.map((s, i) => (
                 <motion.line
                   key={i}
@@ -306,9 +412,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 Raman
               </text>
               <text x={rightOx + PAD.l} y={48} className={styles.plotTick}>
-                {phase === 'h-ex'
-                  ? 'A₁g cubane stretch · basically gone'
-                  : 'A₁g cubane stretch · strong'}
+                {phase === 'h-ex' ? 'A₁g cubane stretch · basically gone' : 'A₁g cubane stretch · strong'}
               </text>
               <line
                 x1={rightOx + PAD.l}
@@ -317,13 +421,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 y2={PAD.t + plotH}
                 stroke={C_AXIS}
               />
-              <line
-                x1={rightOx + PAD.l}
-                y1={PAD.t}
-                x2={rightOx + PAD.l}
-                y2={PAD.t + plotH}
-                stroke={C_AXIS}
-              />
+              <line x1={rightOx + PAD.l} y1={PAD.t} x2={rightOx + PAD.l} y2={PAD.t + plotH} stroke={C_AXIS} />
               <motion.path
                 d={ramanPath}
                 fill="none"
@@ -352,7 +450,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           </>
         )}
 
-        {/* ── Li return: Fig 5 operando ─────────────────── */}
         {showOperando && (
           <>
             <g>
@@ -360,7 +457,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 A₁g peak · Li back in
               </text>
               <text x={leftOx + PAD.l} y={48} className={styles.plotTick}>
-                Fig 5B · licl2-1 fit · Raman returns — changed
+                Fig 5B · smoothed licl2-1 · drag the marker
               </text>
               <line
                 x1={leftOx + PAD.l}
@@ -369,29 +466,24 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 y2={PAD.t + plotH}
                 stroke={C_AXIS}
               />
-              <line
-                x1={leftOx + PAD.l}
-                y1={PAD.t}
-                x2={leftOx + PAD.l}
-                y2={PAD.t + plotH}
-                stroke={C_AXIS}
-              />
+              <line x1={leftOx + PAD.l} y1={PAD.t} x2={leftOx + PAD.l} y2={PAD.t + plotH} stroke={C_AXIS} />
               {[630, 645, 660].map((w) => (
                 <g key={w}>
-                  <line
-                    x1={leftOx + PAD.l}
-                    y1={syA(w)}
-                    x2={leftOx + PAD.l + plotWA}
-                    y2={syA(w)}
-                    stroke={C_GRID}
-                  />
+                  <line x1={leftOx + PAD.l} y1={syA(w)} x2={leftOx + PAD.l + plotWA} y2={syA(w)} stroke={C_GRID} />
                   <text x={leftOx + PAD.l - 8} y={syA(w) + 4} textAnchor="end" className={styles.plotTick}>
                     {w}
                   </text>
                 </g>
               ))}
+              <rect
+                x={leftOx + PAD.l}
+                y={PAD.t}
+                width={plotWA}
+                height={plotH}
+                fill="transparent"
+              />
               <g clipPath="url(#ramanLeftClip)">
-                <path d={fillD} fill="url(#ramanFill)" opacity={active ? Math.min(1, progress * 1.2) : 0} />
+                <path d={fillD} fill="url(#ramanFill)" opacity={active ? reveal : 0} />
                 <path
                   d={pathD}
                   fill="none"
@@ -399,17 +491,11 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  pathLength={1}
-                  strokeDasharray={1}
-                  strokeDashoffset={1 - (active ? progress : 0)}
                 />
               </g>
               {a.markers.map((mk) => {
-                const revealed = live.t >= mk.t - 0.5
-                const onCurve = interpSeries(
-                  a.points,
-                  (mk.t - a.points[0].t) / (a.points[a.points.length - 1].t - a.points[0].t),
-                )
+                const revealed = playT >= mk.t - 0.5
+                const onCurve = atTime(aSmooth, mk.t)
                 const nearEnd = mk.t >= 25
                 return (
                   <g key={mk.t} opacity={active && revealed ? 1 : 0}>
@@ -423,7 +509,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                     />
                     <text
                       x={sxA(mk.t) + (nearEnd ? -6 : 6)}
-                      y={syA(onCurve.w) + (nearEnd ? 20 : -12)}
+                      y={syA(onCurve) + (nearEnd ? 20 : -12)}
                       textAnchor={nearEnd ? 'end' : 'start'}
                       className={styles.plotAnnotate}
                       fontSize={13}
@@ -435,9 +521,18 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               })}
               {active && (
                 <g>
-                  <circle cx={cursor.x} cy={cursor.y} r={6} fill={C_PEAK} />
+                  <line
+                    x1={cursor.x}
+                    y1={PAD.t}
+                    x2={cursor.x}
+                    y2={PAD.t + plotH}
+                    stroke={C_PEAK}
+                    strokeOpacity={0.35}
+                  />
+                  <circle cx={cursor.x} cy={cursor.y} r={16} fill={C_PEAK} fillOpacity={0.12} />
+                  <circle cx={cursor.x} cy={cursor.y} r={7} fill={C_PEAK} />
                   <text x={cursor.x + 12} y={cursor.y - 12} className={styles.plotHiLabel} fontSize={20}>
-                    {Math.round(live.w)}
+                    {Math.round(liveW)}
                     <tspan className={styles.plotTick} fontSize={12} dx={3}>
                       cm⁻¹
                     </tspan>
@@ -459,7 +554,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 A₁g FWHM
               </text>
               <text x={rightOx + PAD.l} y={48} className={styles.plotTick}>
-                Fig 5A · licl2-1 FWHM · narrows then breakup spike
+                Fig 5A · smoothed · same playhead
               </text>
               <line
                 x1={rightOx + PAD.l}
@@ -468,32 +563,27 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 y2={PAD.t + plotH}
                 stroke={C_AXIS}
               />
-              <line
-                x1={rightOx + PAD.l}
-                y1={PAD.t}
-                x2={rightOx + PAD.l}
-                y2={PAD.t + plotH}
-                stroke={C_AXIS}
-              />
+              <line x1={rightOx + PAD.l} y1={PAD.t} x2={rightOx + PAD.l} y2={PAD.t + plotH} stroke={C_AXIS} />
               {[0, 25, 50].map((w) => (
                 <g key={w}>
-                  <line
-                    x1={rightOx + PAD.l}
-                    y1={syF(w)}
-                    x2={rightOx + PAD.l + plotWR}
-                    y2={syF(w)}
-                    stroke={C_GRID}
-                  />
+                  <line x1={rightOx + PAD.l} y1={syF(w)} x2={rightOx + PAD.l + plotWR} y2={syF(w)} stroke={C_GRID} />
                   <text x={rightOx + PAD.l - 8} y={syF(w) + 4} textAnchor="end" className={styles.plotTick}>
                     {w}
                   </text>
                 </g>
               ))}
+              <rect
+                x={rightOx + PAD.l}
+                y={PAD.t}
+                width={plotWR}
+                height={plotH}
+                fill="transparent"
+              />
               <g clipPath="url(#ramanRightClip)">
                 <path
-                  d={`${fPathD} L ${sxF(f.points[f.points.length - 1].t)} ${PAD.t + plotH} L ${sxF(f.points[0].t)} ${PAD.t + plotH} Z`}
+                  d={`${fPathD} L ${sxF(fSmooth[fSmooth.length - 1].t)} ${PAD.t + plotH} L ${sxF(fSmooth[0].t)} ${PAD.t + plotH} Z`}
                   fill="url(#fwhmFill)"
-                  opacity={active ? Math.min(1, progress * 1.2) : 0}
+                  opacity={active ? reveal : 0}
                 />
                 <path
                   d={fPathD}
@@ -502,16 +592,22 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  pathLength={1}
-                  strokeDasharray={1}
-                  strokeDashoffset={1 - (active ? progress : 0)}
                 />
               </g>
               {active && (
                 <g>
-                  <circle cx={cursorF.x} cy={cursorF.y} r={5} fill={C_FWHM} />
+                  <line
+                    x1={cursorF.x}
+                    y1={PAD.t}
+                    x2={cursorF.x}
+                    y2={PAD.t + plotH}
+                    stroke={C_FWHM}
+                    strokeOpacity={0.35}
+                  />
+                  <circle cx={cursorF.x} cy={cursorF.y} r={14} fill={C_FWHM} fillOpacity={0.12} />
+                  <circle cx={cursorF.x} cy={cursorF.y} r={6} fill={C_FWHM} />
                   <text x={cursorF.x + 10} y={cursorF.y - 10} className={styles.plotAnnotate} fontSize={15}>
-                    {Math.round(liveF.w)} cm⁻¹
+                    {Math.round(liveFwhm)} cm⁻¹
                   </text>
                 </g>
               )}
@@ -527,7 +623,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           </>
         )}
 
-        {/* ── Durability ───────────────────────────────── */}
         {showMn && (
           <g>
             <text x={rightOx + PAD.l} y={28} className={styles.plotAnnotate}>
@@ -543,22 +638,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               y2={PAD.t + plotH}
               stroke={C_AXIS}
             />
-            <line
-              x1={rightOx + PAD.l}
-              y1={PAD.t}
-              x2={rightOx + PAD.l}
-              y2={PAD.t + plotH}
-              stroke={C_AXIS}
-            />
+            <line x1={rightOx + PAD.l} y1={PAD.t} x2={rightOx + PAD.l} y2={PAD.t + plotH} stroke={C_AXIS} />
             {[0, 12, 24].map((pct) => (
               <g key={pct}>
-                <line
-                  x1={rightOx + PAD.l}
-                  y1={syM(pct)}
-                  x2={rightOx + PAD.l + plotWR}
-                  y2={syM(pct)}
-                  stroke={C_GRID}
-                />
+                <line x1={rightOx + PAD.l} y1={syM(pct)} x2={rightOx + PAD.l + plotWR} y2={syM(pct)} stroke={C_GRID} />
                 <text x={rightOx + PAD.l - 8} y={syM(pct) + 4} textAnchor="end" className={styles.plotTick}>
                   {pct}%
                 </text>
@@ -628,15 +711,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               <text x={34} y={4} className={styles.plotTick}>
                 full Li/H
               </text>
-              <line
-                x1={110}
-                y1={0}
-                x2={138}
-                y2={0}
-                stroke={C_FWHM}
-                strokeWidth={2.5}
-                strokeDasharray="7 5"
-              />
+              <line x1={110} y1={0} x2={138} y2={0} stroke={C_FWHM} strokeWidth={2.5} strokeDasharray="7 5" />
               <text x={144} y={4} className={styles.plotTick}>
                 stop-before-max
               </text>

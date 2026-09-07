@@ -6,7 +6,9 @@ import data from '../../data/lmoSpinel.json'
 import raman from '../../data/ramanExchange.json'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
-import { ExchangeIons, H_COLOR, type RideState } from './LmoExchange'
+import { isCaptureMode } from '../../lib/asset'
+import { buildExchangeSites, ExchangeIons, H_COLOR, OH_COLOR, protonBind, type RideState } from './LmoExchange'
+import { CubaneUnit, type CubaneData } from './CubaneUnit'
 import styles from './Motifs.module.css'
 
 const SCALE = 0.42
@@ -40,7 +42,7 @@ function phaseForBeat(id?: string): Phase {
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
   voids: 'VdW empty space · Mn/O spheres · Li removed',
-  hydrogen: 'H enters · sits on O · OH → 8a',
+  hydrogen: 'OH dominates · Mn–O muted at H–O',
   lithium: 'Li in · H out the pore',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
@@ -204,6 +206,10 @@ function VoidSurface({ pore }: { pore: boolean }) {
 type VoidAtom = { element: string; x: number; y: number; z: number }
 
 const ATOM_DRAW = { Mn: 0.36, O: 0.24 }
+const VDW_DRAW = {
+  Mn: Number(data.void.radii?.Mn ?? 2),
+  O: Number(data.void.radii?.O ?? 1.52),
+}
 const MN_O_MIN = 1.4
 const MN_O_MAX = 2.25
 
@@ -314,15 +320,57 @@ function VibratingCell({
   const atomRefs = useRef<(THREE.Mesh | null)[]>([])
   const bondA = useRef<(THREE.Mesh | null)[]>([])
   const bondB = useRef<(THREE.Mesh | null)[]>([])
+  const elapsed = useRef(0)
+  const muteOf = useRef<Float32Array>(new Float32Array(0))
   const kind = vibeKind(phase)
+  const capturing = isCaptureMode()
+  const vdw = phase === 'voids'
+  const clip = useMemo(() => (vdw ? cellClipPlanes() : null), [vdw])
+  const rMn = vdw ? VDW_DRAW.Mn : ATOM_DRAW.Mn
+  const rO = vdw ? VDW_DRAW.O : ATOM_DRAW.O
+  const protonated = useMemo(() => {
+    const sites = buildExchangeSites()
+    const { atoms } = model
+    return sites.map((site, siteIndex) => {
+      let oIndex = -1
+      let bestD = Infinity
+      for (let i = 0; i < atoms.length; i++) {
+        if (atoms[i].element !== 'O') continue
+        const d = Math.hypot(
+          atoms[i].x - site.oxygen[0],
+          atoms[i].y - site.oxygen[1],
+          atoms[i].z - site.oxygen[2],
+        )
+        if (d < bestD) {
+          bestD = d
+          oIndex = i
+        }
+      }
+      return { oIndex, siteIndex }
+    }).filter((p) => p.oIndex >= 0)
+  }, [model])
 
-  useFrame(({ clock }) => {
+  useEffect(() => {
+    elapsed.current = 0
+  }, [phase])
+
+  useFrame(({ clock }, dt) => {
     const { atoms, bonds, neighbors } = model
     const n = atoms.length
     const on = vibeOn && active && !reduced
     const t = clock.getElapsedTime()
-    const baseAmp = kind === 'damped' ? 0.07 : kind === 'stiff' ? 0.11 : 0.14
-    const baseHz = kind === 'damped' ? 0.72 : kind === 'stiff' ? 1.32 : 1.05
+    if (phase === 'hydrogen' && active && !reduced) elapsed.current += dt
+    const protonT = capturing ? 99 : elapsed.current
+    if (muteOf.current.length !== n) muteOf.current = new Float32Array(n)
+    muteOf.current.fill(0)
+    if (kind === 'damped') {
+      for (const p of protonated) {
+        const bind = protonBind(protonT, p.siteIndex)
+        muteOf.current[p.oIndex] = Math.max(muteOf.current[p.oIndex], bind)
+      }
+    }
+    const baseAmp = kind === 'damped' ? 0.05 : kind === 'stiff' ? 0.11 : 0.14
+    const baseHz = kind === 'damped' ? 0.68 : kind === 'stiff' ? 1.32 : 1.05
 
     for (let i = 0; i < n; i++) {
       const atom = atoms[i]
@@ -343,13 +391,25 @@ function VibratingCell({
           ux /= len
           uy /= len
           uz /= len
-          const local = kind === 'damped' ? (i * 1.7 + j * 0.31) : 0
-          const hz = kind === 'damped' ? baseHz + ((i * 13) % 7) * 0.08 : baseHz
-          const s = Math.sin(t * Math.PI * 2 * hz + local) * baseAmp
+          const bondMute = muteOf.current[i] > muteOf.current[j] ? muteOf.current[i] : muteOf.current[j]
+          const amp = baseAmp * (1 - 0.94 * bondMute)
+          const local = kind === 'damped' ? i * 2.41 + j * 0.73 : 0
+          const hz = kind === 'damped' ? baseHz + ((i * 17 + j * 9) % 13) * 0.13 : baseHz
+          const s = Math.sin(t * Math.PI * 2 * hz + local) * amp
           const w = atom.element === 'Mn' ? 0.35 : 1
           dx += ux * s * w
           dy += uy * s * w
           dz += uz * s * w
+          if (kind === 'damped' && bondMute < 0.2) {
+            const px = uy * 0.55 - uz * 0.35
+            const py = uz * 0.55 - ux * 0.35
+            const pz = ux * 0.55 - uy * 0.35
+            const plen = Math.hypot(px, py, pz) || 1
+            const jitter = Math.sin(t * Math.PI * 2 * (hz + 0.41) + i * 1.9) * amp * 0.45
+            dx += (px / plen) * jitter * w
+            dy += (py / plen) * jitter * w
+            dz += (pz / plen) * jitter * w
+          }
         }
         const count = Math.max(1, links.length)
         x += dx / count
@@ -374,26 +434,27 @@ function VibratingCell({
 
   return (
     <group>
-      {model.bonds.map((bond, i) => (
-        <group key={`b-${i}`}>
-          <mesh
-            ref={(el) => {
-              bondA.current[i] = el
-            }}
-          >
-            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
-            <meshStandardMaterial color={MN_COLOR} roughness={0.4} metalness={0.2} />
-          </mesh>
-          <mesh
-            ref={(el) => {
-              bondB.current[i] = el
-            }}
-          >
-            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
-            <meshStandardMaterial color={O_COLOR} roughness={0.4} metalness={0.15} />
-          </mesh>
-        </group>
-      ))}
+      {!vdw &&
+        model.bonds.map((bond, i) => (
+          <group key={`b-${i}`}>
+            <mesh
+              ref={(el) => {
+                bondA.current[i] = el
+              }}
+            >
+              <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
+              <meshStandardMaterial color={MN_COLOR} roughness={0.4} metalness={0.2} />
+            </mesh>
+            <mesh
+              ref={(el) => {
+                bondB.current[i] = el
+              }}
+            >
+              <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
+              <meshStandardMaterial color={O_COLOR} roughness={0.4} metalness={0.15} />
+            </mesh>
+          </group>
+        ))}
       {model.atoms.map((atom, i) => (
         <mesh
           key={i}
@@ -403,11 +464,13 @@ function VibratingCell({
           position={[atom.x, atom.y, atom.z]}
           renderOrder={2}
         >
-          <sphereGeometry args={[atom.element === 'Mn' ? ATOM_DRAW.Mn : ATOM_DRAW.O, 20, 20]} />
+          <sphereGeometry args={[atom.element === 'Mn' ? rMn : rO, vdw ? 28 : 20, vdw ? 28 : 20]} />
           <meshStandardMaterial
             color={atom.element === 'Mn' ? MN_COLOR : O_COLOR}
             roughness={0.34}
             metalness={atom.element === 'Mn' ? 0.22 : 0.1}
+            clippingPlanes={clip ?? undefined}
+            clipShadows={Boolean(clip)}
           />
         </mesh>
       ))}
@@ -415,221 +478,6 @@ function VibratingCell({
   )
 }
 
-type CubaneData = {
-  center: number[]
-  mn: number[][]
-  coreO: number[][]
-  terminalO: number[][]
-  bonds: { mn: number; o: number[]; core: boolean }[]
-}
-
-function BondStick({
-  a,
-  b,
-  colorA,
-  colorB,
-}: {
-  a: [number, number, number]
-  b: [number, number, number]
-  colorA: string
-  colorB: string
-}) {
-  const mid = useMemo(() => {
-    const A = new THREE.Vector3(...a)
-    const B = new THREE.Vector3(...b)
-    const dir = new THREE.Vector3().subVectors(B, A)
-    const len = dir.length()
-    const quat = new THREE.Quaternion()
-    quat.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize())
-    const half = A.clone().add(B).multiplyScalar(0.5)
-    const aMid = A.clone().lerp(half, 0.5)
-    const bMid = B.clone().lerp(half, 0.5)
-    return { len, quat, aMid, bMid }
-  }, [a, b])
-
-  return (
-    <group>
-      <mesh position={mid.aMid.toArray()} quaternion={mid.quat}>
-        <cylinderGeometry args={[0.07, 0.07, mid.len * 0.5, 8]} />
-        <meshStandardMaterial color={colorA} roughness={0.4} metalness={0.2} />
-      </mesh>
-      <mesh position={mid.bMid.toArray()} quaternion={mid.quat}>
-        <cylinderGeometry args={[0.07, 0.07, mid.len * 0.5, 8]} />
-        <meshStandardMaterial color={colorB} roughness={0.4} metalness={0.15} />
-      </mesh>
-    </group>
-  )
-}
-
-/** Radial A₁g displacement arrow (cone + shaft) */
-function ModeArrow({
-  from,
-  dir,
-  color,
-  amp,
-}: {
-  from: [number, number, number]
-  dir: THREE.Vector3
-  color: string
-  amp: number
-}) {
-  const geom = useMemo(() => {
-    const u = dir.clone().normalize()
-    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), u)
-    const baseLen = 0.95
-    const tip = 0.28
-    const start = new THREE.Vector3(...from).addScaledVector(u, 0.35)
-    const shaftMid = start.clone().addScaledVector(u, (baseLen * 0.5) * (0.85 + amp * 0.35))
-    const tipPos = start.clone().addScaledVector(u, baseLen * (0.85 + amp * 0.35) + tip * 0.35)
-    return { quat, shaftMid, tipPos, shaftLen: baseLen * (0.85 + amp * 0.35) }
-  }, [from, dir, amp])
-
-  return (
-    <group>
-      <mesh position={geom.shaftMid.toArray()} quaternion={geom.quat}>
-        <cylinderGeometry args={[0.055, 0.055, geom.shaftLen, 8]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} roughness={0.35} />
-      </mesh>
-      <mesh position={geom.tipPos.toArray()} quaternion={geom.quat}>
-        <coneGeometry args={[0.14, 0.32, 10]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.45} roughness={0.3} />
-      </mesh>
-    </group>
-  )
-}
-
-/**
- * Ball-and-stick Mn₄O₄ cubane + terminal O of four face-shared MnO₆.
- * A₁g: Mn (copper) and core O (mineral blue) displace radially outward.
- */
-function CubaneUnit({
-  cubane,
-  active,
-  reduced,
-  vibeOn,
-}: {
-  cubane: CubaneData
-  active: boolean
-  reduced: boolean
-  vibeOn: boolean
-}) {
-  const breath = useRef(0)
-  const atomGroup = useRef<THREE.Group>(null)
-
-  const center = cubane.center as [number, number, number]
-  const mnLocal = useMemo(
-    () => cubane.mn.map((m) => [m[0] - center[0], m[1] - center[1], m[2] - center[2]] as [number, number, number]),
-    [cubane.mn, center],
-  )
-  const coreLocal = useMemo(
-    () =>
-      cubane.coreO.map(
-        (o) => [o[0] - center[0], o[1] - center[1], o[2] - center[2]] as [number, number, number],
-      ),
-    [cubane.coreO, center],
-  )
-  const termLocal = useMemo(
-    () =>
-      cubane.terminalO.map(
-        (o) => [o[0] - center[0], o[1] - center[1], o[2] - center[2]] as [number, number, number],
-      ),
-    [cubane.terminalO, center],
-  )
-  const bondsLocal = useMemo(
-    () =>
-      cubane.bonds.map((b) => ({
-        mn: mnLocal[b.mn],
-        o: [b.o[0] - center[0], b.o[1] - center[1], b.o[2] - center[2]] as [number, number, number],
-      })),
-    [cubane.bonds, mnLocal, center],
-  )
-
-  useFrame(({ clock }) => {
-    const t = active && !reduced && vibeOn ? Math.sin(clock.getElapsedTime() * Math.PI * 2 * 1.05) : 0
-    breath.current = t
-    const root = atomGroup.current
-    if (!root) return
-    // Displace core Mn and O along radial vectors (A₁g breathe)
-    let idx = 0
-    for (const m of mnLocal) {
-      const child = root.children[idx++]
-      if (!child) continue
-      const u = new THREE.Vector3(...m).normalize()
-      child.position.set(m[0] + u.x * t * 0.22, m[1] + u.y * t * 0.22, m[2] + u.z * t * 0.22)
-    }
-    for (const o of coreLocal) {
-      const child = root.children[idx++]
-      if (!child) continue
-      const u = new THREE.Vector3(...o).normalize()
-      child.position.set(o[0] + u.x * t * 0.18, o[1] + u.y * t * 0.18, o[2] + u.z * t * 0.18)
-    }
-  })
-
-  const amp = active && !reduced && vibeOn ? 0.5 + 0.5 * Math.max(0, breath.current) : 0.35
-
-  return (
-    <group position={center}>
-      {bondsLocal.map((b, i) => (
-        <BondStick key={i} a={b.mn} b={b.o} colorA={MN_COLOR} colorB={O_COLOR} />
-      ))}
-
-      <group ref={atomGroup}>
-        {mnLocal.map((m, i) => (
-          <mesh key={`mn-${i}`} position={m}>
-            <sphereGeometry args={[0.38, 28, 28]} />
-            <meshStandardMaterial
-              color={MN_COLOR}
-              roughness={0.28}
-              metalness={0.35}
-              emissive={MN_COLOR}
-              emissiveIntensity={0.12}
-            />
-          </mesh>
-        ))}
-        {coreLocal.map((o, i) => (
-          <mesh key={`co-${i}`} position={o}>
-            <sphereGeometry args={[0.26, 24, 24]} />
-            <meshStandardMaterial
-              color={O_COLOR}
-              roughness={0.32}
-              metalness={0.12}
-              emissive={O_COLOR}
-              emissiveIntensity={0.1}
-            />
-          </mesh>
-        ))}
-      </group>
-
-      {termLocal.map((o, i) => (
-        <mesh key={`to-${i}`} position={o}>
-          <sphereGeometry args={[0.24, 20, 20]} />
-          <meshStandardMaterial color={O_COLOR} roughness={0.38} metalness={0.08} />
-        </mesh>
-      ))}
-
-      {vibeOn &&
-        mnLocal.map((m, i) => (
-          <ModeArrow
-            key={`amn-${i}`}
-            from={m}
-            dir={new THREE.Vector3(...m)}
-            color={ARROW_MN}
-            amp={amp}
-          />
-        ))}
-      {vibeOn &&
-        coreLocal.map((o, i) => (
-          <ModeArrow
-            key={`ao-${i}`}
-            from={o}
-            dir={new THREE.Vector3(...o)}
-            color={ARROW_O}
-            amp={amp}
-          />
-        ))}
-    </group>
-  )
-}
 
 function Scene({
   active,
@@ -695,6 +543,7 @@ function Scene({
             reduced={reduced}
             scale={SCALE}
             ride={ride}
+            vibeOn={vibeOn}
           />
         )}
         {showCubane && heroCubane && (
@@ -824,8 +673,8 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
         w: 647.8,
         fwhm: 14.1 + 26 * ease,
         amp: 1 - 0.9 * ease,
-        label: ease < 0.2 ? 'As-synth · A₁g on' : 'H-exchange · A₁g collapsing',
-        mode: 'MnO₆ modes decohere',
+        label: ease < 0.2 ? 'As-synth · A₁g on' : ease < 0.7 ? 'H-exchange · A₁g collapsing' : 'OH stretch · A₁g gone',
+        mode: 'OH dominates · MnO muted',
         kind,
       }
     }
@@ -919,6 +768,7 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
               { color: MN_COLOR, label: 'Mn' },
               { color: O_COLOR, label: 'O' },
               { color: H_COLOR, label: 'H' },
+              { color: OH_COLOR, label: 'OH' },
             ]
           : phase === 'lithium'
             ? [
