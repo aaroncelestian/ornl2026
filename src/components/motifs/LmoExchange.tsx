@@ -9,12 +9,17 @@ export const OH_COLOR = '#d8c49a'
 export const LI_COLOR = '#6ecf7a'
 export const LI_EXTRA = '#4a9a58'
 
-type Vec3 = readonly [number, number, number]
+type Vec3 = [number, number, number]
+type XYZ = readonly [number, number, number]
+
+function v3(x: number, y: number, z: number): Vec3 {
+  return [x, y, z]
+}
 
 const OH_LEN = 0.97
 const CELL = data.cell.a
 const CELL_PAD = CELL * 0.5 + 0.2
-const HERO_AT: Vec3 = [CELL * 0.25, -CELL * 0.25, CELL * 0.25]
+const HERO_AT = v3(CELL * 0.25, -CELL * 0.25, CELL * 0.25)
 
 export const H_STAGGER = 0.45
 export const H_TRAVEL = 3.2
@@ -62,48 +67,44 @@ export type ExchangeSite = {
   hOut: Vec3[]
 }
 
-function v3(x: number, y: number, z: number): Vec3 {
-  return [x, y, z]
-}
-
-function add(a: Vec3, b: Vec3): Vec3 {
+function add(a: XYZ, b: XYZ): Vec3 {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
 }
 
-function sub(a: Vec3, b: Vec3): Vec3 {
+function sub(a: XYZ, b: XYZ): Vec3 {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 }
 
-function scale(a: Vec3, s: number): Vec3 {
+function scale(a: XYZ, s: number): Vec3 {
   return [a[0] * s, a[1] * s, a[2] * s]
 }
 
-function len(a: Vec3) {
+function len(a: XYZ) {
   return Math.hypot(a[0], a[1], a[2])
 }
 
-function dot(a: Vec3, b: Vec3) {
+function dot(a: XYZ, b: XYZ) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
 /** Pore direction that leaves the crystal, not the one that tunnels through it. */
-function outwardDir(site8a: Vec3, gate: Vec3): Vec3 {
+function outwardDir(site8a: XYZ, gate: XYZ): Vec3 {
   const toGate = norm(sub(gate, site8a))
   const radial = len(site8a) > 0.35 ? norm(site8a) : toGate
   return dot(toGate, radial) >= -0.05 ? toGate : scale(toGate, -1)
 }
 
-function norm(a: Vec3): Vec3 {
+function norm(a: XYZ): Vec3 {
   const d = len(a) || 1
   return scale(a, 1 / d)
 }
 
-function cross(a: Vec3, b: Vec3): Vec3 {
+function cross(a: XYZ, b: XYZ): Vec3 {
   return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
 }
 
-function ohBasis(n: Vec3) {
-  const axis: Vec3 = Math.abs(n[1]) < 0.85 ? [0, 1, 0] : [1, 0, 0]
+function ohBasis(n: XYZ) {
+  const axis = Math.abs(n[1]) < 0.85 ? v3(0, 1, 0) : v3(1, 0, 0)
   const u = norm(cross(n, axis))
   const v = norm(cross(n, u))
   return { n, u, v }
@@ -116,7 +117,7 @@ function minImage(d: number) {
   return d
 }
 
-function inCell(p: Vec3) {
+function inCell(p: XYZ) {
   return Math.abs(p[0]) <= CELL_PAD && Math.abs(p[1]) <= CELL_PAD && Math.abs(p[2]) <= CELL_PAD
 }
 
@@ -134,37 +135,29 @@ function pickHero(sites: ExchangeSite[]) {
 }
 
 function sites16c(): Vec3[] {
-  const bases: Vec3[] = [
-    [0.125, 0.125, 0.125],
-    [0.125, 0.875, 0.875],
-    [0.875, 0.125, 0.875],
-    [0.875, 0.875, 0.125],
-  ]
-  const fcc: Vec3[] = [
-    [0, 0, 0],
-    [0.5, 0.5, 0],
-    [0.5, 0, 0.5],
-    [0, 0.5, 0.5],
-  ]
+  const bases = [v3(0.125, 0.125, 0.125), v3(0.125, 0.875, 0.875), v3(0.875, 0.125, 0.875), v3(0.875, 0.875, 0.125)]
+  const fcc = [v3(0, 0, 0), v3(0.5, 0.5, 0), v3(0.5, 0, 0.5), v3(0, 0.5, 0.5)]
   const out: Vec3[] = []
   for (const b of bases) {
     for (const t of fcc) {
-      out.push([
-        (((b[0] + t[0]) % 1) - 0.5) * CELL,
-        (((b[1] + t[1]) % 1) - 0.5) * CELL,
-        (((b[2] + t[2]) % 1) - 0.5) * CELL,
-      ])
+      out.push(
+        v3(
+          (((b[0] + t[0]) % 1) - 0.5) * CELL,
+          (((b[1] + t[1]) % 1) - 0.5) * CELL,
+          (((b[2] + t[2]) % 1) - 0.5) * CELL,
+        ),
+      )
     }
   }
   return out
 }
 
-function nearest<T extends Vec3>(origin: Vec3, pts: T[]) {
-  let best = pts[0]
+function nearest(origin: XYZ, pts: readonly XYZ[]) {
+  let best = pts[0] ?? v3(0, 0, 0)
   let bestD = Infinity
-  let bestDelta: Vec3 = [0, 0, 0]
+  let bestDelta = v3(0, 0, 0)
   for (const p of pts) {
-    const dlt: Vec3 = [minImage(p[0] - origin[0]), minImage(p[1] - origin[1]), minImage(p[2] - origin[2])]
+    const dlt = v3(minImage(p[0] - origin[0]), minImage(p[1] - origin[1]), minImage(p[2] - origin[2]))
     const d = len(dlt)
     if (d < bestD) {
       bestD = d
