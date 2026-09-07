@@ -5,8 +5,9 @@ import { useScene } from '../../hooks/useSceneBeats'
 import data from '../../data/ramanExchange.json'
 import {
   atTime,
+  exchangeStatus,
+  EXCHANGE_STEPS,
   smoothSeries,
-  vibeFromTrace,
   VIBE_HEX,
   VIBE_SYNTH,
   VIBE_WORN,
@@ -27,9 +28,13 @@ const C_PEAK = '#e07040'
 const C_FWHM = '#7ec4d4'
 const C_XRD = '#d4a04a'
 const C_RAMAN = '#7ec4d4'
+const C_F2G = '#e0b45a'
+const C_SPLIT = '#c4894a'
 const C_GONE = '#564f48'
 const C_AXIS = 'rgba(243,238,228,0.22)'
 const C_GRID = 'rgba(243,238,228,0.08)'
+
+const BAND_COLOR = { a1g: C_PEAK, split: C_SPLIT, f2g: C_F2G } as const
 
 type Phase = 'as-synth' | 'h-ex' | 'li-return' | 'durability'
 type Pt = { x: number; y: number }
@@ -47,7 +52,7 @@ function linePath(pts: Pt[]): string {
 }
 
 function spectrumPath(
-  peaks: { w: number; h: number }[],
+  peaks: { w: number; h: number; sig?: number }[],
   sx: (w: number) => number,
   sy: (h: number) => number,
   wMin: number,
@@ -56,13 +61,13 @@ function spectrumPath(
   noise = 0,
 ) {
   const pts: Pt[] = []
-  const n = 120
+  const n = 140
   for (let i = 0; i <= n; i++) {
     const w = wMin + (i / n) * (wMax - wMin)
     let y = 0.04
     for (const p of peaks) {
       const dw = w - p.w
-      const sig = 9
+      const sig = p.sig ?? 9
       y += p.h * Math.exp((-dw * dw) / (2 * sig * sig))
     }
     if (noise > 0) y += noise * (0.5 + 0.5 * Math.sin(w * 0.37) * Math.cos(w * 0.11))
@@ -157,8 +162,16 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   const liveW = atTime(aSmooth, playT)
   const liveFwhm = atTime(fSmooth, playT)
+  const exchange = exchangeStatus(playT, liveW, liveFwhm)
   const cursor = { x: sxA(playT), y: syA(liveW) }
   const cursorF = { x: sxF(playT), y: syF(liveFwhm) }
+
+  const liveRamW0 = 540
+  const liveRamW1 = 700
+  const liveSx = (w: number) => 18 + ((w - liveRamW0) / (liveRamW1 - liveRamW0)) * 264
+  const liveSy = (h: number) => 78 - h * 64
+  const livePath = spectrumPath(exchange.bands, liveSx, liveSy, liveRamW0, liveRamW1, 1)
+  const liveMarks = exchange.bands.filter((b) => b.h > 0.12)
 
   const pathD = linePath(aPts)
   const fillD = aPts.length
@@ -183,20 +196,15 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const ramanPath = spectrumPath(ramanPeaks, sxRam, syRam, 450, 800, ramanAmp, ramanNoise)
 
   const vibe = showOperando
-    ? vibeFromTrace(liveW, liveFwhm)
+    ? exchange.vibe
     : phase === 'h-ex'
       ? VIBE_HEX
       : phase === 'durability'
         ? VIBE_WORN
         : VIBE_SYNTH
 
-  const cubaneCaption = showOperando
-    ? vibe.mute > 0.45
-      ? `A₁g breakup · ${Math.round(liveW)} cm⁻¹`
-      : vibe.disorder > 0.45
-        ? `modes split · Γ ${Math.round(liveFwhm)}`
-        : `A₁g breathe · ${Math.round(liveW)} cm⁻¹`
-    : phase === 'h-ex'
+  const cubaneCaption =
+    phase === 'h-ex'
       ? 'OH mutes Mn–O · disordered'
       : phase === 'durability'
         ? 'Partial load keeps the cubane'
@@ -215,12 +223,71 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   return (
     <div className={styles.plot} aria-label={label || 'LMO XRD stays good; Raman blanks then returns changed'}>
-      <CubaneInset
-        active={active}
-        vibe={vibe}
-        caption={showOperando ? undefined : cubaneCaption}
-        open={showOperando}
-      />
+      {showOperando ? (
+        <div className={styles.exchangeDock}>
+          <div className={styles.exchangeHead}>
+            <div className={styles.exchangeKicker}>Ion exchange</div>
+            <div className={styles.exchangeFill} aria-hidden>
+              <span>H</span>
+              <div className={styles.exchangeBar}>
+                <i style={{ width: `${Math.round(exchange.li * 100)}%` }} />
+              </div>
+              <span>Li</span>
+            </div>
+          </div>
+          <ol className={styles.exchangeSteps}>
+            {EXCHANGE_STEPS.map((step) => {
+              const on = exchange.id === step.id
+              const done =
+                EXCHANGE_STEPS.findIndex((s) => s.id === exchange.id) >
+                EXCHANGE_STEPS.findIndex((s) => s.id === step.id)
+              return (
+                <li key={step.id} data-on={on || undefined} data-done={done || undefined}>
+                  {step.label}
+                </li>
+              )
+            })}
+          </ol>
+          <svg viewBox="0 0 300 92" className={styles.liveRaman} aria-hidden>
+            <text x="18" y="14" className={styles.plotAnnotate} fontSize={13} fill="currentColor">
+              Raman · live
+            </text>
+            <line x1="18" y1="78" x2="282" y2="78" stroke={C_AXIS} />
+            <path d={livePath} fill="none" stroke={C_RAMAN} strokeWidth="2.2" strokeLinecap="round" />
+            {liveMarks.map((b) => (
+              <g key={b.kind}>
+                <line
+                  x1={liveSx(b.w)}
+                  y1={18}
+                  x2={liveSx(b.w)}
+                  y2={78}
+                  stroke={BAND_COLOR[b.kind]}
+                  strokeOpacity={0.35}
+                />
+                <text
+                  x={liveSx(b.w)}
+                  y={28}
+                  textAnchor="middle"
+                  fill={BAND_COLOR[b.kind]}
+                  fontSize={11}
+                >
+                  {b.label}
+                </text>
+              </g>
+            ))}
+            <text x="18" y="90" className={styles.plotTick} fontSize={10} fill="currentColor">
+              540
+            </text>
+            <text x="268" y="90" className={styles.plotTick} fontSize={10} fill="currentColor">
+              700
+            </text>
+          </svg>
+          <CubaneInset active={active} vibe={vibe} embedded />
+          <p className={styles.cubaneReadout}>{exchange.cubane}</p>
+        </div>
+      ) : (
+        <CubaneInset active={active} vibe={vibe} caption={cubaneCaption} />
+      )}
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className={styles.plotSvg}
@@ -368,7 +435,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           <>
             <g>
               <text x={aBox.ox + aBox.pad.l} y={aBox.oy + 16} className={styles.plotAnnotate}>
-                A₁g peak · Li back in
+                A₁g peak · {exchange.title}
               </text>
               <text x={aBox.ox + aBox.pad.l} y={aBox.oy + 32} className={styles.plotTick}>
                 Fig 5B · smoothed licl2-1

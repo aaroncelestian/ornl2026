@@ -93,6 +93,7 @@ export function CubaneUnit({
   const bondB = useRef<(THREE.Mesh | null)[]>([])
   const mnLive = useRef<THREE.Vector3[]>([])
   const coreLive = useRef<THREE.Vector3[]>([])
+  const termLive = useRef<THREE.Vector3[]>([])
   const vibeRef = useRef(vibe)
   vibeRef.current = vibe
 
@@ -134,11 +135,24 @@ export function CubaneUnit({
     })
   }, [cubane.bonds, mnLocal, coreLocal, termLocal, center])
 
+  const termOwners = useMemo(() => {
+    const owners: number[][] = termLocal.map(() => [])
+    for (const bond of liveBonds) {
+      if (bond.oKind === 'term') owners[bond.o].push(bond.mn)
+    }
+    return owners.map((list, i) =>
+      list.length ? list : [nearestIndex(mnLocal, termLocal[i])],
+    )
+  }, [liveBonds, termLocal, mnLocal])
+
   if (mnLive.current.length !== mnLocal.length) {
     mnLive.current = mnLocal.map((m) => new THREE.Vector3(...m))
   }
   if (coreLive.current.length !== coreLocal.length) {
     coreLive.current = coreLocal.map((o) => new THREE.Vector3(...o))
+  }
+  if (termLive.current.length !== termLocal.length) {
+    termLive.current = termLocal.map((o) => new THREE.Vector3(...o))
   }
 
   useFrame(({ clock }) => {
@@ -157,8 +171,13 @@ export function CubaneUnit({
       const u = new THREE.Vector3(...local)
       const len = u.length() || 1
       u.multiplyScalar(1 / len)
-      const phase = live.disorder > 0.02 ? i * 2.17 : 0
-      const hz = live.hz * (1 + live.disorder * (((i * 3) % 5) - 2) * 0.11)
+      const pair = i % 2
+      const split = live.split ?? 0
+      const phase = (live.disorder > 0.02 ? i * 2.17 : 0) + split * pair * Math.PI
+      const hz =
+        live.hz *
+        (1 + live.disorder * (((i * 3) % 5) - 2) * 0.11) *
+        (1 + split * (pair === 0 ? 0.16 : -0.2))
       const s = on ? Math.sin(time * Math.PI * 2 * hz + phase) * strength : 0
       let jx = 0
       let jy = 0
@@ -190,19 +209,34 @@ export function CubaneUnit({
       const child = root.children[mnLocal.length + i]
       if (child) child.position.copy(coreLive.current[i])
     })
+    termLocal.forEach((o, i) => {
+      const owners = termOwners[i]
+      let dx = 0
+      let dy = 0
+      let dz = 0
+      for (const mn of owners) {
+        const rest = mnLocal[mn]
+        const liveMn = mnLive.current[mn]
+        dx += liveMn.x - rest[0]
+        dy += liveMn.y - rest[1]
+        dz += liveMn.z - rest[2]
+      }
+      const n = owners.length || 1
+      const out = termLive.current[i]
+      out.set(o[0] + dx / n, o[1] + dy / n, o[2] + dz / n)
+      const child = root.children[mnLocal.length + coreLocal.length + i]
+      if (child) child.position.copy(out)
+    })
 
     for (let b = 0; b < liveBonds.length; b++) {
       const bond = liveBonds[b]
       const A = mnLive.current[bond.mn]
-      const B = bond.oKind === 'core' ? coreLive.current[bond.o] : null
-      const ox = B ? B.x : termLocal[bond.o][0]
-      const oy = B ? B.y : termLocal[bond.o][1]
-      const oz = B ? B.z : termLocal[bond.o][2]
+      const B = bond.oKind === 'core' ? coreLive.current[bond.o] : termLive.current[bond.o]
       const ha = bondA.current[b]
       const hb = bondB.current[b]
-      if (!A || !ha || !hb) continue
-      placeHalfBond(ha, A.x, A.y, A.z, ox, oy, oz, bond.rest, true)
-      placeHalfBond(hb, A.x, A.y, A.z, ox, oy, oz, bond.rest, false)
+      if (!A || !B || !ha || !hb) continue
+      placeHalfBond(ha, A.x, A.y, A.z, B.x, B.y, B.z, bond.rest, true)
+      placeHalfBond(hb, A.x, A.y, A.z, B.x, B.y, B.z, bond.rest, false)
     }
   })
 
@@ -254,14 +288,13 @@ export function CubaneUnit({
             />
           </mesh>
         ))}
+        {termLocal.map((o, i) => (
+          <mesh key={`to-${i}`} position={o}>
+            <sphereGeometry args={[0.24, 20, 20]} />
+            <meshStandardMaterial color={O_COLOR} roughness={0.38} metalness={0.08} />
+          </mesh>
+        ))}
       </group>
-
-      {termLocal.map((o, i) => (
-        <mesh key={`to-${i}`} position={o}>
-          <sphereGeometry args={[0.24, 20, 20]} />
-          <meshStandardMaterial color={O_COLOR} roughness={0.38} metalness={0.08} />
-        </mesh>
-      ))}
     </group>
   )
 }
@@ -307,15 +340,21 @@ export function CubaneInset({
   vibe,
   caption,
   open,
+  embedded,
 }: {
   active: boolean
   vibe: CubaneVibe
   caption?: string
   open?: boolean
+  embedded?: boolean
 }) {
   const reduced = usePrefersReducedMotion()
   return (
-    <div className={styles.cubaneDock} data-open={open || undefined} aria-hidden>
+    <div
+      className={embedded ? styles.cubaneEmbed : styles.cubaneDock}
+      data-open={!embedded && open ? '' : undefined}
+      aria-hidden
+    >
       <Canvas
         dpr={[1, 1.5]}
         camera={{ position: CAM_OPEN.toArray(), fov: 40 }}

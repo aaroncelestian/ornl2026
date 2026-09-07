@@ -361,8 +361,12 @@
     ],
     "markers": [
       {
-        "t": 28,
-        "label": "A\u2081g breakup"
+        "t": 3,
+        "label": "Li \u2192 8a"
+      },
+      {
+        "t": 26,
+        "label": "A\u2081g split \u00b7 F\u2082g"
       }
     ],
     "note": "licl2-1 A1g peak column. t=32–35 omitted: spectrum too weak to fit (blank/unstable peak picks)."
@@ -719,7 +723,7 @@
   "footnotes": {
     "as-synth": "As-synthesized LMO: long-range order (XRD) and local Mn\u2013O cubane order (Raman) both present.",
     "h-ex": "H-exchange keeps the spinel XRD \u2014 but the Raman (local cubane stretch) is basically gone.",
-    "li-return": "Li re-enters: XRD still good. Raman returns \u2014 changed. licl2-1 Fit Series: A\u2081g ~645\u2192657 cm\u207b\u00b9, FWHM narrows then spikes ~53 cm\u207b\u00b9 at breakup.",
+    "li-return": "H-form \u2192 Li in 8a (A\u2081g 645\u2192657). More Li splits A\u2081g and turns on F\u2082g: cubane local Oh breaks, not the lattice. Pattern stays weak then settles \u2014 cubane rewritten, not gone.",
     "durability": "Full load costs Mn (24% / 100 cycles). Partial load keeps the lattice intact."
   }
 }

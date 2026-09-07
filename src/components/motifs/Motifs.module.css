@@ -102,6 +102,14 @@
   height: min(70vh, 580px);
 }
 
+.cubaneEmbed {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 120px;
+  width: 100%;
+  pointer-events: none;
+}
+
 .cubaneCap {
   position: absolute;
   left: 8px;
@@ -112,6 +120,105 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   color: color-mix(in srgb, var(--color-text) 72%, transparent);
+}
+
+.exchangeDock {
+  position: absolute;
+  left: 0;
+  top: 3.6rem;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(38%, 400px);
+  pointer-events: none;
+}
+
+.exchangeHead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exchangeKicker {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 52%, transparent);
+}
+
+.exchangeFill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+}
+
+.exchangeBar {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--color-text) 12%, transparent);
+}
+
+.exchangeBar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #eef2f6 0%, #6ecf7a 100%);
+}
+
+.exchangeSteps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exchangeSteps li {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--color-text) 46%, transparent);
+}
+
+.exchangeSteps li[data-done] {
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  border-color: color-mix(in srgb, #6ecf7a 35%, transparent);
+}
+
+.exchangeSteps li[data-on] {
+  color: var(--color-text);
+  border-color: color-mix(in srgb, #e07040 55%, transparent);
+  background: color-mix(in srgb, #e07040 16%, transparent);
+}
+
+.liveRaman {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 130px;
+  color: var(--color-text);
+}
+
+.cubaneReadout {
+  margin: 0;
+  padding: 0 4px 4px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--color-text) 78%, transparent);
 }
 
 .plotTick {

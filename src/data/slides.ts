@@ -440,7 +440,7 @@ export const slides: Slide[] = [
         title: 'Li returns. Raman returns',
         layers: ['raman'],
         notes:
-          'As Li goes back in, XRD is still good. Raman pattern comes back — not identical to as-synthesized. licl2-1 Fit Series (Fig 5): A₁g jumps ~645→657 cm⁻¹ by ~3 min, FWHM narrows to ~8, then breakup near 28 min (peak ~632, FWHM ~53). Operando proof Li entered the lattice, not a capacity claim.',
+          'Start H-form: cubane is there, A₁g is muted. First Li into 8a jumps A₁g 645→657 and narrows it — the cubane breathes again. More Li makes the big dip: A₁g splits and F₂g turns on. That is local Oh breaking — the four Mn–O environments are no longer equivalent — not the spinel dissolving. After the front passes the Raman is weak but settles: the cubane reordered as a weaker Li-occupied oscillator. Rewritten, not gone.',
       },
       {
         id: 'cloud',
