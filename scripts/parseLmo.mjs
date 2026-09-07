@@ -18,18 +18,18 @@ const MN_O_MAX = 2.25
  *
  * Atoms are van der Waals spheres (Bondi / CrystalMaker defaults).
  * Empty space is the complement: sdf = dist_to_nucleus − r_vdw.
- * Iso at ~0 traces the VdW surface; the mesh is the leftover volume
- * (8a → 16c → 8a channels). Polyhedra are display-only — they are not
- * subtracted from the field (that made the old mesh hug octahedron faces).
+ * Iso at the probe radius traces accessible empty space (8a → 16c → 8a).
+ * Polyhedra are display-only — they are not subtracted from the field.
  */
-const GRID = 80
-const PROBE = 0.04
+const GRID = 96
+const PROBE = 0.18
 const MIN_VOID_VOXELS = 40
-const SMOOTH_ITERS = 3
+const SMOOTH_ITERS = 8
+const BOUNDARY_SMOOTH = 16
 const RADII = { Mn: 2.0, O: 1.52 }
 const VOID_SUPERCELL = 2
 /** Spherical cluster, CrystalMaker range-style. Just inside the 2×2×2 box. */
-const CLIP_RADIUS = 8.15
+const CLIP_RADIUS = 7.7
 
 function parseNum(value) {
   return Number(String(value).replace(/\([^)]*\)/g, ''))
@@ -630,10 +630,11 @@ function taubinSmooth(pos, faces, iterations, lambda = 0.5, mu = -0.53) {
   }
 }
 
-function projectToIso(pos, iters = 8) {
+function projectToIso(pos, iters = 8, skip = null) {
   const step = A / n
   for (let k = 0; k < iters; k++) {
     for (let i = 0; i < pos.length; i += 3) {
+      if (skip?.has(i / 3)) continue
       const x = pos[i] + A * 0.5
       const y = pos[i + 1] + A * 0.5
       const z = pos[i + 2] + A * 0.5
@@ -646,6 +647,197 @@ function projectToIso(pos, iters = 8) {
       pos[i + 1] -= (s * gy) / len
       pos[i + 2] -= (s * gz) / len
     }
+  }
+}
+
+function sphereIntersect(a, b, radius) {
+  const dx = b[0] - a[0]
+  const dy = b[1] - a[1]
+  const dz = b[2] - a[2]
+  const aq = dx * dx + dy * dy + dz * dz
+  const snap = (p) => {
+    const r = Math.hypot(p[0], p[1], p[2]) || 1
+    const s = radius / r
+    return [p[0] * s, p[1] * s, p[2] * s]
+  }
+  if (aq < 1e-16) return snap(a)
+  const bq = 2 * (a[0] * dx + a[1] * dy + a[2] * dz)
+  const cq = a[0] * a[0] + a[1] * a[1] + a[2] * a[2] - radius * radius
+  const disc = bq * bq - 4 * aq * cq
+  if (disc < 0) return snap([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2])
+  const root = Math.sqrt(disc)
+  const t0 = (-bq - root) / (2 * aq)
+  const t1 = (-bq + root) / (2 * aq)
+  const ok = []
+  if (t0 >= -1e-4 && t0 <= 1 + 1e-4) ok.push(t0)
+  if (t1 >= -1e-4 && t1 <= 1 + 1e-4) ok.push(t1)
+  let t = 0.5
+  if (ok.length) t = ok.reduce((best, u) => (Math.abs(u - 0.5) < Math.abs(best - 0.5) ? u : best))
+  t = Math.min(1, Math.max(0, t))
+  return snap([a[0] + t * dx, a[1] + t * dy, a[2] + t * dz])
+}
+
+function compactMesh(pos, faces) {
+  const used = new Uint8Array(pos.length / 3)
+  for (const i of faces) used[i] = 1
+  const remap = new Int32Array(pos.length / 3).fill(-1)
+  const newPos = []
+  for (let i = 0; i < used.length; i++) {
+    if (!used[i]) continue
+    remap[i] = newPos.length / 3
+    newPos.push(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2])
+  }
+  const newFaces = []
+  for (let t = 0; t < faces.length; t += 3) {
+    const a0 = remap[faces[t]]
+    const a1 = remap[faces[t + 1]]
+    const a2 = remap[faces[t + 2]]
+    if (a0 < 0 || a1 < 0 || a2 < 0) continue
+    newFaces.push(a0, a1, a2)
+  }
+  return { pos: newPos, faces: newFaces }
+}
+
+/** Clip the mesh to a sphere by splitting straddling triangles on the surface. */
+function clipMeshToSphere(pos, faces, radius) {
+  const nV = pos.length / 3
+  const r2 = radius * radius
+  const inside = new Uint8Array(nV)
+  for (let i = 0; i < nV; i++) {
+    const x = pos[i * 3]
+    const y = pos[i * 3 + 1]
+    const z = pos[i * 3 + 2]
+    inside[i] = x * x + y * y + z * z <= r2 ? 1 : 0
+  }
+  const get = (i) => [pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]]
+  const edgeHit = new Map()
+  const newPos = pos.slice()
+  const hit = (ia, ib) => {
+    const key = ia < ib ? `${ia}-${ib}` : `${ib}-${ia}`
+    if (edgeHit.has(key)) return edgeHit.get(key)
+    const p = sphereIntersect(get(ia), get(ib), radius)
+    const id = newPos.length / 3
+    newPos.push(p[0], p[1], p[2])
+    edgeHit.set(key, id)
+    return id
+  }
+  const newFaces = []
+  for (let t = 0; t < faces.length; t += 3) {
+    const i0 = faces[t]
+    const i1 = faces[t + 1]
+    const i2 = faces[t + 2]
+    const c = inside[i0] + inside[i1] + inside[i2]
+    if (c === 3) {
+      newFaces.push(i0, i1, i2)
+      continue
+    }
+    if (c === 0) continue
+    if (c === 1) {
+      let a0
+      let a1
+      let a2
+      if (inside[i0]) {
+        a0 = i0
+        a1 = i1
+        a2 = i2
+      } else if (inside[i1]) {
+        a0 = i1
+        a1 = i2
+        a2 = i0
+      } else {
+        a0 = i2
+        a1 = i0
+        a2 = i1
+      }
+      newFaces.push(a0, hit(a0, a1), hit(a0, a2))
+    } else {
+      let a0
+      let a1
+      let a2
+      if (!inside[i2]) {
+        a0 = i0
+        a1 = i1
+        a2 = i2
+      } else if (!inside[i0]) {
+        a0 = i1
+        a1 = i2
+        a2 = i0
+      } else {
+        a0 = i2
+        a1 = i0
+        a2 = i1
+      }
+      const p = hit(a0, a2)
+      const q = hit(a1, a2)
+      newFaces.push(a0, a1, q, a0, q, p)
+    }
+  }
+  return compactMesh(newPos, newFaces)
+}
+
+function boundaryVerts(faces, nV) {
+  const edgeCount = new Map()
+  const add = (a, b) => {
+    const key = a < b ? `${a}-${b}` : `${b}-${a}`
+    edgeCount.set(key, (edgeCount.get(key) ?? 0) + 1)
+  }
+  for (let t = 0; t < faces.length; t += 3) {
+    add(faces[t], faces[t + 1])
+    add(faces[t + 1], faces[t + 2])
+    add(faces[t + 2], faces[t])
+  }
+  const bound = new Set()
+  for (const [key, count] of edgeCount) {
+    if (count !== 1) continue
+    const dash = key.indexOf('-')
+    bound.add(Number(key.slice(0, dash)))
+    bound.add(Number(key.slice(dash + 1)))
+  }
+  return bound
+}
+
+function smoothBoundaryOnSphere(pos, faces, bound, radius, iters) {
+  const nV = pos.length / 3
+  const nbrs = Array.from({ length: nV }, () => [])
+  for (let t = 0; t < faces.length; t += 3) {
+    const a0 = faces[t]
+    const a1 = faces[t + 1]
+    const a2 = faces[t + 2]
+    const ring = [
+      [a0, a1],
+      [a1, a2],
+      [a2, a0],
+    ]
+    for (const [u, v] of ring) {
+      if (!bound.has(u) || !bound.has(v)) continue
+      nbrs[u].push(v)
+      nbrs[v].push(u)
+    }
+  }
+  for (let k = 0; k < iters; k++) {
+    const next = pos.slice()
+    for (const i of bound) {
+      const list = nbrs[i]
+      if (list.length < 2) continue
+      let ax = 0
+      let ay = 0
+      let az = 0
+      for (const j of list) {
+        ax += pos[j * 3]
+        ay += pos[j * 3 + 1]
+        az += pos[j * 3 + 2]
+      }
+      const inv = 1 / list.length
+      next[i * 3] = pos[i * 3] * 0.3 + ax * inv * 0.7
+      next[i * 3 + 1] = pos[i * 3 + 1] * 0.3 + ay * inv * 0.7
+      next[i * 3 + 2] = pos[i * 3 + 2] * 0.3 + az * inv * 0.7
+      const r = Math.hypot(next[i * 3], next[i * 3 + 1], next[i * 3 + 2]) || 1
+      const s = radius / r
+      next[i * 3] *= s
+      next[i * 3 + 1] *= s
+      next[i * 3 + 2] *= s
+    }
+    for (let i = 0; i < pos.length; i++) pos[i] = next[i]
   }
 }
 
@@ -673,6 +865,9 @@ taubinSmooth(positions, index, SMOOTH_ITERS)
 sdfStats(positions, 'after Taubin')
 projectToIso(positions)
 sdfStats(positions, 'after project')
+taubinSmooth(positions, index, 4)
+projectToIso(positions, 6)
+sdfStats(positions, 'after second smooth')
 
 // Keep only the dominant connected channel network (drop tiny cavities)
 {
@@ -739,65 +934,39 @@ sdfStats(positions, 'after project')
   }
 }
 
-{
-  const nV = positions.length / 3
-  const remap = new Int32Array(nV).fill(-1)
-  const newPos = []
-  let dropped = 0
-  for (let i = 0; i < nV; i++) {
-    const s = sdfAt(positions[i * 3] + A * 0.5, positions[i * 3 + 1] + A * 0.5, positions[i * 3 + 2] + A * 0.5)
-    if (s < 0) {
-      dropped++
-      continue
-    }
-    remap[i] = newPos.length / 3
-    newPos.push(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
-  }
-  const newIndex = []
-  for (let t = 0; t < index.length; t += 3) {
-    const a0 = remap[index[t]]
-    const a1 = remap[index[t + 1]]
-    const a2 = remap[index[t + 2]]
-    if (a0 < 0 || a1 < 0 || a2 < 0) continue
-    newIndex.push(a0, a1, a2)
-  }
-  positions.length = 0
-  for (let i = 0; i < newPos.length; i++) positions.push(newPos[i])
-  index.length = 0
-  for (let i = 0; i < newIndex.length; i++) index.push(newIndex[i])
-  console.log(`  culled ${dropped} verts still inside a VdW sphere`)
-}
+projectToIso(positions, 6)
+sdfStats(positions, 'after extra project')
 
 {
-  const nV = positions.length / 3
-  const r2 = CLIP_RADIUS * CLIP_RADIUS
-  const remap = new Int32Array(nV).fill(-1)
-  const newPos = []
-  let dropped = 0
-  for (let i = 0; i < nV; i++) {
+  const clipped = clipMeshToSphere(positions, index, CLIP_RADIUS)
+  positions.length = 0
+  for (let i = 0; i < clipped.pos.length; i++) positions.push(clipped.pos[i])
+  index.length = 0
+  for (let i = 0; i < clipped.faces.length; i++) index.push(clipped.faces[i])
+  const rimTol = 0.12
+  const bound = new Set()
+  for (let i = 0; i < positions.length / 3; i++) {
+    const r = Math.hypot(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
+    if (Math.abs(r - CLIP_RADIUS) <= rimTol) bound.add(i)
+  }
+  for (const i of boundaryVerts(index, positions.length / 3)) bound.add(i)
+  taubinSmooth(positions, index, 6)
+  for (const i of bound) {
     const x = positions[i * 3]
     const y = positions[i * 3 + 1]
     const z = positions[i * 3 + 2]
-    if (x * x + y * y + z * z > r2) {
-      dropped++
-      continue
-    }
-    remap[i] = newPos.length / 3
-    newPos.push(x, y, z)
+    const r = Math.hypot(x, y, z) || 1
+    const s = CLIP_RADIUS / r
+    positions[i * 3] = x * s
+    positions[i * 3 + 1] = y * s
+    positions[i * 3 + 2] = z * s
   }
-  const newIndex = []
-  for (let t = 0; t < index.length; t += 3) {
-    const a0 = remap[index[t]]
-    const a1 = remap[index[t + 1]]
-    const a2 = remap[index[t + 2]]
-    if (a0 < 0 || a1 < 0 || a2 < 0) continue
-    newIndex.push(a0, a1, a2)
-  }
-  positions.length = 0
-  for (let i = 0; i < newPos.length; i++) positions.push(newPos[i])
-  index.length = 0
-  for (let i = 0; i < newIndex.length; i++) index.push(newIndex[i])
-  console.log(`  clipped to ${CLIP_RADIUS} Å sphere · dropped ${dropped} verts`)
+  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, BOUNDARY_SMOOTH)
+  projectToIso(positions, 6, bound)
+  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, 8)
+  console.log(
+    `  clipped to ${CLIP_RADIUS} Å sphere · ${bound.size} rim verts smoothed`,
+  )
 }
 
 const voidAtoms = []
@@ -854,7 +1023,7 @@ const payload = {
     supercell: sc,
     box: A,
     clipRadius: CLIP_RADIUS,
-    note: `Empty space outside Bondi/CrystalMaker VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å); Li removed`,
+    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Li removed`,
     positions,
     normals,
     index,
