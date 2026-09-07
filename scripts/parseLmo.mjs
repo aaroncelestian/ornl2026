@@ -14,25 +14,21 @@ const outPath = join(root, 'src', 'data', 'lmoSpinel.json')
 
 const MN_O_MAX = 2.25
 /**
- * Probe-accessible void of the Mn–O framework (Li removed).
+ * Accessible void of the Mn–O framework (Li removed).
  *
- * Method (same family as Rowleyite / Zeo++-style geometric pores):
- *   1. Assign each Mn/O a hard-sphere radius.
- *   2. Sample a signed-distance field: sdf = dist_to_nearest_atom − radius.
- *   3. Mark void where sdf > PROBE (a spherical probe of radius PROBE fits).
- *   4. Keep the large connected cavity, extract a surface-nets mesh,
- *      Taubin-smooth, and re-project to the iso-surface.
+ * Void = space a probe can sit without overlapping:
+ *   • Mn / O hard spheres (radii below)
+ *   • MnO₆ octahedron interiors (so the surface cannot cut the polyhedra)
+ *   sdf = dist_to_nearest_atom − radius; void where sdf > PROBE
  *
- * PROBE must sit below the 8a clearance (~0.66 Å with these radii) and the
- * 16c neck clearance (~0.87 Å) so the 8a→16c→8a path stays open as tubing,
- * not a foam that fills every interstitial gap.
+ * The earlier Gaussian density contour ignored those volumes, which is why
+ * the mesh ran through atoms and octahedra.
  */
-const GRID = 72
-const PROBE = 0.4
-const MIN_VOID_VOXELS = 24
-const SMOOTH_ITERS = 18
+const GRID = 64
+const PROBE = 0.28
+const MIN_VOID_VOXELS = 40
+const SMOOTH_ITERS = 6
 const RADII = { Mn: 1.4, O: 1.35 }
-/** Compute the SDF on a real 2×2×2 supercell — do not tile a 1-cell mesh */
 const VOID_SUPERCELL = 2
 
 function parseNum(value) {
@@ -380,34 +376,80 @@ for (let ix = 0; ix < sc; ix++) {
 }
 console.log(`Void supercell ${sc}×${sc}×${sc} · box ${A.toFixed(2)} Å · ${framework.length} Mn/O images`)
 
+const polys01 = polyhedra.map((p) => ({
+  center: [p.center[0] + a * 0.5, p.center[1] + a * 0.5, p.center[2] + a * 0.5],
+  vertices: p.vertices.map((v) => [v[0] + a * 0.5, v[1] + a * 0.5, v[2] + a * 0.5]),
+  faces: p.faces,
+}))
+
+function insidePoly(x, y, z, poly) {
+  const px = poly.center[0] + minImage(x - poly.center[0], a)
+  const py = poly.center[1] + minImage(y - poly.center[1], a)
+  const pz = poly.center[2] + minImage(z - poly.center[2], a)
+  for (const face of poly.faces) {
+    const A0 = poly.vertices[face[0]]
+    const B0 = poly.vertices[face[1]]
+    const C0 = poly.vertices[face[2]]
+    let nx = (B0[1] - A0[1]) * (C0[2] - A0[2]) - (B0[2] - A0[2]) * (C0[1] - A0[1])
+    let ny = (B0[2] - A0[2]) * (C0[0] - A0[0]) - (B0[0] - A0[0]) * (C0[2] - A0[2])
+    let nz = (B0[0] - A0[0]) * (C0[1] - A0[1]) - (B0[1] - A0[1]) * (C0[0] - A0[0])
+    const fx = A0[0] - poly.center[0]
+    const fy = A0[1] - poly.center[1]
+    const fz = A0[2] - poly.center[2]
+    if (nx * fx + ny * fy + nz * fz < 0) {
+      nx = -nx
+      ny = -ny
+      nz = -nz
+    }
+    // Slightly expanded solid so the void surface stays off the faces
+    if (nx * (px - A0[0]) + ny * (py - A0[1]) + nz * (pz - A0[2]) > -0.06) return false
+  }
+  return true
+}
+
+function insideFramework(x, y, z) {
+  for (const poly of polys01) {
+    if (insidePoly(x, y, z, poly)) return true
+  }
+  return false
+}
+
 const n = GRID
 const field = new Float64Array((n + 1) ** 3)
 function fIndex(i, j, k) {
   return (i * (n + 1) + j) * (n + 1) + k
 }
-function sdfAt(x, y, z) {
+function atomSdf(x, y, z) {
   let best = Infinity
-  for (const atom of framework) {
-    const dx = minImage(x - atom.x, A)
-    const dy = minImage(y - atom.y, A)
-    const dz = minImage(z - atom.z, A)
+  for (const atom of unitFw) {
+    const dx = minImage(x - atom.x, a)
+    const dy = minImage(y - atom.y, a)
+    const dz = minImage(z - atom.z, a)
     const d = Math.hypot(dx, dy, dz) - atom.r
     if (d < best) best = d
   }
   return best
 }
+/** Projection field: atom spheres only (needs a real gradient). */
+function sdfAt(x, y, z) {
+  return atomSdf(x, y, z)
+}
+
+const iso = PROBE
 
 for (let i = 0; i <= n; i++) {
   const x = (i / n) * A
   for (let j = 0; j <= n; j++) {
     const y = (j / n) * A
     for (let k = 0; k <= n; k++) {
-      field[fIndex(i, j, k)] = sdfAt(x, y, (k / n) * A)
+      const z = (k / n) * A
+      let s = atomSdf(x, y, z)
+      if (insideFramework(x, y, z)) s = Math.min(s, iso - 1)
+      field[fIndex(i, j, k)] = s
     }
   }
 }
 
-const iso = PROBE
 const totalSamples = (n + 1) ** 3
 const label = new Int32Array(totalSamples).fill(-1)
 let voidCount = 0
@@ -621,26 +663,47 @@ function taubinSmooth(pos, faces, iterations, lambda = 0.5, mu = -0.53) {
   }
 }
 
-function projectToIso(pos) {
+function projectToIso(pos, iters = 8) {
   const step = A / n
-  for (let i = 0; i < pos.length; i += 3) {
-    const x = pos[i] + A * 0.5
-    const y = pos[i + 1] + A * 0.5
-    const z = pos[i + 2] + A * 0.5
-    const s = sdfAt(x, y, z) - iso
-    const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
-    const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
-    const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
-    const len = Math.hypot(gx, gy, gz) || 1
-    pos[i] -= (s * gx) / len
-    pos[i + 1] -= (s * gy) / len
-    pos[i + 2] -= (s * gz) / len
+  for (let k = 0; k < iters; k++) {
+    for (let i = 0; i < pos.length; i += 3) {
+      const x = pos[i] + A * 0.5
+      const y = pos[i + 1] + A * 0.5
+      const z = pos[i + 2] + A * 0.5
+      const s = sdfAt(x, y, z) - iso
+      const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
+      const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
+      const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
+      const len = Math.hypot(gx, gy, gz) || 1
+      pos[i] -= (s * gx) / len
+      pos[i + 1] -= (s * gy) / len
+      pos[i + 2] -= (s * gz) / len
+    }
   }
 }
 
-console.log(`Smoothing LMO void surface (${SMOOTH_ITERS} Taubin iterations, probe ${PROBE} Å)…`)
+function sdfStats(pos, label) {
+  let inside = 0
+  let minS = Infinity
+  let maxS = -Infinity
+  for (let i = 0; i < pos.length; i += 3) {
+    const s = sdfAt(pos[i] + A * 0.5, pos[i + 1] + A * 0.5, pos[i + 2] + A * 0.5)
+    if (s < 0) inside++
+    if (s < minS) minS = s
+    if (s > maxS) maxS = s
+  }
+  const nV = pos.length / 3
+  console.log(
+    `  ${label}: ${inside}/${nV} verts inside solid (${((inside / nV) * 100).toFixed(1)}%) · sdf ${minS.toFixed(2)}…${maxS.toFixed(2)}`,
+  )
+}
+
+console.log(`Smoothing LMO void (${SMOOTH_ITERS} Taubin, probe ${PROBE} Å, atoms+MnO₆ excluded)…`)
+sdfStats(positions, 'before smooth')
 taubinSmooth(positions, index, SMOOTH_ITERS)
+sdfStats(positions, 'after Taubin')
 projectToIso(positions)
+sdfStats(positions, 'after project')
 
 // Keep only the dominant connected channel network (drop tiny cavities)
 {
@@ -707,6 +770,35 @@ projectToIso(positions)
   }
 }
 
+{
+  const nV = positions.length / 3
+  const remap = new Int32Array(nV).fill(-1)
+  const newPos = []
+  let dropped = 0
+  for (let i = 0; i < nV; i++) {
+    const s = sdfAt(positions[i * 3] + A * 0.5, positions[i * 3 + 1] + A * 0.5, positions[i * 3 + 2] + A * 0.5)
+    if (s < 0) {
+      dropped++
+      continue
+    }
+    remap[i] = newPos.length / 3
+    newPos.push(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
+  }
+  const newIndex = []
+  for (let t = 0; t < index.length; t += 3) {
+    const a0 = remap[index[t]]
+    const a1 = remap[index[t + 1]]
+    const a2 = remap[index[t + 2]]
+    if (a0 < 0 || a1 < 0 || a2 < 0) continue
+    newIndex.push(a0, a1, a2)
+  }
+  positions.length = 0
+  for (let i = 0; i < newPos.length; i++) positions.push(newPos[i])
+  index.length = 0
+  for (let i = 0; i < newIndex.length; i++) index.push(newIndex[i])
+  console.log(`  culled ${dropped} verts still inside the framework`)
+}
+
 const normals = new Array(positions.length).fill(0)
 const step = A / n
 for (let i = 0; i < positions.length; i += 3) {
@@ -731,7 +823,7 @@ function mean(xs) {
 
 const payload = {
   mineral: 'Lithium manganese oxide (spinel)',
-  source: 'LiMn2O4.cif · Fd-3m · 2×2×2 probe-accessible void (Li removed)',
+  source: 'LiMn2O4.cif · Fd-3m · probe void excluding Mn/O spheres and MnO₆ (Li removed)',
   paper: 'Celestian et al., J. Raman Spectrosc. 2026, 57:131–139',
   cell: { a },
   polyhedra,
@@ -741,11 +833,11 @@ const payload = {
   cubanes: cubaneUnique.slice(0, 8),
   void: {
     probe: PROBE,
-    grid: GRID,
     radii: RADII,
+    grid: GRID,
     supercell: sc,
     box: A,
-    note: `SDF on a ${sc}×${sc}×${sc} supercell (${A.toFixed(2)} Å); void where sdf > ${PROBE} Å`,
+    note: `Void where sdf > ${PROBE} Å; Mn/O spheres and MnO₆ interiors excluded`,
     positions,
     normals,
     index,
