@@ -12,7 +12,6 @@ const SCALE = 0.42
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
 /** Framework in the home cell; void network extends through the 2×2×2 box */
 const VOID_HOME = new THREE.Vector3(9.2, 6.2, 11.0)
-const POLY_COLOR = '#9a6ab8'
 const VOID_OUT = '#5e87a0'
 const VOID_IN = '#f0d7a0'
 const VOID_GHOST = '#e0b15c'
@@ -33,7 +32,7 @@ function phaseForBeat(id?: string): Phase {
 }
 
 const CAPTION: Record<Phase, string> = {
-  framework: 'LiMn₂O₄ · MnO₆ polyhedra · drag to orbit',
+  framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
   voids: 'VdW empty space · Mn/O spheres · Li removed',
   hydrogen: 'H enters · sits on O · OH → 8a',
   lithium: 'Li in · H out the pore',
@@ -74,75 +73,6 @@ function CellWire({ size, opacity = 0.28 }: { size: number; opacity?: number }) 
     <group>
       {edges.map((points, i) => (
         <Line key={i} points={points} color="#d4a04a" lineWidth={1} transparent opacity={opacity} />
-      ))}
-    </group>
-  )
-}
-
-function Polyhedron({
-  vertices,
-  faces,
-  opacity,
-}: {
-  vertices: number[][]
-  faces: number[][]
-  opacity: number
-}) {
-  const geometry = useMemo(() => {
-    const positions: number[] = []
-    const normals: number[] = []
-    for (const face of faces) {
-      const a = new THREE.Vector3(...vertices[face[0]])
-      const b = new THREE.Vector3(...vertices[face[1]])
-      const c = new THREE.Vector3(...vertices[face[2]])
-      const n = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).normalize()
-      for (const v of [a, b, c]) {
-        positions.push(v.x, v.y, v.z)
-        normals.push(n.x, n.y, n.z)
-      }
-    }
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
-    return geo
-  }, [vertices, faces])
-
-  const edges = useMemo(() => {
-    const segs: [[number, number, number], [number, number, number]][] = []
-    const seen = new Set<string>()
-    for (const face of faces) {
-      for (let i = 0; i < 3; i++) {
-        const ia = face[i]
-        const ib = face[(i + 1) % 3]
-        const key = ia < ib ? `${ia}-${ib}` : `${ib}-${ia}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        segs.push([
-          vertices[ia] as [number, number, number],
-          vertices[ib] as [number, number, number],
-        ])
-      }
-    }
-    return segs
-  }, [vertices, faces])
-
-  if (opacity < 0.04) return null
-
-  return (
-    <group>
-      <mesh geometry={geometry}>
-        <meshStandardMaterial
-          color={POLY_COLOR}
-          transparent
-          opacity={opacity}
-          roughness={0.45}
-          metalness={0.15}
-          side={THREE.DoubleSide}
-          depthWrite={opacity > 0.55}
-        />
-      </mesh>
-      {edges.map((pts, i) => (
-        <Line key={i} points={pts} color="#d4b8e8" lineWidth={1} transparent opacity={opacity * 0.85} />
       ))}
     </group>
   )
