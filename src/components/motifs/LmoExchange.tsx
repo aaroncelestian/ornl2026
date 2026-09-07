@@ -30,12 +30,28 @@ export function protonBind(t: number, i: number) {
 const LI_GATHER = 2.6
 const LI_STAGGER = 0.55
 const LI_TRAVEL = 2.9
-const H_EXIT_TRAVEL = 2.2
-const H_EXIT_AT = 0.48
+const H_EXIT_TRAVEL = 1.15
+const CHASE_BACK = 2.55
+const CHASE_AHEAD = 1.48
+const CHASE_HEIGHT = 0.92
+const ORBIT_SPEED = 0.5
+const ORBIT_MIN_S = 2.35
+const ORBIT_FALLBACK_S = 5.1
+const APPROACH_FROM = -1.18
+const APPROACH_TO = 0.16
+const CAM_HOME = new THREE.Vector3(4.2, 2.6, 5.8)
+
+export type RideStage = 'idle' | 'approach' | 'chase' | 'orbit' | 'flash' | 'hold' | 'pullback'
 
 export type RideState = {
   following: boolean
   done: boolean
+  pull: boolean
+  wide: boolean
+  pullable: boolean
+  flash: number
+  fov: number
+  stage: RideStage
   pos: THREE.Vector3
   look: THREE.Vector3
 }
@@ -163,8 +179,20 @@ function easeInOut(t: number) {
   return u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2
 }
 
-function samplePath(path: Vec3[], t: number) {
-  const u = easeInOut(t)
+function easeInExpo(t: number) {
+  const u = Math.min(1, Math.max(0, t))
+  return u === 0 ? 0 : 2 ** (10 * u - 10)
+}
+
+function shortestAngle(a: number) {
+  let x = a
+  while (x > Math.PI) x -= Math.PI * 2
+  while (x < -Math.PI) x += Math.PI * 2
+  return x
+}
+
+function samplePath(path: Vec3[], t: number, ease: (u: number) => number = easeInOut) {
+  const u = ease(t)
   if (path.length === 1) {
     return { p: new THREE.Vector3(...path[0]), tan: new THREE.Vector3(0, 0, 1) }
   }
@@ -215,8 +243,11 @@ export function ExchangeIons({
   const ohMesh = useRef<(THREE.Mesh | null)[]>([])
   const ohMat = useRef<(THREE.MeshStandardMaterial | null)[]>([])
   const liMesh = useRef<(THREE.Mesh | null)[]>([])
+  const liMat = useRef<(THREE.MeshStandardMaterial | null)[]>([])
   const extraMesh = useRef<(THREE.Mesh | null)[]>([])
+  const flashLight = useRef<THREE.PointLight>(null)
   const heroTan = useRef(new THREE.Vector3(0, 0, 1))
+  const heroH = useMemo(() => new THREE.Vector3(), [])
   const tmpA = useMemo(() => new THREE.Vector3(), [])
   const tmpB = useMemo(() => new THREE.Vector3(), [])
   const tmpMid = useMemo(() => new THREE.Vector3(), [])
@@ -224,6 +255,17 @@ export function ExchangeIons({
   const heroWorld = useMemo(() => new THREE.Vector3(), [])
   const tmpQ = useMemo(() => new THREE.Quaternion(), [])
   const yUp = useMemo(() => new THREE.Vector3(0, 1, 0), [])
+  const cam = useRef({
+    arrived: false,
+    bolted: false,
+    boltT: Infinity,
+    orbitT: 0,
+    startYaw: 0,
+    radius: CHASE_BACK,
+    height: CHASE_HEIGHT,
+    dir: 1,
+    targetYaw: 0,
+  })
 
   const extras = useMemo(() => {
     return [0, 1, 2].map((i) => {
@@ -237,8 +279,18 @@ export function ExchangeIons({
 
   useEffect(() => {
     clock.current = 0
+    cam.current.arrived = false
+    cam.current.bolted = false
+    cam.current.boltT = Infinity
+    cam.current.orbitT = 0
     ride.current.following = false
     ride.current.done = false
+    ride.current.pull = false
+    ride.current.wide = false
+    ride.current.pullable = false
+    ride.current.flash = 0
+    ride.current.fov = 40
+    ride.current.stage = 'idle'
   }, [phase, active, ride])
 
   useFrame((_, dt) => {
@@ -294,6 +346,7 @@ export function ExchangeIons({
           lx = site.liIn[0][0]
           ly = site.liIn[0][1]
           lz = site.liIn[0][2]
+          if (i === HERO) heroTan.current.copy(samplePath(site.liIn, 0).tan)
         } else {
           const samp = samplePath(site.liIn, local)
           lx = samp.p.x
@@ -302,7 +355,8 @@ export function ExchangeIons({
           if (i === HERO) heroTan.current.copy(samp.tan)
         }
 
-        const exitT = (local - H_EXIT_AT) / (H_EXIT_TRAVEL / LI_TRAVEL)
+        const stagger = i === HERO ? 0 : 0.12 + i * 0.05
+        const exitT = (t - cam.current.boltT - stagger) / H_EXIT_TRAVEL
         if (reduced) {
           hop = 0
           oop = 0
@@ -320,12 +374,12 @@ export function ExchangeIons({
           hop = 0
           oop = 0
         } else {
-          const samp = samplePath(site.hOut, exitT)
+          const samp = samplePath(site.hOut, exitT, i === HERO ? easeInExpo : easeInOut)
           hx = samp.p.x
           hy = samp.p.y
           hz = samp.p.z
           oop = 0
-          hop = 1 - THREE.MathUtils.smoothstep(0.72, 1, exitT)
+          hop = 1 - THREE.MathUtils.smoothstep(0.55, 1, exitT)
         }
       }
 
@@ -360,7 +414,10 @@ export function ExchangeIons({
         if (om) om.opacity = oop
       }
       if (li) li.position.set(lx, ly, lz)
-      if (i === HERO) heroWorld.set(lx, ly, lz)
+      if (i === HERO) {
+        heroWorld.set(lx, ly, lz)
+        heroH.set(hx, hy, hz)
+      }
     }
 
     extras.forEach((e, i) => {
@@ -375,26 +432,135 @@ export function ExchangeIons({
     })
 
     if (phase === 'lithium' && !reduced) {
+      const hero = sites[HERO]
       const heroLocal = (t - LI_GATHER - HERO * LI_STAGGER) / LI_TRAVEL
-      const follow = capturing || (heroLocal > -0.12 && heroLocal < 1.18)
-      const heroDone = !capturing && heroLocal >= 1.18
-      ride.current.following = Boolean(follow && !heroDone)
-      ride.current.done = Boolean(heroDone)
       const tan = heroTan.current
-      ride.current.pos
-        .copy(heroWorld)
-        .addScaledVector(tan, -2.35)
-        .setY(heroWorld.y + 0.85)
-        .multiplyScalar(scale)
-      ride.current.look.copy(heroWorld).addScaledVector(tan, 1.55).multiplyScalar(scale)
+      const r = ride.current
+      const c = cam.current
+
+      tmpA.copy(heroWorld).addScaledVector(tan, -CHASE_BACK)
+      tmpA.y = heroWorld.y + CHASE_HEIGHT
+      tmpB.copy(heroWorld).addScaledVector(tan, CHASE_AHEAD)
+      const chasePos = tmpA.multiplyScalar(scale)
+      const chaseLook = tmpB.multiplyScalar(scale)
+
+      if (capturing) {
+        r.stage = 'chase'
+        r.following = true
+        r.done = false
+        r.pullable = false
+        r.flash = 0
+        r.fov = 33
+        r.pos.copy(chasePos)
+        r.look.copy(chaseLook)
+      } else if (r.wide) {
+        r.stage = 'idle'
+        r.following = false
+        r.done = true
+        r.pullable = false
+        r.flash = 0
+        r.fov = 40
+      } else if (r.pull) {
+        r.stage = 'pullback'
+        r.following = true
+        r.done = false
+        r.pullable = false
+        r.flash = 0
+        r.fov = 40
+        r.pos.copy(CAM_HOME)
+        r.look.set(0, 0, 0)
+      } else if (heroLocal < 1) {
+        const u = THREE.MathUtils.smoothstep(APPROACH_FROM, APPROACH_TO, heroLocal)
+        r.stage = u < 0.999 ? 'approach' : 'chase'
+        r.following = u > 0.01
+        r.done = false
+        r.pullable = false
+        r.flash = 0
+        r.fov = THREE.MathUtils.lerp(40, 33, u)
+        r.pos.lerpVectors(CAM_HOME, chasePos, easeInOut(u))
+        r.look.lerpVectors(tmpDir.set(0, 0, 0), chaseLook, easeInOut(u))
+      } else {
+        if (!c.arrived) {
+          c.arrived = true
+          const offX = -CHASE_BACK * tan.x
+          const offZ = -CHASE_BACK * tan.z
+          c.startYaw = Math.atan2(offX, offZ)
+          c.radius = Math.hypot(offX, offZ) || CHASE_BACK
+          c.height = CHASE_HEIGHT
+          const hYaw = Math.atan2(hero.hHome[0] - hero.site8a[0], hero.hHome[2] - hero.site8a[2])
+          const sideA = hYaw + Math.PI * 0.5
+          const sideB = hYaw - Math.PI * 0.5
+          const dA = shortestAngle(sideA - c.startYaw)
+          const dB = shortestAngle(sideB - c.startYaw)
+          if (Math.abs(dA) <= Math.abs(dB)) {
+            c.targetYaw = sideA
+            c.dir = Math.sign(dA) || 1
+          } else {
+            c.targetYaw = sideB
+            c.dir = Math.sign(dB) || 1
+          }
+        }
+
+        c.orbitT += capturing ? 0 : dt
+        const yaw = c.startYaw + c.dir * c.orbitT * ORBIT_SPEED
+        const breathe = 1 + 0.05 * Math.sin(c.orbitT * 0.34)
+        const lift = c.height + 0.1 * Math.sin(c.orbitT * 0.21 + 0.5)
+        tmpA.set(Math.sin(yaw) * c.radius * breathe, lift, Math.cos(yaw) * c.radius * breathe)
+        r.pos.copy(heroWorld).add(tmpA).multiplyScalar(scale)
+
+        const towardH = THREE.MathUtils.smoothstep(0.15, 2.1, c.orbitT)
+        tmpB.set(hero.hHome[0] - hero.site8a[0], hero.hHome[1] - hero.site8a[1], hero.hHome[2] - hero.site8a[2])
+        r.look
+          .copy(heroWorld)
+          .addScaledVector(tan, CHASE_AHEAD * (1 - towardH))
+          .addScaledVector(tmpB, 0.58 * towardH)
+
+        if (!c.bolted) {
+          const aligned = Math.abs(shortestAngle(yaw - c.targetYaw)) < 0.24
+          if ((c.orbitT > ORBIT_MIN_S && aligned) || c.orbitT > ORBIT_FALLBACK_S) {
+            c.bolted = true
+            c.boltT = t
+          }
+        }
+
+        const flashAge = t - c.boltT
+        r.flash = flashAge < 0 ? 0 : Math.exp(-flashAge * 3.8) * (flashAge < 0.07 ? flashAge / 0.07 : 1)
+        if (c.bolted && flashAge >= 0 && flashAge < 1.25) {
+          const kick = Math.sin(Math.min(1, flashAge / 0.32) * Math.PI) * 0.55
+          tmpDir.copy(heroH).sub(heroWorld)
+          r.look.addScaledVector(tmpDir, kick)
+        }
+        r.look.multiplyScalar(scale)
+
+        r.stage = !c.bolted ? 'orbit' : flashAge < 0.55 ? 'flash' : 'hold'
+        r.following = true
+        r.done = true
+        r.pullable = c.bolted && flashAge > 0.4
+        r.fov = THREE.MathUtils.lerp(33, 36, THREE.MathUtils.smoothstep(0, 2.4, c.orbitT))
+      }
+
+      const hm = hMat.current[HERO]
+      const lm = liMat.current[HERO]
+      if (hm) hm.emissiveIntensity = 0.55 + r.flash * 2.4
+      if (lm) lm.emissiveIntensity = 0.42 + r.flash * 1.9
+      if (flashLight.current) {
+        flashLight.current.position.copy(heroH)
+        flashLight.current.intensity = r.flash * 14
+      }
     } else {
       ride.current.following = false
       ride.current.done = false
+      ride.current.pullable = false
+      ride.current.flash = 0
+      ride.current.fov = 40
+      ride.current.stage = 'idle'
+      if (flashLight.current) flashLight.current.intensity = 0
     }
   })
 
   return (
     <group>
+      <pointLight ref={flashLight} color="#f6fff4" intensity={0} distance={7} decay={2} />
       {sites.map((site, i) => (
         <group key={`pair-${i}`}>
           <mesh
@@ -445,6 +611,9 @@ export function ExchangeIons({
             >
               <sphereGeometry args={[0.4, 18, 18]} />
               <meshStandardMaterial
+                ref={(el) => {
+                  liMat.current[i] = el
+                }}
                 color={LI_COLOR}
                 emissive={LI_COLOR}
                 emissiveIntensity={0.42}

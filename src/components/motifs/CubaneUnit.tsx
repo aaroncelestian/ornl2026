@@ -8,8 +8,6 @@ import styles from './Motifs.module.css'
 
 export const MN_COLOR = '#8b5cad'
 export const O_COLOR = '#c45a3a'
-export const ARROW_MN = '#c4894a'
-export const ARROW_O = '#7ec4d4'
 
 export type CubaneData = {
   center: number[]
@@ -19,78 +17,56 @@ export type CubaneData = {
   bonds: { mn: number; o: number[]; core: boolean }[]
 }
 
-function BondStick({
-  a,
-  b,
-  colorA,
-  colorB,
-}: {
-  a: [number, number, number]
-  b: [number, number, number]
-  colorA: string
-  colorB: string
-}) {
-  const mid = useMemo(() => {
-    const A = new THREE.Vector3(...a)
-    const B = new THREE.Vector3(...b)
-    const dir = new THREE.Vector3().subVectors(B, A)
-    const len = dir.length()
-    const quat = new THREE.Quaternion()
-    quat.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize())
-    const half = A.clone().add(B).multiplyScalar(0.5)
-    const aMid = A.clone().lerp(half, 0.5)
-    const bMid = B.clone().lerp(half, 0.5)
-    return { len, quat, aMid, bMid }
-  }, [a, b])
-
-  return (
-    <group>
-      <mesh position={mid.aMid.toArray()} quaternion={mid.quat}>
-        <cylinderGeometry args={[0.07, 0.07, mid.len * 0.5, 8]} />
-        <meshStandardMaterial color={colorA} roughness={0.4} metalness={0.2} />
-      </mesh>
-      <mesh position={mid.bMid.toArray()} quaternion={mid.quat}>
-        <cylinderGeometry args={[0.07, 0.07, mid.len * 0.5, 8]} />
-        <meshStandardMaterial color={colorB} roughness={0.4} metalness={0.15} />
-      </mesh>
-    </group>
-  )
+type LiveBond = {
+  mn: number
+  oKind: 'core' | 'term'
+  o: number
+  rest: number
 }
 
-function ModeArrow({
-  from,
-  dir,
-  color,
-  amp,
-}: {
-  from: [number, number, number]
-  dir: THREE.Vector3
-  color: string
-  amp: number
-}) {
-  const geom = useMemo(() => {
-    const u = dir.clone().normalize()
-    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), u)
-    const baseLen = 0.95
-    const tip = 0.28
-    const start = new THREE.Vector3(...from).addScaledVector(u, 0.35)
-    const shaftMid = start.clone().addScaledVector(u, baseLen * 0.5 * (0.85 + amp * 0.35))
-    const tipPos = start.clone().addScaledVector(u, baseLen * (0.85 + amp * 0.35) + tip * 0.35)
-    return { quat, shaftMid, tipPos, shaftLen: baseLen * (0.85 + amp * 0.35) }
-  }, [from, dir, amp])
+const _Y_UP = new THREE.Vector3(0, 1, 0)
+const _DIR = new THREE.Vector3()
+const _QUAT = new THREE.Quaternion()
 
-  return (
-    <group>
-      <mesh position={geom.shaftMid.toArray()} quaternion={geom.quat}>
-        <cylinderGeometry args={[0.055, 0.055, geom.shaftLen, 8]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} roughness={0.35} />
-      </mesh>
-      <mesh position={geom.tipPos.toArray()} quaternion={geom.quat}>
-        <coneGeometry args={[0.14, 0.32, 10]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.45} roughness={0.3} />
-      </mesh>
-    </group>
-  )
+function nearKey(p: [number, number, number]) {
+  return `${p[0].toFixed(3)},${p[1].toFixed(3)},${p[2].toFixed(3)}`
+}
+
+function nearestIndex(pts: [number, number, number][], target: [number, number, number]) {
+  let best = 0
+  let bestD = Infinity
+  for (let i = 0; i < pts.length; i++) {
+    const d = Math.hypot(pts[i][0] - target[0], pts[i][1] - target[1], pts[i][2] - target[2])
+    if (d < bestD) {
+      bestD = d
+      best = i
+    }
+  }
+  return best
+}
+
+function placeHalfBond(
+  mesh: THREE.Mesh,
+  ax: number,
+  ay: number,
+  az: number,
+  bx: number,
+  by: number,
+  bz: number,
+  rest: number,
+  towardA: boolean,
+) {
+  _DIR.set(bx - ax, by - ay, bz - az)
+  const live = _DIR.length() || rest
+  _DIR.normalize()
+  _QUAT.setFromUnitVectors(_Y_UP, _DIR)
+  const mx = (ax + bx) * 0.5
+  const my = (ay + by) * 0.5
+  const mz = (az + bz) * 0.5
+  if (towardA) mesh.position.set((ax + mx) * 0.5, (ay + my) * 0.5, (az + mz) * 0.5)
+  else mesh.position.set((bx + mx) * 0.5, (by + my) * 0.5, (bz + mz) * 0.5)
+  mesh.quaternion.copy(_QUAT)
+  mesh.scale.set(1, live / rest, 1)
 }
 
 /**
@@ -112,8 +88,11 @@ export function CubaneUnit({
   vibe?: CubaneVibe
   atOrigin?: boolean
 }) {
-  const breath = useRef(0)
   const atomGroup = useRef<THREE.Group>(null)
+  const bondA = useRef<(THREE.Mesh | null)[]>([])
+  const bondB = useRef<(THREE.Mesh | null)[]>([])
+  const mnLive = useRef<THREE.Vector3[]>([])
+  const coreLive = useRef<THREE.Vector3[]>([])
   const vibeRef = useRef(vibe)
   vibeRef.current = vibe
 
@@ -134,14 +113,33 @@ export function CubaneUnit({
       ),
     [cubane.terminalO, center],
   )
-  const bondsLocal = useMemo(
-    () =>
-      cubane.bonds.map((b) => ({
-        mn: mnLocal[b.mn],
-        o: [b.o[0] - center[0], b.o[1] - center[1], b.o[2] - center[2]] as [number, number, number],
-      })),
-    [cubane.bonds, mnLocal, center],
-  )
+  const liveBonds = useMemo<LiveBond[]>(() => {
+    const coreMap = new Map(coreLocal.map((o, i) => [nearKey(o), i]))
+    const termMap = new Map(termLocal.map((o, i) => [nearKey(o), i]))
+    return cubane.bonds.map((b) => {
+      const oLocal: [number, number, number] = [
+        b.o[0] - center[0],
+        b.o[1] - center[1],
+        b.o[2] - center[2],
+      ]
+      const key = nearKey(oLocal)
+      const oKind: 'core' | 'term' = b.core ? 'core' : 'term'
+      const o =
+        oKind === 'core'
+          ? (coreMap.get(key) ?? nearestIndex(coreLocal, oLocal))
+          : (termMap.get(key) ?? nearestIndex(termLocal, oLocal))
+      const mn = mnLocal[b.mn]
+      const rest = Math.hypot(mn[0] - oLocal[0], mn[1] - oLocal[1], mn[2] - oLocal[2]) || 1
+      return { mn: b.mn, oKind, o, rest }
+    })
+  }, [cubane.bonds, mnLocal, coreLocal, termLocal, center])
+
+  if (mnLive.current.length !== mnLocal.length) {
+    mnLive.current = mnLocal.map((m) => new THREE.Vector3(...m))
+  }
+  if (coreLive.current.length !== coreLocal.length) {
+    coreLive.current = coreLocal.map((o) => new THREE.Vector3(...o))
+  }
 
   useFrame(({ clock }) => {
     const root = atomGroup.current
@@ -150,10 +148,12 @@ export function CubaneUnit({
     const on = active && !reduced && vibeOn
     const strength = on ? live.amp * (1 - live.mute) : 0
     const time = clock.getElapsedTime()
-    let idx = 0
-    const place = (local: [number, number, number], radial: number, i: number) => {
-      const child = root.children[idx++]
-      if (!child) return
+    const displace = (
+      local: [number, number, number],
+      radial: number,
+      i: number,
+      out: THREE.Vector3,
+    ) => {
       const u = new THREE.Vector3(...local)
       const len = u.length() || 1
       u.multiplyScalar(1 / len)
@@ -173,24 +173,60 @@ export function CubaneUnit({
         jy = (py / plen) * jitter
         jz = (pz / plen) * jitter
       }
-      child.position.set(
+      out.set(
         local[0] + u.x * s * radial + jx,
         local[1] + u.y * s * radial + jy,
         local[2] + u.z * s * radial + jz,
       )
-      if (i === 0) breath.current = s
     }
-    mnLocal.forEach((m, i) => place(m, 0.22, i))
-    coreLocal.forEach((o, i) => place(o, 0.18, i + 4))
-  })
 
-  const arrowAmp = active && !reduced && vibeOn ? 0.25 + 0.75 * vibe.amp * (1 - vibe.mute) : 0.28
-  const showArrows = vibeOn && vibe.disorder < 0.55 && vibe.mute < 0.55
+    mnLocal.forEach((m, i) => {
+      displace(m, 0.22, i, mnLive.current[i])
+      const child = root.children[i]
+      if (child) child.position.copy(mnLive.current[i])
+    })
+    coreLocal.forEach((o, i) => {
+      displace(o, 0.18, i + 4, coreLive.current[i])
+      const child = root.children[mnLocal.length + i]
+      if (child) child.position.copy(coreLive.current[i])
+    })
+
+    for (let b = 0; b < liveBonds.length; b++) {
+      const bond = liveBonds[b]
+      const A = mnLive.current[bond.mn]
+      const B = bond.oKind === 'core' ? coreLive.current[bond.o] : null
+      const ox = B ? B.x : termLocal[bond.o][0]
+      const oy = B ? B.y : termLocal[bond.o][1]
+      const oz = B ? B.z : termLocal[bond.o][2]
+      const ha = bondA.current[b]
+      const hb = bondB.current[b]
+      if (!A || !ha || !hb) continue
+      placeHalfBond(ha, A.x, A.y, A.z, ox, oy, oz, bond.rest, true)
+      placeHalfBond(hb, A.x, A.y, A.z, ox, oy, oz, bond.rest, false)
+    }
+  })
 
   return (
     <group position={atOrigin ? [0, 0, 0] : center}>
-      {bondsLocal.map((b, i) => (
-        <BondStick key={i} a={b.mn} b={b.o} colorA={MN_COLOR} colorB={O_COLOR} />
+      {liveBonds.map((bond, i) => (
+        <group key={`b-${i}`}>
+          <mesh
+            ref={(el) => {
+              bondA.current[i] = el
+            }}
+          >
+            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
+            <meshStandardMaterial color={MN_COLOR} roughness={0.4} metalness={0.2} />
+          </mesh>
+          <mesh
+            ref={(el) => {
+              bondB.current[i] = el
+            }}
+          >
+            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
+            <meshStandardMaterial color={O_COLOR} roughness={0.4} metalness={0.15} />
+          </mesh>
+        </group>
       ))}
 
       <group ref={atomGroup}>
@@ -226,15 +262,6 @@ export function CubaneUnit({
           <meshStandardMaterial color={O_COLOR} roughness={0.38} metalness={0.08} />
         </mesh>
       ))}
-
-      {showArrows &&
-        mnLocal.map((m, i) => (
-          <ModeArrow key={`amn-${i}`} from={m} dir={new THREE.Vector3(...m)} color={ARROW_MN} amp={arrowAmp} />
-        ))}
-      {showArrows &&
-        coreLocal.map((o, i) => (
-          <ModeArrow key={`ao-${i}`} from={o} dir={new THREE.Vector3(...o)} color={ARROW_O} amp={arrowAmp} />
-        ))}
     </group>
   )
 }

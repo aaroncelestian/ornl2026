@@ -21,8 +21,6 @@ const VOID_GHOST = '#e0b15c'
 const LI_COLOR = '#6ecf7a'
 const MN_COLOR = '#8b5cad'
 const O_COLOR = '#c45a3a'
-const ARROW_MN = '#c4894a'
-const ARROW_O = '#7ec4d4'
 const C_RAMAN = '#7ec4d4'
 const C_RAMAN_DIM = '#564f48'
 const _Y_UP = new THREE.Vector3(0, 1, 0)
@@ -490,7 +488,7 @@ function Scene({
   const showCubane = phase === 'cubane'
   const showBalls = !showCubane
   const heroCubane = data.cubanes[0] as CubaneData
-  const controls = useRef<{ enabled: boolean } | null>(null)
+  const controls = useRef<{ enabled: boolean; target: THREE.Vector3 } | null>(null)
 
   useEffect(() => {
     if (exchange && group.current) group.current.rotation.set(0, 0, 0)
@@ -498,7 +496,10 @@ function Scene({
 
   useFrame((_, dt) => {
     const root = group.current
-    if (controls.current) controls.current.enabled = !ride.current.following
+    if (controls.current) {
+      controls.current.enabled = !ride.current.following
+      if (ride.current.wide) controls.current.target.set(0, 0, 0)
+    }
     if (!root || !active || reduced) return
     if (exchange) return
     if (cubaneFocus) root.rotation.y += dt * 0.12
@@ -555,11 +556,15 @@ function Scene({
 function CameraHome({
   phase,
   ride,
+  onRideUi,
 }: {
   phase: Phase
   ride: MutableRefObject<RideState>
+  onRideUi?: (ui: { pullable: boolean; flashing: boolean }) => void
 }) {
   const prev = useRef<Phase | null>(null)
+  const look = useRef(new THREE.Vector3())
+  const uiKey = useRef('')
   const cubaneHome = useMemo(() => {
     const c = data.cubanes[0]?.center
     if (!c) return new THREE.Vector3(3.2, 2.4, 4.2)
@@ -571,25 +576,53 @@ function CameraHome({
     return new THREE.Vector3(c[0] * SCALE, c[1] * SCALE, c[2] * SCALE)
   }, [])
 
-  useFrame(({ camera }) => {
-    if (phase === 'lithium' && ride.current.following) {
-      camera.position.lerp(ride.current.pos, 0.14)
-      camera.lookAt(ride.current.look)
+  useFrame(({ camera }, dt) => {
+    const r = ride.current
+    if (onRideUi) {
+      const key = `${r.pullable ? 1 : 0}|${r.flash > 0.16 ? 1 : 0}`
+      if (key !== uiKey.current) {
+        uiKey.current = key
+        onRideUi({ pullable: r.pullable, flashing: r.flash > 0.16 })
+      }
+    }
+
+    if (phase === 'lithium' && r.following) {
+      const rate =
+        r.stage === 'approach' ? 0.82 : r.stage === 'chase' ? 2.6 : r.stage === 'pullback' ? 0.46 : 1.35
+      camera.position.x = THREE.MathUtils.damp(camera.position.x, r.pos.x, rate, dt)
+      camera.position.y = THREE.MathUtils.damp(camera.position.y, r.pos.y, rate, dt)
+      camera.position.z = THREE.MathUtils.damp(camera.position.z, r.pos.z, rate, dt)
+      look.current.x = THREE.MathUtils.damp(look.current.x, r.look.x, rate, dt)
+      look.current.y = THREE.MathUtils.damp(look.current.y, r.look.y, rate, dt)
+      look.current.z = THREE.MathUtils.damp(look.current.z, r.look.z, rate, dt)
+      camera.lookAt(look.current)
+      const persp = camera as THREE.PerspectiveCamera
+      persp.fov = THREE.MathUtils.damp(persp.fov, r.fov, 1.15, dt)
+      persp.updateProjectionMatrix()
+      if (r.stage === 'pullback' && camera.position.distanceTo(HOME) < 0.1) {
+        camera.position.copy(HOME)
+        r.wide = true
+        r.following = false
+      }
       prev.current = null
       return
     }
-    if (phase === 'lithium' && ride.current.done) {
-      camera.position.lerp(HOME, 0.04)
-      camera.lookAt(0, 0, 0)
-      return
-    }
+
     if (prev.current === phase) return
     const targetPos = phase === 'cubane' ? cubaneHome : HOME
-    const look = phase === 'cubane' ? cubaneTarget : new THREE.Vector3(0, 0, 0)
+    const targetLook = phase === 'cubane' ? cubaneTarget : new THREE.Vector3(0, 0, 0)
     camera.position.lerp(targetPos, 0.12)
-    camera.lookAt(look)
+    camera.lookAt(targetLook)
+    look.current.copy(targetLook)
+    const persp = camera as THREE.PerspectiveCamera
+    if (Math.abs(persp.fov - 40) > 0.05) {
+      persp.fov = THREE.MathUtils.damp(persp.fov, 40, 1.4, dt)
+      persp.updateProjectionMatrix()
+    }
     if (camera.position.distanceTo(targetPos) < 0.08) {
       camera.position.copy(targetPos)
+      persp.fov = 40
+      persp.updateProjectionMatrix()
       prev.current = phase
     }
   })
@@ -614,16 +647,24 @@ function atTime(points: SeriesPt[], t: number): number {
   return last.w
 }
 
-function lorentzPath(center: number, fwhm: number, amp: number, w0 = 500, w1 = 780) {
+function lorentzPath(
+  center: number,
+  fwhm: number,
+  amp: number,
+  w0: number,
+  w1: number,
+  baseY: number,
+  peakScale: number,
+) {
   const pts: string[] = []
-  const n = 80
+  const n = 100
   const gamma = Math.max(2.4, fwhm * 0.5)
   for (let i = 0; i <= n; i++) {
     const w = w0 + (i / n) * (w1 - w0)
     const dw = w - center
     const y = amp / (1 + (dw * dw) / (gamma * gamma))
     const x = 8 + ((w - w0) / (w1 - w0)) * 284
-    const yy = 52 - y * 40
+    const yy = baseY - y * peakScale
     pts.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${yy.toFixed(1)}`)
   }
   return pts.join(' ')
@@ -698,21 +739,40 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
     }
   }, [phase, elapsed])
 
-  const path = lorentzPath(track.w, track.fwhm, track.amp)
+  const exchange = phase === 'hydrogen'
+  const w0 = exchange ? 600 : 500
+  const w1 = exchange ? 700 : 780
+  const vbH = exchange ? 108 : 64
+  const baseY = exchange ? 88 : 52
+  const peakScale = exchange ? 40 * (1 + track.amp) : 40
+  const path = lorentzPath(track.w, track.fwhm, track.amp, w0, w1, baseY, peakScale)
   const collapsed = track.amp < 0.2
-  const peakX = 8 + ((track.w - 500) / 280) * 284
+  const peakX = 8 + ((track.w - w0) / (w1 - w0)) * 284
 
   return (
-    <div className={styles.ramanHud} aria-hidden>
+    <div
+      className={styles.ramanHud}
+      data-dock={exchange ? 'left' : undefined}
+      data-tight={exchange || undefined}
+      aria-hidden
+    >
       <div className={styles.ramanHudTitle}>Raman · A₁g</div>
-      <svg viewBox="0 0 300 64" className={styles.ramanHudSvg}>
+      <svg viewBox={`0 0 300 ${vbH}`} className={styles.ramanHudSvg}>
         <path d={path} fill="none" stroke={collapsed ? C_RAMAN_DIM : C_RAMAN} strokeWidth="2" strokeLinecap="round" />
-        <line x1={peakX} y1="10" x2={peakX} y2="54" stroke={collapsed ? C_RAMAN_DIM : C_RAMAN} strokeWidth="1" opacity="0.35" />
-        <text x="8" y="62" fill="currentColor" fontSize="9" opacity="0.55">
-          500
+        <line
+          x1={peakX}
+          y1={exchange ? 8 : 10}
+          x2={peakX}
+          y2={baseY}
+          stroke={collapsed ? C_RAMAN_DIM : C_RAMAN}
+          strokeWidth="1"
+          opacity="0.35"
+        />
+        <text x="8" y={vbH - 2} fill="currentColor" fontSize="9" opacity="0.55">
+          {w0}
         </text>
-        <text x="268" y="62" fill="currentColor" fontSize="9" opacity="0.55">
-          780
+        <text x="268" y={vbH - 2} fill="currentColor" fontSize="9" opacity="0.55">
+          {w1}
         </text>
       </svg>
       <div className={styles.ramanHudMeta}>
@@ -731,13 +791,33 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
   const reduced = usePrefersReducedMotion()
   const phase = phaseForBeat(scene.beat?.id)
   const [vibeOn, setVibeOn] = useState(false)
+  const [rideUi, setRideUi] = useState({ pullable: false, flashing: false })
+  const [flashOn, setFlashOn] = useState(false)
   const ride = useRef<RideState>({
     following: false,
     done: false,
+    pull: false,
+    wide: false,
+    pullable: false,
+    flash: 0,
+    fov: 40,
+    stage: 'idle',
     pos: new THREE.Vector3(),
     look: new THREE.Vector3(),
   })
   const vibrations = vibeOn && !reduced
+
+  useEffect(() => {
+    setRideUi({ pullable: false, flashing: false })
+    setFlashOn(false)
+  }, [phase])
+
+  useEffect(() => {
+    if (!rideUi.flashing) return
+    setFlashOn(true)
+    const id = window.setTimeout(() => setFlashOn(false), 780)
+    return () => window.clearTimeout(id)
+  }, [rideUi.flashing])
 
   const legend =
     phase === 'framework'
@@ -769,8 +849,6 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
             : [
                 { color: MN_COLOR, label: 'Mn' },
                 { color: O_COLOR, label: 'O' },
-                { color: ARROW_MN, label: 'A₁g Mn' },
-                { color: ARROW_O, label: 'A₁g O' },
               ]
 
   return (
@@ -778,16 +856,31 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
       className={styles.crystal}
       aria-label={label || 'LMO spinel — MnO₆ framework, voids, and A1g cubane'}
     >
-      <button
-        type="button"
-        className={styles.vibeBtn}
-        data-on={vibrations || undefined}
-        aria-pressed={vibrations}
-        onClick={() => setVibeOn((on) => !on)}
-      >
-        <span className={styles.vibeDot} />
-        Vibrations
-      </button>
+      <div className={styles.crystalBtns}>
+        <button
+          type="button"
+          className={styles.vibeBtn}
+          data-on={vibrations || undefined}
+          aria-pressed={vibrations}
+          onClick={() => setVibeOn((on) => !on)}
+        >
+          <span className={styles.vibeDot} />
+          Vibrations
+        </button>
+        {phase === 'lithium' && rideUi.pullable && !ride.current.wide && (
+          <button
+            type="button"
+            className={styles.vibeBtn}
+            onClick={() => {
+              ride.current.pull = true
+              setRideUi((ui) => ({ ...ui, pullable: false }))
+            }}
+          >
+            Full view
+          </button>
+        )}
+      </div>
+      <div className={styles.liFlash} data-on={flashOn || undefined} aria-hidden />
       <div className={styles.legend}>
         {legend.map((row) => (
           <div key={row.label} className={styles.legendRow}>
@@ -803,7 +896,7 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
         style={{ width: '100%', height: '100%' }}
       >
         <Suspense fallback={null}>
-          <CameraHome phase={phase} ride={ride} />
+          <CameraHome phase={phase} ride={ride} onRideUi={setRideUi} />
           <Scene active={active} phase={phase} ride={ride} vibeOn={vibrations} />
         </Suspense>
       </Canvas>

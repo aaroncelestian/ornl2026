@@ -33,6 +33,14 @@
   cursor: grabbing;
 }
 
+.plotPlay {
+  position: absolute;
+  top: clamp(16px, 2.4vh, 32px);
+  right: clamp(20px, 3vw, 44px);
+  z-index: 4;
+  pointer-events: auto;
+}
+
 .cubaneDock {
   position: absolute;
   left: 0;
@@ -541,11 +549,18 @@
   opacity: 1;
 }
 
-.vibeBtn {
+.crystalBtns {
   position: absolute;
   top: var(--pad-y);
   right: var(--pad-x);
   z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.vibeBtn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -558,6 +573,37 @@
   font-size: 13px;
   letter-spacing: 0.04em;
   cursor: pointer;
+}
+
+.liFlash {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: radial-gradient(
+    circle at 50% 46%,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(238, 242, 246, 0.32) 16%,
+    rgba(110, 207, 122, 0.14) 40%,
+    transparent 68%
+  );
+  opacity: 0;
+}
+
+.liFlash[data-on] {
+  animation: liBoltFlash 0.72s ease-out forwards;
+}
+
+@keyframes liBoltFlash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .vibeBtn[data-on] {
@@ -592,6 +638,16 @@
   background: color-mix(in srgb, var(--color-bg) 70%, transparent);
   pointer-events: none;
   color: var(--color-text);
+}
+
+.ramanHud[data-dock='left'] {
+  left: var(--pad-x);
+  right: auto;
+  bottom: var(--pad-y);
+}
+
+.ramanHud[data-tight] {
+  width: min(380px, 40vw);
 }
 
 .ramanHudSvg {
