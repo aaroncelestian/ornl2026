@@ -11,7 +11,7 @@ import styles from './Motifs.module.css'
 const SCALE = 0.42
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
 /** Framework in the home cell; void network extends through the 2×2×2 box */
-const VOID_HOME = new THREE.Vector3(6.4, 4.2, 7.4)
+const VOID_HOME = new THREE.Vector3(9.2, 6.2, 11.0)
 const POLY_COLOR = '#9a6ab8'
 const VOID_OUT = '#5e87a0'
 const VOID_IN = '#f0d7a0'
@@ -170,7 +170,7 @@ function VoidSurface({ pore }: { pore: boolean }) {
   }, [])
 
   // Steel on the outer skin, cream on the channel interior (cut-open look).
-  // Caps stay the cream discs on the spherical clip.
+  // Caps stay the cream discs on the cube faces.
   if (pore) {
     return (
       <group>
@@ -230,21 +230,58 @@ function VoidSurface({ pore }: { pore: boolean }) {
 
 type VoidAtom = { element: string; x: number; y: number; z: number }
 
-/** Markers only — void field still uses full VdW radii. */
-const ATOM_DRAW = { Mn: 0.28, O: 0.2 }
+const ATOM_DRAW = { Mn: 0.36, O: 0.24 }
+const MN_O_MIN = 1.4
+const MN_O_MAX = 2.25
 
-function FrameworkAtoms() {
-  const atoms = (data as { voidAtoms?: VoidAtom[] }).voidAtoms
-  const list: VoidAtom[] =
-    atoms ??
-    [
-      ...data.manganese.map((p) => ({ element: 'Mn', ...p })),
-      ...data.oxygen.map((p) => ({ element: 'O', ...p })),
-    ]
+function minImage(d: number, cell: number) {
+  const half = cell * 0.5
+  if (d > half) return d - cell
+  if (d < -half) return d + cell
+  return d
+}
 
+function mnOBonds(
+  mns: { x: number; y: number; z: number }[],
+  oxs: { x: number; y: number; z: number }[],
+  cell?: number,
+): [[number, number, number], [number, number, number]][] {
+  const pairs: [[number, number, number], [number, number, number]][] = []
+  for (const mn of mns) {
+    for (const ox of oxs) {
+      let dx = ox.x - mn.x
+      let dy = ox.y - mn.y
+      let dz = ox.z - mn.z
+      if (cell) {
+        dx = minImage(dx, cell)
+        dy = minImage(dy, cell)
+        dz = minImage(dz, cell)
+      }
+      const d = Math.hypot(dx, dy, dz)
+      if (d > MN_O_MIN && d < MN_O_MAX) {
+        pairs.push([
+          [mn.x, mn.y, mn.z],
+          [mn.x + dx, mn.y + dy, mn.z + dz],
+        ])
+      }
+    }
+  }
+  return pairs
+}
+
+function AtomBalls({
+  atoms,
+  bonds,
+}: {
+  atoms: VoidAtom[]
+  bonds: [[number, number, number], [number, number, number]][]
+}) {
   return (
     <group>
-      {list.map((atom, i) => (
+      {bonds.map((pair, i) => (
+        <BondStick key={`b-${i}`} a={pair[0]} b={pair[1]} colorA={MN_COLOR} colorB={O_COLOR} />
+      ))}
+      {atoms.map((atom, i) => (
         <mesh key={i} position={[atom.x, atom.y, atom.z]} renderOrder={2}>
           <sphereGeometry args={[atom.element === 'Mn' ? ATOM_DRAW.Mn : ATOM_DRAW.O, 20, 20]} />
           <meshStandardMaterial
@@ -256,6 +293,37 @@ function FrameworkAtoms() {
       ))}
     </group>
   )
+}
+
+function FrameworkAtoms() {
+  const { list, bonds } = useMemo(() => {
+    const atoms = (data as { voidAtoms?: VoidAtom[] }).voidAtoms
+    const list: VoidAtom[] =
+      atoms ??
+      [
+        ...data.manganese.map((p) => ({ element: 'Mn', ...p })),
+        ...data.oxygen.map((p) => ({ element: 'O', ...p })),
+      ]
+    const mns = list.filter((p) => p.element === 'Mn')
+    const oxs = list.filter((p) => p.element === 'O')
+    return { list, bonds: mnOBonds(mns, oxs) }
+  }, [])
+  return <AtomBalls atoms={list} bonds={bonds} />
+}
+
+function CellAtoms() {
+  const atoms = useMemo<VoidAtom[]>(
+    () => [
+      ...data.manganese.map((p) => ({ element: 'Mn', ...p })),
+      ...data.oxygen.map((p) => ({ element: 'O', ...p })),
+    ],
+    [],
+  )
+  const bonds = useMemo(
+    () => mnOBonds(data.manganese, data.oxygen, data.cell.a),
+    [],
+  )
+  return <AtomBalls atoms={atoms} bonds={bonds} />
 }
 
 type CubaneData = {
@@ -489,9 +557,8 @@ function Scene({
 
   const showVoids = phase === 'voids'
   const showCubane = phase === 'cubane'
-  const showPoly = phase === 'framework' || exchange
-  const showAtoms = phase === 'voids'
-  const polyOpacity = phase === 'framework' ? 0.72 : exchange ? 0.58 : 0.32
+  const showCellBalls = phase === 'framework' || exchange
+  const showVoidBalls = phase === 'voids'
   const heroCubane = data.cubanes[0] as CubaneData
   const controls = useRef<{ enabled: boolean } | null>(null)
 
@@ -525,12 +592,15 @@ function Scene({
       {cubaneFocus && <directionalLight position={[2, -4, 5]} intensity={0.3} color="#f0c878" />}
       {poreView && <pointLight position={[0, 0, 0]} intensity={0.55} color="#f0d7a0" distance={8} />}
       <group ref={group} scale={SCALE}>
+        {poreView && (
+          <CellWire
+            size={((data.void as { clipHalf?: number }).clipHalf ?? data.cell.a) * 2}
+            opacity={0.34}
+          />
+        )}
         {!cubaneFocus && !poreView && <CellWire size={data.cell.a} opacity={0.28} />}
-        {showPoly &&
-          data.polyhedra.map((poly, i) => (
-            <Polyhedron key={i} vertices={poly.vertices} faces={poly.faces} opacity={polyOpacity} />
-          ))}
-        {showAtoms && <FrameworkAtoms />}
+        {showCellBalls && <CellAtoms />}
+        {showVoidBalls && <FrameworkAtoms />}
         {exchange && <HomeOxygen />}
         {showVoids && <VoidSurface pore={poreView} />}
         {exchange && (
@@ -551,8 +621,8 @@ function Scene({
           controls.current = el
         }}
         enablePan={false}
-        minDistance={cell * (cubaneFocus ? 0.85 : poreView ? 1.6 : 1.25)}
-        maxDistance={cell * (poreView ? 5.5 : 4.5)}
+        minDistance={cell * (cubaneFocus ? 0.85 : poreView ? 2.2 : 1.25)}
+        maxDistance={cell * (poreView ? 7 : 4.5)}
         makeDefault
       />
     </>
@@ -615,23 +685,27 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
 
   const legend =
     phase === 'framework'
-      ? [{ color: POLY_COLOR, label: 'MnO₆' }]
+      ? [
+          { color: MN_COLOR, label: 'Mn' },
+          { color: O_COLOR, label: 'O' },
+        ]
       : phase === 'voids'
         ? [
-            { color: POLY_COLOR, label: 'Mn' },
+            { color: MN_COLOR, label: 'Mn' },
             { color: O_COLOR, label: 'O' },
             { color: VOID_OUT, label: 'void out' },
             { color: VOID_IN, label: 'void in' },
           ]
         : phase === 'hydrogen'
           ? [
-              { color: POLY_COLOR, label: 'MnO₆' },
+              { color: MN_COLOR, label: 'Mn' },
               { color: O_COLOR, label: 'O' },
               { color: H_COLOR, label: 'H' },
             ]
           : phase === 'lithium'
             ? [
-                { color: POLY_COLOR, label: 'MnO₆' },
+                { color: MN_COLOR, label: 'Mn' },
+                { color: O_COLOR, label: 'O' },
                 { color: H_COLOR, label: 'H' },
                 { color: LI_COLOR, label: 'Li' },
               ]

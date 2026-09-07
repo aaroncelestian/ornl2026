@@ -32,8 +32,8 @@ const RADII = { Mn: 2.0, O: 1.52 }
 const CAP_MIN_R = 0.32
 const CAP_MAX_R = 3.8
 const VOID_SUPERCELL = 2
-/** Spherical cluster, CrystalMaker range-style. Just inside the 2×2×2 box. */
-const CLIP_RADIUS = 7.7
+/** Cube half-extent, set after the cell length is known. */
+let CLIP_HALF = 8
 
 function parseNum(value) {
   return Number(String(value).replace(/\([^)]*\)/g, ''))
@@ -360,6 +360,7 @@ console.log(
 // ── Void mesh on a 2×2×2 supercell (Li removed → continuous 8a→16c tubing) ──
 const sc = VOID_SUPERCELL
 const A = a * sc
+CLIP_HALF = A * 0.5 - 0.02
 const unitFw = atoms
   .filter((p) => p.element === 'Mn' || p.element === 'O')
   .map((p) => ({
@@ -676,31 +677,42 @@ function enforceOutsideAtoms(pos, skip = null) {
   }
 }
 
-function sphereIntersect(a, b, radius) {
-  const dx = b[0] - a[0]
-  const dy = b[1] - a[1]
-  const dz = b[2] - a[2]
-  const aq = dx * dx + dy * dy + dz * dz
-  const snap = (p) => {
-    const r = Math.hypot(p[0], p[1], p[2]) || 1
-    const s = radius / r
-    return [p[0] * s, p[1] * s, p[2] * s]
-  }
-  if (aq < 1e-16) return snap(a)
-  const bq = 2 * (a[0] * dx + a[1] * dy + a[2] * dz)
-  const cq = a[0] * a[0] + a[1] * a[1] + a[2] * a[2] - radius * radius
-  const disc = bq * bq - 4 * aq * cq
-  if (disc < 0) return snap([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2])
-  const root = Math.sqrt(disc)
-  const t0 = (-bq - root) / (2 * aq)
-  const t1 = (-bq + root) / (2 * aq)
-  const ok = []
-  if (t0 >= -1e-4 && t0 <= 1 + 1e-4) ok.push(t0)
-  if (t1 >= -1e-4 && t1 <= 1 + 1e-4) ok.push(t1)
-  let t = 0.5
-  if (ok.length) t = ok.reduce((best, u) => (Math.abs(u - 0.5) < Math.abs(best - 0.5) ? u : best))
-  t = Math.min(1, Math.max(0, t))
-  return snap([a[0] + t * dx, a[1] + t * dy, a[2] + t * dz])
+function planeIntersect(a, b, nx, ny, nz, d) {
+  const da = nx * a[0] + ny * a[1] + nz * a[2]
+  const db = nx * b[0] + ny * b[1] + nz * b[2]
+  const t = (d - da) / (db - da || 1e-16)
+  const u = Math.min(1, Math.max(0, t))
+  return [a[0] + u * (b[0] - a[0]), a[1] + u * (b[1] - a[1]), a[2] + u * (b[2] - a[2])]
+}
+
+function snapToBoxFace(x, y, z, h) {
+  x = Math.min(h, Math.max(-h, x))
+  y = Math.min(h, Math.max(-h, y))
+  z = Math.min(h, Math.max(-h, z))
+  const dx = h - Math.abs(x)
+  const dy = h - Math.abs(y)
+  const dz = h - Math.abs(z)
+  if (dx <= dy && dx <= dz) x = (x >= 0 ? 1 : -1) * h
+  else if (dy <= dz) y = (y >= 0 ? 1 : -1) * h
+  else z = (z >= 0 ? 1 : -1) * h
+  return [x, y, z]
+}
+
+function faceNormal(x, y, z) {
+  const ax = Math.abs(x)
+  const ay = Math.abs(y)
+  const az = Math.abs(z)
+  if (ax >= ay && ax >= az) return [x >= 0 ? 1 : -1, 0, 0]
+  if (ay >= az) return [0, y >= 0 ? 1 : -1, 0]
+  return [0, 0, z >= 0 ? 1 : -1]
+}
+
+function onBoxFace(x, y, z, h, tol = 0.14) {
+  return (
+    Math.abs(Math.abs(x) - h) <= tol ||
+    Math.abs(Math.abs(y) - h) <= tol ||
+    Math.abs(Math.abs(z) - h) <= tol
+  )
 }
 
 function compactMesh(pos, faces) {
@@ -724,16 +736,13 @@ function compactMesh(pos, faces) {
   return { pos: newPos, faces: newFaces }
 }
 
-/** Clip the mesh to a sphere by splitting straddling triangles on the surface. */
-function clipMeshToSphere(pos, faces, radius) {
+/** Clip the mesh to a half-space n·x <= d by splitting straddling triangles. */
+function clipMeshToPlane(pos, faces, nx, ny, nz, d) {
   const nV = pos.length / 3
-  const r2 = radius * radius
   const inside = new Uint8Array(nV)
   for (let i = 0; i < nV; i++) {
-    const x = pos[i * 3]
-    const y = pos[i * 3 + 1]
-    const z = pos[i * 3 + 2]
-    inside[i] = x * x + y * y + z * z <= r2 ? 1 : 0
+    inside[i] =
+      nx * pos[i * 3] + ny * pos[i * 3 + 1] + nz * pos[i * 3 + 2] <= d + 1e-7 ? 1 : 0
   }
   const get = (i) => [pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]]
   const edgeHit = new Map()
@@ -741,7 +750,7 @@ function clipMeshToSphere(pos, faces, radius) {
   const hit = (ia, ib) => {
     const key = ia < ib ? `${ia}-${ib}` : `${ib}-${ia}`
     if (edgeHit.has(key)) return edgeHit.get(key)
-    const p = sphereIntersect(get(ia), get(ib), radius)
+    const p = planeIntersect(get(ia), get(ib), nx, ny, nz, d)
     const id = newPos.length / 3
     newPos.push(p[0], p[1], p[2])
     edgeHit.set(key, id)
@@ -799,6 +808,25 @@ function clipMeshToSphere(pos, faces, radius) {
     }
   }
   return compactMesh(newPos, newFaces)
+}
+
+function clipMeshToBox(pos, faces, h) {
+  const planes = [
+    [1, 0, 0, h],
+    [-1, 0, 0, h],
+    [0, 1, 0, h],
+    [0, -1, 0, h],
+    [0, 0, 1, h],
+    [0, 0, -1, h],
+  ]
+  let p = pos
+  let f = faces
+  for (const [nx, ny, nz, d] of planes) {
+    const r = clipMeshToPlane(p, f, nx, ny, nz, d)
+    p = r.pos
+    f = r.faces
+  }
+  return { pos: p, faces: f }
 }
 
 function boundaryLoops(faces) {
@@ -881,61 +909,64 @@ function loopSpread(pos, loop, c, meanR) {
   return Math.sqrt(acc / loop.length) / Math.max(meanR, 1e-6)
 }
 
-/** Pull each mouth toward a circle on the clip sphere so caps read as clean discs. */
-function circularizeLoopsOnSphere(pos, loops, radius, mix = 0.78) {
+function faceBasis(n) {
+  let ax = 0
+  let ay = 1
+  let az = 0
+  if (Math.abs(n[1]) > 0.9) {
+    ax = 1
+    ay = 0
+  }
+  let ux = n[1] * az - n[2] * ay
+  let uy = n[2] * ax - n[0] * az
+  let uz = n[0] * ay - n[1] * ax
+  const ul = Math.hypot(ux, uy, uz) || 1
+  ux /= ul
+  uy /= ul
+  uz /= ul
+  return {
+    u: [ux, uy, uz],
+    v: [n[1] * uz - n[2] * uy, n[2] * ux - n[0] * uz, n[0] * uy - n[1] * ux],
+  }
+}
+
+/** Pull each mouth toward a circle on its cube face. */
+function circularizeLoopsOnBox(pos, loops, h, mix = 0.72) {
   let n = 0
   for (const loop of loops) {
     const c = loopCentroid(pos, loop)
     const meanR = loopRadius(pos, loop, c)
     if (meanR < CAP_MIN_R || meanR > CAP_MAX_R) continue
     if (loopSpread(pos, loop, c, meanR) > 0.32) continue
-    const nlen = Math.hypot(c[0], c[1], c[2]) || 1
-    const nx = c[0] / nlen
-    const ny = c[1] / nlen
-    const nz = c[2] / nlen
-    let ax = 0
-    let ay = 1
-    let az = 0
-    if (Math.abs(ny) > 0.9) {
-      ax = 1
-      ay = 0
-    }
-    let ux = ny * az - nz * ay
-    let uy = nz * ax - nx * az
-    let uz = nx * ay - ny * ax
-    const ul = Math.hypot(ux, uy, uz) || 1
-    ux /= ul
-    uy /= ul
-    uz /= ul
-    const vx = ny * uz - nz * uy
-    const vy = nz * ux - nx * uz
-    const vz = nx * uy - ny * ux
+    if (!onBoxFace(c[0], c[1], c[2], h, 0.55)) continue
+    const fn = faceNormal(c[0], c[1], c[2])
+    const { u, v } = faceBasis(fn)
     for (const i of loop) {
       const dx = pos[i * 3] - c[0]
       const dy = pos[i * 3 + 1] - c[1]
       const dz = pos[i * 3 + 2] - c[2]
-      const x = dx * ux + dy * uy + dz * uz
-      const y = dx * vx + dy * vy + dz * vz
+      const x = dx * u[0] + dy * u[1] + dz * u[2]
+      const y = dx * v[0] + dy * v[1] + dz * v[2]
       const ang = Math.atan2(y, x)
-      const tx = c[0] + (ux * Math.cos(ang) + vx * Math.sin(ang)) * meanR
-      const ty = c[1] + (uy * Math.cos(ang) + vy * Math.sin(ang)) * meanR
-      const tz = c[2] + (uz * Math.cos(ang) + vz * Math.sin(ang)) * meanR
-      let px = pos[i * 3] * (1 - mix) + tx * mix
-      let py = pos[i * 3 + 1] * (1 - mix) + ty * mix
-      let pz = pos[i * 3 + 2] * (1 - mix) + tz * mix
-      const r = Math.hypot(px, py, pz) || 1
-      const s = radius / r
-      pos[i * 3] = px * s
-      pos[i * 3 + 1] = py * s
-      pos[i * 3 + 2] = pz * s
+      const tx = c[0] + (u[0] * Math.cos(ang) + v[0] * Math.sin(ang)) * meanR
+      const ty = c[1] + (u[1] * Math.cos(ang) + v[1] * Math.sin(ang)) * meanR
+      const tz = c[2] + (u[2] * Math.cos(ang) + v[2] * Math.sin(ang)) * meanR
+      const px = pos[i * 3] * (1 - mix) + tx * mix
+      const py = pos[i * 3 + 1] * (1 - mix) + ty * mix
+      const pz = pos[i * 3 + 2] * (1 - mix) + tz * mix
+      const s = snapToBoxFace(px, py, pz, h)
+      pos[i * 3] = s[0]
+      pos[i * 3 + 1] = s[1]
+      pos[i * 3 + 2] = s[2]
     }
     n++
   }
   return n
 }
 
-/** Planar discs that seal each spherical cut — CrystalMaker-style channel mouths. */
-function capSphereLoops(pos, loops) {
+/** Planar discs on cube faces — resampled circles so the lids stay clean. */
+function capBoxLoops(pos, loops, h) {
+  const SEG = 28
   const capPos = []
   const capNorm = []
   const capIndex = []
@@ -945,29 +976,29 @@ function capSphereLoops(pos, loops) {
     const meanR = loopRadius(pos, loop, c)
     if (meanR < CAP_MIN_R || meanR > CAP_MAX_R) continue
     if (loopSpread(pos, loop, c, meanR) > 0.32) continue
-    const cr = Math.hypot(c[0], c[1], c[2]) || 1
-    if (Math.abs(cr - CLIP_RADIUS) > 0.55) continue
-    const out = [c[0] / cr, c[1] / cr, c[2] / cr]
-    // Lift the disc slightly so it does not z-fight the rim.
-    const lift = 0.02
+    if (!onBoxFace(c[0], c[1], c[2], h, 0.55)) continue
+    const out = faceNormal(c[0], c[1], c[2])
+    const { u, v } = faceBasis(out)
+    const lift = 0.05
     const cx = c[0] + out[0] * lift
     const cy = c[1] + out[1] * lift
     const cz = c[2] + out[2] * lift
+    const rad = meanR * 1.02
     const base = capPos.length / 3
     capPos.push(r3(cx), r3(cy), r3(cz))
-    capNorm.push(r3(out[0]), r3(out[1]), r3(out[2]))
+    capNorm.push(out[0], out[1], out[2])
     const rim = capPos.length / 3
-    for (const i of loop) {
-      capPos.push(r3(pos[i * 3]), r3(pos[i * 3 + 1]), r3(pos[i * 3 + 2]))
-      capNorm.push(r3(out[0]), r3(out[1]), r3(out[2]))
+    for (let k = 0; k < SEG; k++) {
+      const ang = (k / SEG) * Math.PI * 2
+      capPos.push(
+        r3(cx + (u[0] * Math.cos(ang) + v[0] * Math.sin(ang)) * rad),
+        r3(cy + (u[1] * Math.cos(ang) + v[1] * Math.sin(ang)) * rad),
+        r3(cz + (u[2] * Math.cos(ang) + v[2] * Math.sin(ang)) * rad),
+      )
+      capNorm.push(out[0], out[1], out[2])
     }
-    for (let k = 0; k < loop.length; k++) {
-      const a = rim + k
-      const b = rim + ((k + 1) % loop.length)
-      const v0 = [capPos[a * 3] - cx, capPos[a * 3 + 1] - cy, capPos[a * 3 + 2] - cz]
-      const v1 = [capPos[b * 3] - cx, capPos[b * 3 + 1] - cy, capPos[b * 3 + 2] - cz]
-      if (dot(cross(v0, v1), out) >= 0) capIndex.push(base, a, b)
-      else capIndex.push(base, b, a)
+    for (let k = 0; k < SEG; k++) {
+      capIndex.push(base, rim + k, rim + ((k + 1) % SEG))
     }
     count++
   }
@@ -1035,6 +1066,52 @@ function smoothBoundaryOnSphere(pos, faces, bound, radius, iters) {
       next[i * 3] *= s
       next[i * 3 + 1] *= s
       next[i * 3 + 2] *= s
+    }
+    for (let i = 0; i < pos.length; i++) pos[i] = next[i]
+  }
+}
+
+function smoothBoundaryOnBox(pos, faces, bound, h, iters) {
+  const nV = pos.length / 3
+  const nbrs = Array.from({ length: nV }, () => [])
+  for (let t = 0; t < faces.length; t += 3) {
+    const a0 = faces[t]
+    const a1 = faces[t + 1]
+    const a2 = faces[t + 2]
+    const ring = [
+      [a0, a1],
+      [a1, a2],
+      [a2, a0],
+    ]
+    for (const [u, v] of ring) {
+      if (!bound.has(u) || !bound.has(v)) continue
+      nbrs[u].push(v)
+      nbrs[v].push(u)
+    }
+  }
+  for (let k = 0; k < iters; k++) {
+    const next = pos.slice()
+    for (const i of bound) {
+      const list = nbrs[i]
+      if (list.length < 2) continue
+      let ax = 0
+      let ay = 0
+      let az = 0
+      for (const j of list) {
+        ax += pos[j * 3]
+        ay += pos[j * 3 + 1]
+        az += pos[j * 3 + 2]
+      }
+      const inv = 1 / list.length
+      const s = snapToBoxFace(
+        pos[i * 3] * 0.3 + ax * inv * 0.7,
+        pos[i * 3 + 1] * 0.3 + ay * inv * 0.7,
+        pos[i * 3 + 2] * 0.3 + az * inv * 0.7,
+        h,
+      )
+      next[i * 3] = s[0]
+      next[i * 3 + 1] = s[1]
+      next[i * 3 + 2] = s[2]
     }
     for (let i = 0; i < pos.length; i++) pos[i] = next[i]
   }
@@ -1138,49 +1215,41 @@ enforceOutsideAtoms(positions)
 sdfStats(positions, 'after extra project')
 
 {
-  const clipped = clipMeshToSphere(positions, index, CLIP_RADIUS)
+  const clipped = clipMeshToBox(positions, index, CLIP_HALF)
   positions.length = 0
   for (let i = 0; i < clipped.pos.length; i++) positions.push(clipped.pos[i])
   index.length = 0
   for (let i = 0; i < clipped.faces.length; i++) index.push(clipped.faces[i])
-  const rimTol = 0.12
   const bound = new Set()
   for (let i = 0; i < positions.length / 3; i++) {
-    const r = Math.hypot(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
-    if (Math.abs(r - CLIP_RADIUS) <= rimTol) bound.add(i)
+    if (onBoxFace(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], CLIP_HALF)) {
+      bound.add(i)
+    }
   }
   for (const i of boundaryVerts(index, positions.length / 3)) bound.add(i)
   taubinSmooth(positions, index, 4)
   for (const i of bound) {
-    const x = positions[i * 3]
-    const y = positions[i * 3 + 1]
-    const z = positions[i * 3 + 2]
-    const r = Math.hypot(x, y, z) || 1
-    const s = CLIP_RADIUS / r
-    positions[i * 3] = x * s
-    positions[i * 3 + 1] = y * s
-    positions[i * 3 + 2] = z * s
+    const s = snapToBoxFace(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], CLIP_HALF)
+    positions[i * 3] = s[0]
+    positions[i * 3 + 1] = s[1]
+    positions[i * 3 + 2] = s[2]
   }
-  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, BOUNDARY_SMOOTH)
+  smoothBoundaryOnBox(positions, index, bound, CLIP_HALF, BOUNDARY_SMOOTH)
   projectToIso(positions, 6, bound)
   enforceOutsideAtoms(positions, bound)
   const mouths = boundaryLoops(index)
-  const rounded = circularizeLoopsOnSphere(positions, mouths, CLIP_RADIUS, 0.55)
-  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, 8)
+  const rounded = circularizeLoopsOnBox(positions, mouths, CLIP_HALF, 0.6)
+  smoothBoundaryOnBox(positions, index, bound, CLIP_HALF, 8)
   projectToIso(positions, 4, bound)
   enforceOutsideAtoms(positions)
   for (const i of bound) {
-    const x = positions[i * 3]
-    const y = positions[i * 3 + 1]
-    const z = positions[i * 3 + 2]
-    const r = Math.hypot(x, y, z) || 1
-    const s = CLIP_RADIUS / r
-    positions[i * 3] = x * s
-    positions[i * 3 + 1] = y * s
-    positions[i * 3 + 2] = z * s
+    const s = snapToBoxFace(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], CLIP_HALF)
+    positions[i * 3] = s[0]
+    positions[i * 3 + 1] = s[1]
+    positions[i * 3 + 2] = s[2]
   }
   console.log(
-    `  clipped to ${CLIP_RADIUS} Å sphere · ${bound.size} rim verts · ${mouths.length} loops · ${rounded} circularized`,
+    `  clipped to ${CLIP_HALF.toFixed(2)} Å cube · ${bound.size} rim verts · ${mouths.length} loops · ${rounded} circularized`,
   )
 }
 
@@ -1262,16 +1331,15 @@ sdfStats(positions, 'final')
 
 const voidAtoms = []
 {
-  const rKeep = CLIP_RADIUS + 0.35
-  const r2 = rKeep * rKeep
+  const keep = CLIP_HALF + 0.35
   for (const atom of framework) {
     const x = atom.x - A * 0.5
     const y = atom.y - A * 0.5
     const z = atom.z - A * 0.5
-    if (x * x + y * y + z * z > r2) continue
+    if (Math.abs(x) > keep || Math.abs(y) > keep || Math.abs(z) > keep) continue
     voidAtoms.push({ element: atom.element, x: r3(x), y: r3(y), z: r3(z) })
   }
-  console.log(`Void cluster atoms: ${voidAtoms.length} within ${rKeep.toFixed(2)} Å`)
+  console.log(`Void cube atoms: ${voidAtoms.length} within ±${keep.toFixed(2)} Å`)
 }
 
 const normals = new Array(positions.length).fill(0)
@@ -1292,7 +1360,7 @@ for (let i = 0; i < positions.length; i += 3) {
 for (let i = 0; i < normals.length; i++) normals[i] = r3(normals[i])
 for (let i = 0; i < positions.length; i++) positions[i] = r3(positions[i])
 
-const voidCaps = capSphereLoops(positions, boundaryLoops(index))
+const voidCaps = capBoxLoops(positions, boundaryLoops(index), CLIP_HALF)
 console.log(`  capped ${voidCaps.count} channel mouths (${voidCaps.positions.length / 3} cap verts)`)
 
 function mean(xs) {
@@ -1316,8 +1384,9 @@ const payload = {
     grid: GRID,
     supercell: sc,
     box: A,
-    clipRadius: CLIP_RADIUS,
-    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Li removed; spherical cuts capped`,
+    clipHalf: CLIP_HALF,
+    clipShape: 'cube',
+    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Li removed; cube-clipped`,
     positions,
     normals,
     index,
