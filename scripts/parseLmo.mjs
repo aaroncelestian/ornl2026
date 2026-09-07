@@ -13,14 +13,16 @@ const cifPath = join(root, 'docs', 'data-assets', 'LMO', 'LiMn2O4.cif')
 const outPath = join(root, 'src', 'data', 'lmoSpinel.json')
 
 const MN_O_MAX = 2.25
-/** Same void pipeline as rowleyite: SDF → keep large cavities → surface nets → Taubin */
-const GRID = 52
-/** Li⁺-accessible probe (Å). Water 1.35 Å does not fit the 8a↔16c channels. */
-const PROBE = 0.5
-const MIN_VOID_VOXELS = 12
+/**
+ * Same void pipeline as rowleyite (SDF → cavities → surface nets → Taubin),
+ * but radii/probe tuned so 8a→16c→8a stays ONE connected channel network.
+ * (Water probe 1.35 Å leaves almost nothing in spinel.)
+ */
+const GRID = 56
+const PROBE = 0.22
+const MIN_VOID_VOXELS = 40
 const SMOOTH_ITERS = 10
-/** Framework radii in the same spirit as Rowleyite’s VdW set */
-const RADII = { Mn: 1.35, O: 1.28 }
+const RADII = { Mn: 1.18, O: 1.12 }
 
 function parseNum(value) {
   return Number(String(value).replace(/\([^)]*\)/g, ''))
@@ -616,6 +618,71 @@ console.log(`Smoothing LMO void surface (${SMOOTH_ITERS} Taubin iterations, prob
 taubinSmooth(positions, index, SMOOTH_ITERS)
 projectToIso(positions)
 
+// Keep only the dominant connected channel network (drop tiny cavities)
+{
+  const nV = positions.length / 3
+  const nbrs = Array.from({ length: nV }, () => new Set())
+  for (let t = 0; t < index.length; t += 3) {
+    const a0 = index[t]
+    const a1 = index[t + 1]
+    const a2 = index[t + 2]
+    nbrs[a0].add(a1)
+    nbrs[a0].add(a2)
+    nbrs[a1].add(a0)
+    nbrs[a1].add(a2)
+    nbrs[a2].add(a0)
+    nbrs[a2].add(a1)
+  }
+  const labelV = new Int32Array(nV).fill(-1)
+  const sizesV = []
+  let cid = 0
+  for (let s = 0; s < nV; s++) {
+    if (labelV[s] >= 0) continue
+    const stack = [s]
+    labelV[s] = cid
+    let size = 0
+    while (stack.length) {
+      const u = stack.pop()
+      size++
+      for (const v of nbrs[u]) {
+        if (labelV[v] < 0) {
+          labelV[v] = cid
+          stack.push(v)
+        }
+      }
+    }
+    sizesV.push({ id: cid, size })
+    cid++
+  }
+  sizesV.sort((p, q) => q.size - p.size)
+  const keepId = sizesV[0]?.id
+  const keepFrac = (sizesV[0]?.size ?? 0) / Math.max(1, nV)
+  console.log(
+    `Mesh components: ${sizesV.length} · keeping #${keepId} (${((keepFrac) * 100).toFixed(1)}% of verts)`,
+  )
+  if (keepId != null && sizesV.length > 1) {
+    const remap = new Int32Array(nV).fill(-1)
+    const newPos = []
+    for (let i = 0; i < nV; i++) {
+      if (labelV[i] !== keepId) continue
+      remap[i] = newPos.length / 3
+      newPos.push(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
+    }
+    const newIndex = []
+    for (let t = 0; t < index.length; t += 3) {
+      const a0 = remap[index[t]]
+      const a1 = remap[index[t + 1]]
+      const a2 = remap[index[t + 2]]
+      if (a0 < 0 || a1 < 0 || a2 < 0) continue
+      newIndex.push(a0, a1, a2)
+    }
+    positions.length = 0
+    for (let i = 0; i < newPos.length; i++) positions.push(newPos[i])
+    index.length = 0
+    for (let i = 0; i < newIndex.length; i++) index.push(newIndex[i])
+  }
+}
+
 const normals = new Array(positions.length).fill(0)
 const step = a / n
 for (let i = 0; i < positions.length; i += 3) {
@@ -651,7 +718,7 @@ const payload = {
   void: {
     probe: PROBE,
     grid: GRID,
-    note: 'Li⁺-accessible void (probe 0.5 Å) of Mn–O framework only — same SAS pipeline as Rowleyite',
+    note: 'Connected 8a→16c→8a pore channels of Mn–O framework (Li removed); Taubin-smoothed',
     positions: [...positions],
     normals: [...normals],
     index,

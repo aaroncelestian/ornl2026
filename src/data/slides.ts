@@ -341,7 +341,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Li removed. Same solvent-accessible void pipeline as Rowleyite — probe SDF of the Mn–O framework, Taubin-smoothed surface. Probe 0.5 Å (Li⁺ fit); water at 1.35 Å does not thread 8a→16c→8a. That tunnel geometry is the product.',
+          'Li removed. Connected pore channels of the Mn–O framework — tubular 8a→16c→8a along ⟨111⟩ — drawn as a translucent void surface around Mn and O. That tunnel geometry is the product: the gate brine Li has to fit.',
       },
       {
         id: '8a',
