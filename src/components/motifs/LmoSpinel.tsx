@@ -12,8 +12,8 @@ const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
 /** Framework in the home cell; void network extends through the 2×2×2 box */
 const VOID_HOME = new THREE.Vector3(6.4, 4.2, 7.4)
 const POLY_COLOR = '#9a6ab8'
-const VOID_OUT = '#9bb4c8'
-const VOID_IN = '#f2f5f7'
+const VOID_OUT = '#5e87a0'
+const VOID_IN = '#f0d7a0'
 const VOID_GHOST = '#e0b15c'
 const LI_COLOR = '#6ecf7a'
 const MN_COLOR = '#8b5cad'
@@ -154,32 +154,27 @@ function VoidSurface({ pore }: { pore: boolean }) {
     return geo
   }, [])
 
-  // Tubing: blue outer wall + pale inner wall (cut-open channel look from the reference)
+  // Two passes: steel outside, warm channel interior. Sides are assigned
+  // to match the clipped cluster (blue skin, cream when a tube is cut open).
   if (pore) {
     return (
       <group>
         <mesh geometry={geometry} renderOrder={1}>
-          <meshPhysicalMaterial
+          <meshStandardMaterial
             color={VOID_OUT}
-            transparent
-            opacity={0.62}
-            roughness={0.28}
-            metalness={0.03}
-            transmission={0.22}
-            thickness={0.55}
+            roughness={0.32}
+            metalness={0.08}
             side={THREE.BackSide}
-            depthWrite={false}
           />
         </mesh>
-        <mesh geometry={geometry} renderOrder={1}>
-          <meshPhysicalMaterial
+        <mesh geometry={geometry} renderOrder={2}>
+          <meshStandardMaterial
             color={VOID_IN}
-            transparent
-            opacity={0.48}
+            emissive={VOID_IN}
+            emissiveIntensity={0.14}
             roughness={0.38}
-            metalness={0.02}
+            metalness={0.04}
             side={THREE.FrontSide}
-            depthWrite={false}
           />
         </mesh>
       </group>
@@ -559,6 +554,8 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
         ? [
             { color: POLY_COLOR, label: 'Mn' },
             { color: O_COLOR, label: 'O' },
+            { color: VOID_OUT, label: 'void out' },
+            { color: VOID_IN, label: 'void in' },
           ]
         : phase === 'lithium'
           ? [
