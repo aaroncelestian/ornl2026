@@ -15,9 +15,10 @@ const outPath = join(root, 'src', 'data', 'lmoSpinel.json')
 const MN_O_MAX = 2.25
 /** Finer grid → smoother tubular 8a↔16c channels along ⟨111⟩ */
 const GRID = 52
-const PROBE = 0.48
+/** Soft probe → plump pore continuum around Mn–O (Li removed), closer to VESTA-style void maps */
+const PROBE = 0.18
 const MIN_VOID_VOXELS = 18
-const RADII = { Mn: 1.26, O: 1.22 }
+const RADII = { Mn: 1.12, O: 1.08 }
 
 function parseNum(value) {
   return Number(String(value).replace(/\([^)]*\)/g, ''))
@@ -226,6 +227,8 @@ for (const mn of mns) {
 }
 
 const lithium = lis.map((li) => ({ x: r3(li.x), y: r3(li.y), z: r3(li.z) }))
+const oxygen = oxys.map((ox) => ({ x: r3(ox.x), y: r3(ox.y), z: r3(ox.z) }))
+const manganese = mns.map((mn) => ({ x: r3(mn.x), y: r3(mn.y), z: r3(mn.z) }))
 
 function oxNear(mn, maxD = MN_O_MAX) {
   const neighbors = []
@@ -588,12 +591,14 @@ const payload = {
   paper: 'Celestian et al., J. Raman Spectrosc. 2026, 57:131–139',
   cell: { a },
   polyhedra,
+  manganese,
+  oxygen,
   lithium,
   cubanes: cubaneUnique.slice(0, 8),
   void: {
     probe: PROBE,
     grid: GRID,
-    note: 'Probe-accessible void with Li removed — tubular 8a→16c→8a channels along ⟨111⟩',
+    note: 'Probe-accessible void with Li removed — pore space of the Mn–O framework (8a→16c→8a along ⟨111⟩)',
     positions: [...positions],
     normals: [...normals],
     index,
@@ -602,6 +607,8 @@ const payload = {
     counts,
     mnOMean: r3(mean(mnOLengths)),
     polyCount: polyhedra.length,
+    mnCount: manganese.length,
+    oCount: oxygen.length,
     liCount: lithium.length,
     cubaneCount: cubaneUnique.length,
     voidVerts: positions.length / 3,

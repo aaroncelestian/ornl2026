@@ -455,6 +455,28 @@
   z-index: 2;
 }
 
+.scaleBar {
+  position: absolute;
+  right: var(--pad-x);
+  bottom: calc(var(--pad-y) + 1.85rem);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-text) 72%, transparent);
+  pointer-events: none;
+}
+
+.scaleTick {
+  display: block;
+  width: 52px;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-text) 78%, transparent);
+}
+
 .captionSizer {
   visibility: hidden;
   display: block;
