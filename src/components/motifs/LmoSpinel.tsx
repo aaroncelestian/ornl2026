@@ -9,11 +9,11 @@ import styles from './Motifs.module.css'
 
 const SCALE = 0.55
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
-/** ¾ view that keeps Mn–O framework readable under the pore surface */
-const VOID_HOME = new THREE.Vector3(4.6, 3.1, 5.4)
+/** Same family of view as Rowleyite void — read the cavity network first */
+const VOID_HOME = new THREE.Vector3(5.0, 3.4, 5.6)
 const POLY_COLOR = '#9a6ab8'
-const VOID_PORE = '#9eb8c8'
 const VOID_IN = '#e0b15c'
+const VOID_OUT = '#5aa8b8'
 const LI_COLOR = '#6ecf7a'
 const MN_COLOR = '#8b5cad'
 const O_COLOR = '#c45a3a'
@@ -31,7 +31,7 @@ function phaseForBeat(id?: string): Phase {
 
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · MnO₆ polyhedra · drag to orbit',
-  voids: 'Pore space · Mn–O framework · Li removed',
+  voids: 'Li⁺-accessible void · Mn–O only · probe 0.5 Å',
   lithium: 'Li in tetrahedral 8a voids',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
@@ -144,7 +144,7 @@ function Polyhedron({
   )
 }
 
-function VoidSurface({ pore }: { pore: boolean }) {
+function VoidSurface({ emphasize }: { emphasize: boolean }) {
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.Float32BufferAttribute(data.void.positions, 3))
@@ -153,22 +153,36 @@ function VoidSurface({ pore }: { pore: boolean }) {
     return geo
   }, [])
 
-  // Pore beat: translucent blue continuum around the Mn–O framework (Li removed)
-  if (pore) {
+  // Same dual-wall SAS look as Rowleyite VoidViewer
+  if (emphasize) {
     return (
-      <mesh geometry={geometry} renderOrder={1}>
-        <meshPhysicalMaterial
-          color={VOID_PORE}
-          transparent
-          opacity={0.34}
-          roughness={0.55}
-          metalness={0.04}
-          transmission={0.28}
-          thickness={0.65}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
+      <group>
+        <mesh geometry={geometry} renderOrder={0}>
+          <meshPhysicalMaterial
+            color={VOID_IN}
+            roughness={0.38}
+            metalness={0.22}
+            clearcoat={0.45}
+            clearcoatRoughness={0.35}
+            sheen={0.28}
+            sheenColor="#f0d4a0"
+            side={THREE.FrontSide}
+            depthWrite
+          />
+        </mesh>
+        <mesh geometry={geometry} renderOrder={0}>
+          <meshPhysicalMaterial
+            color={VOID_OUT}
+            roughness={0.62}
+            metalness={0.06}
+            clearcoat={0.08}
+            sheen={0.18}
+            sheenColor="#b8e0e8"
+            side={THREE.BackSide}
+            depthWrite
+          />
+        </mesh>
+      </group>
     )
   }
 
@@ -186,27 +200,6 @@ function VoidSurface({ pore }: { pore: boolean }) {
         depthWrite={false}
       />
     </mesh>
-  )
-}
-
-function OxygenAtoms({ opacity = 1 }: { opacity?: number }) {
-  if (opacity < 0.04) return null
-  return (
-    <group>
-      {data.oxygen.map((ox, i) => (
-        <mesh key={i} position={[ox.x, ox.y, ox.z]}>
-          <sphereGeometry args={[0.28, 18, 18]} />
-          <meshStandardMaterial
-            color={O_COLOR}
-            roughness={0.35}
-            metalness={0.1}
-            transparent={opacity < 0.98}
-            opacity={opacity}
-            depthWrite={opacity > 0.7}
-          />
-        </mesh>
-      ))}
-    </group>
   )
 }
 
@@ -427,15 +420,14 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
   const group = useRef<THREE.Group>(null)
   const reduced = usePrefersReducedMotion()
   const cell = data.cell.a * SCALE
-  const poreView = phase === 'voids'
+  const voidOnly = phase === 'voids'
   const cubaneFocus = phase === 'cubane'
 
   const showVoids = phase === 'voids' || phase === 'lithium'
   const showLi = phase === 'lithium'
   const showCubane = phase === 'cubane'
-  const showPoly = phase === 'framework' || phase === 'voids' || phase === 'lithium'
-  const showOxygen = phase === 'voids'
-  const polyOpacity = phase === 'framework' ? 0.72 : phase === 'voids' ? 0.58 : 0.32
+  const showPoly = phase === 'framework' || phase === 'lithium'
+  const polyOpacity = phase === 'framework' ? 0.72 : 0.32
 
   const heroCubane = data.cubanes[0] as CubaneData
 
@@ -443,32 +435,33 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
     const root = group.current
     if (!root || !active || reduced) return
     if (cubaneFocus) root.rotation.y += dt * 0.12
-    else root.rotation.y += dt * (poreView ? 0.06 : 0.1)
+    else root.rotation.y += dt * (voidOnly ? 0.07 : 0.1)
   })
 
   return (
     <>
       <color attach="background" args={['#000000']} />
-      <ambientLight intensity={cubaneFocus ? 0.4 : poreView ? 0.48 : 0.55} />
+      <ambientLight intensity={cubaneFocus ? 0.4 : voidOnly ? 0.2 : 0.55} />
       <directionalLight
         position={[6, 8, 4]}
-        intensity={cubaneFocus ? 1.55 : poreView ? 1.2 : 1.15}
+        intensity={cubaneFocus ? 1.55 : voidOnly ? 1.65 : 1.15}
         color="#fff3dc"
       />
       <directionalLight
         position={[-4, 2, -6]}
-        intensity={cubaneFocus ? 0.5 : poreView ? 0.7 : 0.35}
+        intensity={cubaneFocus ? 0.5 : voidOnly ? 0.45 : 0.35}
         color="#9ec4d4"
       />
-      {cubaneFocus && <directionalLight position={[2, -4, 5]} intensity={0.32} color="#f0c878" />}
+      {(voidOnly || cubaneFocus) && (
+        <directionalLight position={[2, -4, 5]} intensity={0.3} color="#f0c878" />
+      )}
       <group ref={group} scale={SCALE}>
-        {!cubaneFocus && !poreView && <CellWire size={data.cell.a} opacity={0.28} />}
+        {!cubaneFocus && <CellWire size={data.cell.a} opacity={voidOnly ? 0.34 : 0.28} />}
         {showPoly &&
           data.polyhedra.map((poly, i) => (
             <Polyhedron key={i} vertices={poly.vertices} faces={poly.faces} opacity={polyOpacity} />
           ))}
-        {showOxygen && <OxygenAtoms />}
-        {showVoids && <VoidSurface pore={poreView} />}
+        {showVoids && <VoidSurface emphasize={voidOnly} />}
         {showLi &&
           data.lithium.map((li, i) => (
             <mesh key={i} position={[li.x, li.y, li.z]}>
@@ -535,8 +528,8 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
       ? [{ color: POLY_COLOR, label: 'MnO₆' }]
       : phase === 'voids'
         ? [
-            { color: POLY_COLOR, label: 'Mn' },
-            { color: O_COLOR, label: 'O' },
+            { color: VOID_OUT, label: 'void outside' },
+            { color: VOID_IN, label: 'void inside' },
           ]
         : phase === 'lithium'
           ? [

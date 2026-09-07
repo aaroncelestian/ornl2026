@@ -290,7 +290,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'lmo-spinel') {
         lines.push(
           beat?.id === 'voids'
-            ? 'Motif: LMO pore space — Mn–O framework with Li removed'
+            ? 'Motif: LMO Li⁺-accessible void — Taubin SAS mesh, Li removed (same pipeline as Rowleyite)'
             : beat?.id === '8a'
               ? 'Motif: LMO CIF — Li in tetrahedral 8a voids'
               : beat?.id === 'cubane'

@@ -13,12 +13,14 @@ const cifPath = join(root, 'docs', 'data-assets', 'LMO', 'LiMn2O4.cif')
 const outPath = join(root, 'src', 'data', 'lmoSpinel.json')
 
 const MN_O_MAX = 2.25
-/** Finer grid → smoother tubular 8a↔16c channels along ⟨111⟩ */
+/** Same void pipeline as rowleyite: SDF → keep large cavities → surface nets → Taubin */
 const GRID = 52
-/** Soft probe → plump pore continuum around Mn–O (Li removed), closer to VESTA-style void maps */
-const PROBE = 0.18
-const MIN_VOID_VOXELS = 18
-const RADII = { Mn: 1.12, O: 1.08 }
+/** Li⁺-accessible probe (Å). Water 1.35 Å does not fit the 8a↔16c channels. */
+const PROBE = 0.5
+const MIN_VOID_VOXELS = 12
+const SMOOTH_ITERS = 10
+/** Framework radii in the same spirit as Rowleyite’s VdW set */
+const RADII = { Mn: 1.35, O: 1.28 }
 
 function parseNum(value) {
   return Number(String(value).replace(/\([^)]*\)/g, ''))
@@ -550,36 +552,87 @@ for (let i = 0; i < n; i++) {
   }
 }
 
-const normals = new Float64Array(positions.length)
-for (let t = 0; t < index.length; t += 3) {
-  const ia = index[t] * 3
-  const ib = index[t + 1] * 3
-  const ic = index[t + 2] * 3
-  const ux = positions[ib] - positions[ia]
-  const uy = positions[ib + 1] - positions[ia + 1]
-  const uz = positions[ib + 2] - positions[ia + 2]
-  const vx = positions[ic] - positions[ia]
-  const vy = positions[ic + 1] - positions[ia + 1]
-  const vz = positions[ic + 2] - positions[ia + 2]
-  const nx = uy * vz - uz * vy
-  const ny = uz * vx - ux * vz
-  const nz = ux * vy - uy * vx
-  normals[ia] += nx
-  normals[ia + 1] += ny
-  normals[ia + 2] += nz
-  normals[ib] += nx
-  normals[ib + 1] += ny
-  normals[ib + 2] += nz
-  normals[ic] += nx
-  normals[ic + 1] += ny
-  normals[ic + 2] += nz
+function taubinSmooth(pos, faces, iterations, lambda = 0.5, mu = -0.53) {
+  const nV = pos.length / 3
+  const nbrs = Array.from({ length: nV }, () => new Set())
+  for (let t = 0; t < faces.length; t += 3) {
+    const a0 = faces[t]
+    const a1 = faces[t + 1]
+    const a2 = faces[t + 2]
+    nbrs[a0].add(a1)
+    nbrs[a0].add(a2)
+    nbrs[a1].add(a0)
+    nbrs[a1].add(a2)
+    nbrs[a2].add(a0)
+    nbrs[a2].add(a1)
+  }
+  const adj = nbrs.map((set) => [...set])
+
+  const pass = (factor) => {
+    const next = pos.slice()
+    for (let i = 0; i < nV; i++) {
+      const list = adj[i]
+      if (!list.length) continue
+      let ax = 0
+      let ay = 0
+      let az = 0
+      for (const j of list) {
+        ax += pos[j * 3]
+        ay += pos[j * 3 + 1]
+        az += pos[j * 3 + 2]
+      }
+      const inv = 1 / list.length
+      next[i * 3] = pos[i * 3] + factor * (ax * inv - pos[i * 3])
+      next[i * 3 + 1] = pos[i * 3 + 1] + factor * (ay * inv - pos[i * 3 + 1])
+      next[i * 3 + 2] = pos[i * 3 + 2] + factor * (az * inv - pos[i * 3 + 2])
+    }
+    for (let i = 0; i < pos.length; i++) pos[i] = next[i]
+  }
+
+  for (let k = 0; k < iterations; k++) {
+    pass(lambda)
+    pass(mu)
+  }
 }
-for (let i = 0; i < normals.length; i += 3) {
-  const L = Math.hypot(normals[i], normals[i + 1], normals[i + 2]) || 1
-  normals[i] = r3(normals[i] / L)
-  normals[i + 1] = r3(normals[i + 1] / L)
-  normals[i + 2] = r3(normals[i + 2] / L)
+
+function projectToIso(pos) {
+  const step = a / n
+  for (let i = 0; i < pos.length; i += 3) {
+    const x = pos[i] + a * 0.5
+    const y = pos[i + 1] + a * 0.5
+    const z = pos[i + 2] + a * 0.5
+    const s = sdfAt(x, y, z) - iso
+    const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
+    const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
+    const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
+    const len = Math.hypot(gx, gy, gz) || 1
+    pos[i] -= (s * gx) / len
+    pos[i + 1] -= (s * gy) / len
+    pos[i + 2] -= (s * gz) / len
+  }
 }
+
+console.log(`Smoothing LMO void surface (${SMOOTH_ITERS} Taubin iterations, probe ${PROBE} Å)…`)
+taubinSmooth(positions, index, SMOOTH_ITERS)
+projectToIso(positions)
+
+const normals = new Array(positions.length).fill(0)
+const step = a / n
+for (let i = 0; i < positions.length; i += 3) {
+  const x = positions[i] + a * 0.5
+  const y = positions[i + 1] + a * 0.5
+  const z = positions[i + 2] + a * 0.5
+  const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
+  const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
+  const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
+  const len = Math.hypot(gx, gy, gz) || 1
+  // Point out of the void, toward the framework (same as rowleyite).
+  normals[i] = -gx / len
+  normals[i + 1] = -gy / len
+  normals[i + 2] = -gz / len
+}
+for (let i = 0; i < normals.length; i++) normals[i] = r3(normals[i])
+for (let i = 0; i < positions.length; i++) positions[i] = r3(positions[i])
 
 function mean(xs) {
   return xs.reduce((s, v) => s + v, 0) / Math.max(1, xs.length)
@@ -587,7 +640,7 @@ function mean(xs) {
 
 const payload = {
   mineral: 'Lithium manganese oxide (spinel)',
-  source: 'LiMn2O4.cif · Fd-3m · MnO₆ framework + probe void (Li removed)',
+  source: 'LiMn2O4.cif · Fd-3m · Taubin-smoothed probe void (Li removed)',
   paper: 'Celestian et al., J. Raman Spectrosc. 2026, 57:131–139',
   cell: { a },
   polyhedra,
@@ -598,7 +651,7 @@ const payload = {
   void: {
     probe: PROBE,
     grid: GRID,
-    note: 'Probe-accessible void with Li removed — pore space of the Mn–O framework (8a→16c→8a along ⟨111⟩)',
+    note: 'Li⁺-accessible void (probe 0.5 Å) of Mn–O framework only — same SAS pipeline as Rowleyite',
     positions: [...positions],
     normals: [...normals],
     index,
