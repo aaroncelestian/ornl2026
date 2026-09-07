@@ -266,17 +266,24 @@ export function CubaneUnit({
   )
 }
 
+const CAM_OPEN = new THREE.Vector3(7.6, 4.0, 9.4)
+const CAM_CLOSED = new THREE.Vector3(6.4, 3.4, 7.8)
+
 function InsetScene({
   active,
   reduced,
   vibe,
+  open,
 }: {
   active: boolean
   reduced: boolean
   vibe: CubaneVibe
+  open?: boolean
 }) {
   const group = useRef<THREE.Group>(null)
-  useFrame((_, dt) => {
+  useFrame(({ camera }, dt) => {
+    camera.position.copy(open ? CAM_OPEN : CAM_CLOSED)
+    camera.lookAt(0, 0, 0)
     if (!group.current || !active || reduced) return
     group.current.rotation.y += dt * 0.18
   })
@@ -311,12 +318,12 @@ export function CubaneInset({
     <div className={styles.cubaneDock} data-open={open || undefined} aria-hidden>
       <Canvas
         dpr={[1, 1.5]}
-        camera={{ position: open ? [3.4, 2.0, 4.2] : [2.55, 1.55, 3.15], fov: open ? 32 : 36 }}
+        camera={{ position: CAM_OPEN.toArray(), fov: 40 }}
         gl={{ antialias: true, alpha: true }}
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       >
         <Suspense fallback={null}>
-          <InsetScene active={active} reduced={reduced} vibe={vibe} />
+          <InsetScene active={active} reduced={reduced} vibe={vibe} open={open} />
         </Suspense>
       </Canvas>
       {caption && <div className={styles.cubaneCap}>{caption}</div>}

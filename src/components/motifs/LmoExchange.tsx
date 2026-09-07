@@ -11,7 +11,8 @@ export const LI_EXTRA = '#4a9a58'
 
 const OH_LEN = 0.97
 const CELL = data.cell.a
-const HERO = 7
+const CELL_PAD = CELL * 0.5 + 0.2
+const HERO_AT = [CELL * 0.25, -CELL * 0.25, CELL * 0.25] as const
 
 export const H_STAGGER = 0.45
 export const H_TRAVEL = 3.2
@@ -34,14 +35,17 @@ const H_EXIT_TRAVEL = 1.15
 const CHASE_BACK = 2.55
 const CHASE_AHEAD = 1.48
 const CHASE_HEIGHT = 0.92
-const ORBIT_SPEED = 0.5
-const ORBIT_MIN_S = 2.35
-const ORBIT_FALLBACK_S = 5.1
+const ESCAPE_BACK = 3.7
+const ESCAPE_SIDE = 1.85
+const ESCAPE_LIFT = 1.28
+const ESCAPE_LOOK = 2.4
+const ALIGN_S = 1.85
+const ESCAPE_HOLD = 0.48
 const APPROACH_FROM = -1.18
 const APPROACH_TO = 0.16
 const CAM_HOME = new THREE.Vector3(4.2, 2.6, 5.8)
 
-export type RideStage = 'idle' | 'approach' | 'chase' | 'orbit' | 'flash' | 'hold' | 'pullback'
+export type RideStage = 'idle' | 'approach' | 'chase' | 'orbit' | 'flash' | 'escape' | 'hold' | 'pullback'
 
 export type RideState = {
   following: boolean
@@ -63,6 +67,7 @@ export type ExchangeSite = {
   oxygen: Vec3
   hHome: Vec3
   c16: Vec3
+  outward: Vec3
   hIn: Vec3[]
   liIn: Vec3[]
   hOut: Vec3[]
@@ -88,6 +93,17 @@ function len(a: Vec3) {
   return Math.hypot(a[0], a[1], a[2])
 }
 
+function dot(a: Vec3, b: Vec3) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+
+/** Pore direction that leaves the crystal, not the one that tunnels through it. */
+function outwardDir(site8a: Vec3, gate: Vec3): Vec3 {
+  const toGate = norm(sub(gate, site8a))
+  const radial = len(site8a) > 0.35 ? norm(site8a) : toGate
+  return dot(toGate, radial) >= -0.05 ? toGate : scale(toGate, -1)
+}
+
 function norm(a: Vec3): Vec3 {
   const d = len(a) || 1
   return scale(a, 1 / d)
@@ -109,6 +125,23 @@ function minImage(d: number) {
   if (d > half) return d - CELL
   if (d < -half) return d + CELL
   return d
+}
+
+function inCell(p: Vec3) {
+  return Math.abs(p[0]) <= CELL_PAD && Math.abs(p[1]) <= CELL_PAD && Math.abs(p[2]) <= CELL_PAD
+}
+
+function pickHero(sites: ExchangeSite[]) {
+  let best = 0
+  let bestD = Infinity
+  for (let i = 0; i < sites.length; i++) {
+    const d = len(sub(sites[i].site8a, HERO_AT))
+    if (d < bestD) {
+      bestD = d
+      best = i
+    }
+  }
+  return best
 }
 
 function sites16c(): Vec3[] {
@@ -163,15 +196,16 @@ export function buildExchangeSites(): ExchangeSite[] {
     const toward8a = norm(sub(site8a, oxygen))
     const hHome = add(oxygen, scale(toward8a, OH_LEN))
     const gate = nearest(site8a, c16).point
-    const outDir = norm(sub(gate, site8a))
-    const hStart = add(gate, scale(outDir, 5.2))
-    const liStart = add(gate, scale(outDir, 7.4))
-    const approach = add(site8a, scale(outDir, 0.55))
-    const hIn: Vec3[] = [hStart, gate, approach, hHome]
-    const liIn: Vec3[] = [liStart, gate, site8a]
-    const hOut: Vec3[] = [hHome, gate, add(gate, scale(outDir, 6.2))]
-    return { site8a, oxygen, hHome, c16: gate, hIn, liIn, hOut }
-  })
+    const outward = outwardDir(site8a, gate)
+    const mouth = add(site8a, scale(outward, 1.35))
+    const hStart = add(site8a, scale(outward, 5.8))
+    const liStart = add(site8a, scale(outward, 8.4))
+    const hExit = add(site8a, scale(outward, 7.4))
+    const hIn: Vec3[] = [hStart, mouth, hHome]
+    const liIn: Vec3[] = [liStart, mouth, site8a]
+    const hOut: Vec3[] = [hHome, mouth, hExit]
+    return { site8a, oxygen, hHome, c16: gate, outward, hIn, liIn, hOut }
+  }).filter((site) => inCell(site.oxygen) && inCell(site.hHome))
 }
 
 function easeInOut(t: number) {
@@ -182,13 +216,6 @@ function easeInOut(t: number) {
 function easeInExpo(t: number) {
   const u = Math.min(1, Math.max(0, t))
   return u === 0 ? 0 : 2 ** (10 * u - 10)
-}
-
-function shortestAngle(a: number) {
-  let x = a
-  while (x > Math.PI) x -= Math.PI * 2
-  while (x < -Math.PI) x += Math.PI * 2
-  return x
 }
 
 function samplePath(path: Vec3[], t: number, ease: (u: number) => number = easeInOut) {
@@ -232,6 +259,7 @@ export function ExchangeIons({
   vibeOn?: boolean
 }) {
   const sites = useMemo(() => buildExchangeSites(), [])
+  const HERO = useMemo(() => pickHero(sites), [sites])
   const ohAxes = useMemo(
     () => sites.map((site) => ohBasis(norm(sub(site.hHome, site.oxygen)))),
     [sites],
@@ -271,7 +299,7 @@ export function ExchangeIons({
     return [0, 1, 2].map((i) => {
       const ang = (i / 3) * Math.PI * 2 + 0.4
       return {
-        base: v3(Math.cos(ang) * 8.6, -1.2 + i * 1.1, Math.sin(ang) * 8.6),
+        base: v3(Math.cos(ang) * 10.4, -1.2 + i * 1.1, Math.sin(ang) * 10.4),
         spin: 0.22 + i * 0.05,
       }
     })
@@ -444,6 +472,20 @@ export function ExchangeIons({
       const chasePos = tmpA.multiplyScalar(scale)
       const chaseLook = tmpB.multiplyScalar(scale)
 
+      const out = tmpDir.set(hero.outward[0], hero.outward[1], hero.outward[2])
+      const side = tmpA.set(-out.z, 0, out.x)
+      if (side.lengthSq() < 1e-6) side.set(1, 0, 0)
+      else side.normalize()
+      const escapeU = c.bolted ? Math.min(1, Math.max(0, (t - c.boltT) / H_EXIT_TRAVEL)) : 0
+      const back = ESCAPE_BACK + 1.9 * escapeU
+      tmpB.copy(heroWorld).addScaledVector(out, -back).addScaledVector(side, ESCAPE_SIDE)
+      tmpB.y += ESCAPE_LIFT
+      const readyPos = tmpB.clone().multiplyScalar(scale)
+      tmpA.copy(heroWorld).addScaledVector(out, ESCAPE_LOOK)
+      const readyLook = tmpA.clone().multiplyScalar(scale)
+      tmpA.copy(heroH).lerp(heroWorld, 0.32)
+      const escapeLook = tmpA.multiplyScalar(scale)
+
       if (capturing) {
         r.stage = 'chase'
         r.following = true
@@ -480,63 +522,42 @@ export function ExchangeIons({
         r.pos.lerpVectors(CAM_HOME, chasePos, easeInOut(u))
         r.look.lerpVectors(tmpDir.set(0, 0, 0), chaseLook, easeInOut(u))
       } else {
-        if (!c.arrived) {
-          c.arrived = true
-          const offX = -CHASE_BACK * tan.x
-          const offZ = -CHASE_BACK * tan.z
-          c.startYaw = Math.atan2(offX, offZ)
-          c.radius = Math.hypot(offX, offZ) || CHASE_BACK
-          c.height = CHASE_HEIGHT
-          const hYaw = Math.atan2(hero.hHome[0] - hero.site8a[0], hero.hHome[2] - hero.site8a[2])
-          const sideA = hYaw + Math.PI * 0.5
-          const sideB = hYaw - Math.PI * 0.5
-          const dA = shortestAngle(sideA - c.startYaw)
-          const dB = shortestAngle(sideB - c.startYaw)
-          if (Math.abs(dA) <= Math.abs(dB)) {
-            c.targetYaw = sideA
-            c.dir = Math.sign(dA) || 1
-          } else {
-            c.targetYaw = sideB
-            c.dir = Math.sign(dB) || 1
-          }
-        }
-
         c.orbitT += capturing ? 0 : dt
-        const yaw = c.startYaw + c.dir * c.orbitT * ORBIT_SPEED
-        const breathe = 1 + 0.05 * Math.sin(c.orbitT * 0.34)
-        const lift = c.height + 0.1 * Math.sin(c.orbitT * 0.21 + 0.5)
-        tmpA.set(Math.sin(yaw) * c.radius * breathe, lift, Math.cos(yaw) * c.radius * breathe)
-        r.pos.copy(heroWorld).add(tmpA).multiplyScalar(scale)
-
-        const towardH = THREE.MathUtils.smoothstep(0.15, 2.1, c.orbitT)
-        tmpB.set(hero.hHome[0] - hero.site8a[0], hero.hHome[1] - hero.site8a[1], hero.hHome[2] - hero.site8a[2])
-        r.look
-          .copy(heroWorld)
-          .addScaledVector(tan, CHASE_AHEAD * (1 - towardH))
-          .addScaledVector(tmpB, 0.58 * towardH)
+        const flashAge = t - c.boltT
 
         if (!c.bolted) {
-          const aligned = Math.abs(shortestAngle(yaw - c.targetYaw)) < 0.24
-          if ((c.orbitT > ORBIT_MIN_S && aligned) || c.orbitT > ORBIT_FALLBACK_S) {
+          const u = easeInOut(Math.min(1, c.orbitT / ALIGN_S))
+          r.stage = 'orbit'
+          r.following = true
+          r.done = false
+          r.pullable = false
+          r.flash = 0
+          r.fov = THREE.MathUtils.lerp(33, 36, u)
+          r.pos.lerpVectors(chasePos, readyPos, u)
+          r.look.lerpVectors(chaseLook, readyLook, u)
+          if (u >= 1) {
             c.bolted = true
             c.boltT = t
           }
+        } else if (flashAge < H_EXIT_TRAVEL + ESCAPE_HOLD) {
+          r.stage = flashAge < 0.45 ? 'flash' : 'escape'
+          r.following = true
+          r.done = false
+          r.pullable = false
+          r.flash = Math.exp(-flashAge * 3.8) * (flashAge < 0.07 ? flashAge / 0.07 : 1)
+          r.fov = THREE.MathUtils.lerp(36, 40, escapeU)
+          r.pos.copy(readyPos)
+          r.look.copy(escapeLook)
+        } else {
+          r.stage = 'pullback'
+          r.following = true
+          r.done = false
+          r.pullable = false
+          r.flash = 0
+          r.fov = 40
+          r.pos.copy(CAM_HOME)
+          r.look.set(0, 0, 0)
         }
-
-        const flashAge = t - c.boltT
-        r.flash = flashAge < 0 ? 0 : Math.exp(-flashAge * 3.8) * (flashAge < 0.07 ? flashAge / 0.07 : 1)
-        if (c.bolted && flashAge >= 0 && flashAge < 1.25) {
-          const kick = Math.sin(Math.min(1, flashAge / 0.32) * Math.PI) * 0.55
-          tmpDir.copy(heroH).sub(heroWorld)
-          r.look.addScaledVector(tmpDir, kick)
-        }
-        r.look.multiplyScalar(scale)
-
-        r.stage = !c.bolted ? 'orbit' : flashAge < 0.55 ? 'flash' : 'hold'
-        r.following = true
-        r.done = true
-        r.pullable = c.bolted && flashAge > 0.4
-        r.fov = THREE.MathUtils.lerp(33, 36, THREE.MathUtils.smoothstep(0, 2.4, c.orbitT))
       }
 
       const hm = hMat.current[HERO]

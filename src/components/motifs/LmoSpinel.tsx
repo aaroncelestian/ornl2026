@@ -588,7 +588,15 @@ function CameraHome({
 
     if (phase === 'lithium' && r.following) {
       const rate =
-        r.stage === 'approach' ? 0.82 : r.stage === 'chase' ? 2.6 : r.stage === 'pullback' ? 0.46 : 1.35
+        r.stage === 'approach'
+          ? 0.82
+          : r.stage === 'chase'
+            ? 2.6
+            : r.stage === 'escape'
+              ? 1.7
+              : r.stage === 'pullback'
+                ? 0.52
+                : 1.35
       camera.position.x = THREE.MathUtils.damp(camera.position.x, r.pos.x, rate, dt)
       camera.position.y = THREE.MathUtils.damp(camera.position.y, r.pos.y, rate, dt)
       camera.position.z = THREE.MathUtils.damp(camera.position.z, r.pos.z, rate, dt)
@@ -739,12 +747,12 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
     }
   }, [phase, elapsed])
 
-  const exchange = phase === 'hydrogen'
-  const w0 = exchange ? 600 : 500
-  const w1 = exchange ? 700 : 780
-  const vbH = exchange ? 108 : 64
-  const baseY = exchange ? 88 : 52
-  const peakScale = exchange ? 40 * (1 + track.amp) : 40
+  const tight = phase === 'framework' || phase === 'voids' || phase === 'hydrogen' || phase === 'lithium'
+  const w0 = tight ? 600 : 500
+  const w1 = tight ? 700 : 780
+  const vbH = tight ? 108 : 64
+  const baseY = tight ? 88 : 52
+  const peakScale = tight ? 40 * (1 + track.amp) : 40
   const path = lorentzPath(track.w, track.fwhm, track.amp, w0, w1, baseY, peakScale)
   const collapsed = track.amp < 0.2
   const peakX = 8 + ((track.w - w0) / (w1 - w0)) * 284
@@ -752,8 +760,8 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
   return (
     <div
       className={styles.ramanHud}
-      data-dock={exchange ? 'left' : undefined}
-      data-tight={exchange || undefined}
+      data-dock={tight ? 'left' : undefined}
+      data-tight={tight || undefined}
       aria-hidden
     >
       <div className={styles.ramanHudTitle}>Raman · A₁g</div>
@@ -761,7 +769,7 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
         <path d={path} fill="none" stroke={collapsed ? C_RAMAN_DIM : C_RAMAN} strokeWidth="2" strokeLinecap="round" />
         <line
           x1={peakX}
-          y1={exchange ? 8 : 10}
+          y1={tight ? 8 : 10}
           x2={peakX}
           y2={baseY}
           stroke={collapsed ? C_RAMAN_DIM : C_RAMAN}
@@ -867,18 +875,6 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
           <span className={styles.vibeDot} />
           Vibrations
         </button>
-        {phase === 'lithium' && rideUi.pullable && !ride.current.wide && (
-          <button
-            type="button"
-            className={styles.vibeBtn}
-            onClick={() => {
-              ride.current.pull = true
-              setRideUi((ui) => ({ ...ui, pullable: false }))
-            }}
-          >
-            Full view
-          </button>
-        )}
       </div>
       <div className={styles.liFlash} data-on={flashOn || undefined} aria-hidden />
       <div className={styles.legend}>

@@ -46,17 +46,19 @@
   left: 0;
   bottom: 0;
   z-index: 3;
-  width: min(240px, 26vw);
-  height: min(220px, 34vh);
+  width: min(220px, 24vw);
+  height: min(220px, 32vh);
   pointer-events: none;
+  overflow: visible;
 }
 
 .cubaneDock[data-open] {
-  left: 2.4vw;
-  top: auto;
-  bottom: 10vh;
-  width: min(300px, 28vw);
-  height: min(340px, 48vh);
+  left: 0.4vw;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  width: min(320px, 32vw);
+  height: min(320px, 48vh);
 }
 
 .cubaneCap {
