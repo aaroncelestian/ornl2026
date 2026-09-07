@@ -9,10 +9,12 @@ export const OH_COLOR = '#d8c49a'
 export const LI_COLOR = '#6ecf7a'
 export const LI_EXTRA = '#4a9a58'
 
+type Vec3 = readonly [number, number, number]
+
 const OH_LEN = 0.97
 const CELL = data.cell.a
 const CELL_PAD = CELL * 0.5 + 0.2
-const HERO_AT: [number, number, number] = [CELL * 0.25, -CELL * 0.25, CELL * 0.25]
+const HERO_AT: Vec3 = [CELL * 0.25, -CELL * 0.25, CELL * 0.25]
 
 export const H_STAGGER = 0.45
 export const H_TRAVEL = 3.2
@@ -48,8 +50,6 @@ export type RideState = {
   pos: THREE.Vector3
   look: THREE.Vector3
 }
-
-type Vec3 = [number, number, number]
 
 export type ExchangeSite = {
   site8a: Vec3
@@ -236,7 +236,6 @@ export function ExchangeIons({
   phase,
   active,
   reduced,
-  scale,
   ride,
   vibeOn = true,
 }: {
