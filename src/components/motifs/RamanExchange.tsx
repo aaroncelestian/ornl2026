@@ -19,6 +19,9 @@ const H = 520
 const COPY_GUTTER = 300
 const GAP = 28
 const PAD = { t: 64, r: 20, b: 52, l: 48 }
+const STACK_LEFT = 428
+const STACK_GAP = 14
+const STACK_PAD = { t: 38, r: 14, b: 22, l: 38 }
 
 const C_PEAK = '#e07040'
 const C_FWHM = '#7ec4d4'
@@ -92,6 +95,18 @@ function svgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
   }
 }
 
+function inPlot(
+  x: number,
+  y: number,
+  ox: number,
+  top: number,
+  plotW: number,
+  plotH: number,
+  padL: number,
+) {
+  return y >= top - 8 && y <= top + plotH + 16 && x >= ox + padL - 10 && x <= ox + padL + plotW + 10
+}
+
 export function RamanExchange({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
@@ -104,14 +119,30 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const showOperando = phase === 'li-return'
   const showMn = phase === 'durability'
 
-  const leftW = showOperando || storyMode ? half : 0
-  const rightW = showMn ? usable : half
+  const leftW = storyMode ? half : 0
+  const rightW = showMn ? usable : storyMode ? half : 0
   const leftOx = COPY_GUTTER
   const rightOx = showMn ? COPY_GUTTER : COPY_GUTTER + leftW + GAP
 
   const plotH = H - PAD.t - PAD.b
   const plotWA = Math.max(1, leftW - PAD.l - PAD.r)
   const plotWR = Math.max(1, rightW - PAD.l - PAD.r)
+
+  const stackH = (H - 12 - STACK_GAP) / 2
+  const aBox = showOperando
+    ? { ox: STACK_LEFT, oy: 6, w: W - STACK_LEFT, h: stackH, pad: STACK_PAD }
+    : { ox: leftOx, oy: 0, w: leftW, h: H, pad: PAD }
+  const fBox = showOperando
+    ? { ox: STACK_LEFT, oy: 6 + stackH + STACK_GAP, w: W - STACK_LEFT, h: stackH, pad: STACK_PAD }
+    : { ox: rightOx, oy: 0, w: rightW, h: H, pad: PAD }
+  const aPlotW = Math.max(1, aBox.w - aBox.pad.l - aBox.pad.r)
+  const aPlotH = Math.max(1, aBox.h - aBox.pad.t - aBox.pad.b)
+  const fPlotW = Math.max(1, fBox.w - fBox.pad.l - fBox.pad.r)
+  const fPlotH = Math.max(1, fBox.h - fBox.pad.t - fBox.pad.b)
+  const aTop = aBox.oy + aBox.pad.t
+  const aBot = aTop + aPlotH
+  const fTop = fBox.oy + fBox.pad.t
+  const fBot = fTop + fPlotH
 
   const aSmooth = useMemo(
     () => smoothSeries(data.a1g.points, { sigma: 1.0, range: 2.2, breakupT: 30, breakupSigma: 2.3 }),
@@ -126,12 +157,12 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const tMax = aSmooth[aSmooth.length - 1]?.t ?? a.xMax
   const t0 = aSmooth[0]?.t ?? 0
 
-  const sxA = (t: number) => leftOx + PAD.l + (t / a.xMax) * plotWA
-  const syA = (w: number) => PAD.t + plotH - ((w - a.yMin) / (a.yMax - a.yMin)) * plotH
+  const sxA = (t: number) => aBox.ox + aBox.pad.l + (t / a.xMax) * aPlotW
+  const syA = (w: number) => aBot - ((w - a.yMin) / (a.yMax - a.yMin)) * aPlotH
   const aPts = aSmooth.map((p) => ({ x: sxA(p.t), y: syA(p.w) }))
 
-  const sxF = (t: number) => rightOx + PAD.l + (t / f.xMax) * plotWR
-  const syF = (w: number) => PAD.t + plotH - ((w - f.yMin) / (f.yMax - f.yMin)) * plotH
+  const sxF = (t: number) => fBox.ox + fBox.pad.l + (t / f.xMax) * fPlotW
+  const syF = (w: number) => fBot - ((w - f.yMin) / (f.yMax - f.yMin)) * fPlotH
   const fPts = fSmooth.map((p) => ({ x: sxF(p.t), y: syF(p.w) }))
 
   const m = data.mnLoss
@@ -181,17 +212,16 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
       const svg = svgRef.current
       if (!svg) return
       const { x, y } = svgPoint(svg, clientX, clientY)
-      const inY = y >= PAD.t - 8 && y <= PAD.t + plotH + 16
-      const inA = inY && x >= leftOx + PAD.l - 10 && x <= leftOx + PAD.l + plotWA + 10
-      const inF = inY && x >= rightOx + PAD.l - 10 && x <= rightOx + PAD.l + plotWR + 10
+      const inA = inPlot(x, y, aBox.ox, aTop, aPlotW, aPlotH, aBox.pad.l)
+      const inF = inPlot(x, y, fBox.ox, fTop, fPlotW, fPlotH, fBox.pad.l)
       if (!inA && !inF) return
-      const ox = inA ? leftOx : rightOx
-      const pw = inA ? plotWA : plotWR
+      const box = inA ? aBox : fBox
+      const pw = inA ? aPlotW : fPlotW
       const xmax = inA ? a.xMax : f.xMax
-      const t = ((x - ox - PAD.l) / Math.max(1, pw)) * xmax
+      const t = ((x - box.ox - box.pad.l) / Math.max(1, pw)) * xmax
       setPlayT(Math.max(t0, Math.min(tMax, t)))
     },
-    [leftOx, rightOx, plotWA, plotWR, plotH, a.xMax, f.xMax, t0, tMax],
+    [aBox, fBox, aTop, fTop, aPlotW, fPlotW, aPlotH, fPlotH, a.xMax, f.xMax, t0, tMax],
   )
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -199,9 +229,8 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
     const svg = svgRef.current
     if (!svg) return
     const { x, y } = svgPoint(svg, e.clientX, e.clientY)
-    const inY = y >= PAD.t - 8 && y <= PAD.t + plotH + 16
-    const inA = inY && x >= leftOx + PAD.l - 10 && x <= leftOx + PAD.l + plotWA + 10
-    const inF = inY && x >= rightOx + PAD.l - 10 && x <= rightOx + PAD.l + plotWR + 10
+    const inA = inPlot(x, y, aBox.ox, aTop, aPlotW, aPlotH, aBox.pad.l)
+    const inF = inPlot(x, y, fBox.ox, fTop, fPlotW, fPlotH, fBox.pad.l)
     if (!inA && !inF) return
     grabbed.current = true
     setPlaying(false)
@@ -243,7 +272,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   const pathD = linePath(aPts)
   const fillD = aPts.length
-    ? `${pathD} L ${sxA(aSmooth[aSmooth.length - 1].t)} ${PAD.t + plotH} L ${sxA(aSmooth[0].t)} ${PAD.t + plotH} Z`
+    ? `${pathD} L ${sxA(aSmooth[aSmooth.length - 1].t)} ${aBot} L ${sxA(aSmooth[0].t)} ${aBot} Z`
     : ''
   const fPathD = linePath(fPts)
 
@@ -350,10 +379,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
             <stop offset="100%" stopColor={C_FWHM} stopOpacity="0.02" />
           </linearGradient>
           <clipPath id="ramanLeftClip">
-            <rect x={leftOx + PAD.l} y={PAD.t} width={Math.max(0, plotWA)} height={plotH} />
+            <rect x={aBox.ox + aBox.pad.l} y={aTop} width={Math.max(0, aPlotW)} height={aPlotH} />
           </clipPath>
           <clipPath id="ramanRightClip">
-            <rect x={rightOx + PAD.l} y={PAD.t} width={Math.max(0, plotWR)} height={plotH} />
+            <rect x={fBox.ox + fBox.pad.l} y={fTop} width={Math.max(0, fPlotW)} height={fPlotH} />
           </clipPath>
         </defs>
 
@@ -480,35 +509,23 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
         {showOperando && (
           <>
             <g>
-              <text x={leftOx + PAD.l} y={28} className={styles.plotAnnotate}>
+              <text x={aBox.ox + aBox.pad.l} y={aBox.oy + 16} className={styles.plotAnnotate}>
                 A₁g peak · Li back in
               </text>
-              <text x={leftOx + PAD.l} y={48} className={styles.plotTick}>
+              <text x={aBox.ox + aBox.pad.l} y={aBox.oy + 32} className={styles.plotTick}>
                 Fig 5B · smoothed licl2-1 · drag the marker
               </text>
-              <line
-                x1={leftOx + PAD.l}
-                y1={PAD.t + plotH}
-                x2={leftOx + PAD.l + plotWA}
-                y2={PAD.t + plotH}
-                stroke={C_AXIS}
-              />
-              <line x1={leftOx + PAD.l} y1={PAD.t} x2={leftOx + PAD.l} y2={PAD.t + plotH} stroke={C_AXIS} />
+              <line x1={aBox.ox + aBox.pad.l} y1={aBot} x2={aBox.ox + aBox.pad.l + aPlotW} y2={aBot} stroke={C_AXIS} />
+              <line x1={aBox.ox + aBox.pad.l} y1={aTop} x2={aBox.ox + aBox.pad.l} y2={aBot} stroke={C_AXIS} />
               {[630, 645, 660].map((w) => (
                 <g key={w}>
-                  <line x1={leftOx + PAD.l} y1={syA(w)} x2={leftOx + PAD.l + plotWA} y2={syA(w)} stroke={C_GRID} />
-                  <text x={leftOx + PAD.l - 8} y={syA(w) + 4} textAnchor="end" className={styles.plotTick}>
+                  <line x1={aBox.ox + aBox.pad.l} y1={syA(w)} x2={aBox.ox + aBox.pad.l + aPlotW} y2={syA(w)} stroke={C_GRID} />
+                  <text x={aBox.ox + aBox.pad.l - 8} y={syA(w) + 4} textAnchor="end" className={styles.plotTick}>
                     {w}
                   </text>
                 </g>
               ))}
-              <rect
-                x={leftOx + PAD.l}
-                y={PAD.t}
-                width={plotWA}
-                height={plotH}
-                fill="transparent"
-              />
+              <rect x={aBox.ox + aBox.pad.l} y={aTop} width={aPlotW} height={aPlotH} fill="transparent" />
               <g clipPath="url(#ramanLeftClip)">
                 <path d={fillD} fill="url(#ramanFill)" opacity={active ? reveal : 0} />
                 <path
@@ -528,18 +545,18 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                   <g key={mk.t} opacity={active && revealed ? 1 : 0}>
                     <line
                       x1={sxA(mk.t)}
-                      y1={PAD.t}
+                      y1={aTop}
                       x2={sxA(mk.t)}
-                      y2={PAD.t + plotH}
+                      y2={aBot}
                       stroke="rgba(243,238,228,0.22)"
                       strokeDasharray="3 4"
                     />
                     <text
                       x={sxA(mk.t) + (nearEnd ? -6 : 6)}
-                      y={syA(onCurve) + (nearEnd ? 20 : -12)}
+                      y={syA(onCurve) + (nearEnd ? 16 : -10)}
                       textAnchor={nearEnd ? 'end' : 'start'}
                       className={styles.plotAnnotate}
-                      fontSize={13}
+                      fontSize={12}
                     >
                       {mk.label}
                     </text>
@@ -548,67 +565,45 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               })}
               {active && (
                 <g>
-                  <line
-                    x1={cursor.x}
-                    y1={PAD.t}
-                    x2={cursor.x}
-                    y2={PAD.t + plotH}
-                    stroke={C_PEAK}
-                    strokeOpacity={0.35}
-                  />
-                  <circle cx={cursor.x} cy={cursor.y} r={16} fill={C_PEAK} fillOpacity={0.12} />
-                  <circle cx={cursor.x} cy={cursor.y} r={7} fill={C_PEAK} />
-                  <text x={cursor.x + 12} y={cursor.y - 12} className={styles.plotHiLabel} fontSize={20}>
+                  <line x1={cursor.x} y1={aTop} x2={cursor.x} y2={aBot} stroke={C_PEAK} strokeOpacity={0.35} />
+                  <circle cx={cursor.x} cy={cursor.y} r={14} fill={C_PEAK} fillOpacity={0.12} />
+                  <circle cx={cursor.x} cy={cursor.y} r={6} fill={C_PEAK} />
+                  <text x={cursor.x + 10} y={cursor.y - 10} className={styles.plotHiLabel} fontSize={18}>
                     {Math.round(liveW)}
-                    <tspan className={styles.plotTick} fontSize={12} dx={3}>
+                    <tspan className={styles.plotTick} fontSize={11} dx={3}>
                       cm⁻¹
                     </tspan>
                   </text>
                 </g>
               )}
               {[0, 20, 40, 60].map((t) => (
-                <text key={t} x={sxA(t)} y={H - 18} textAnchor="middle" className={styles.plotTick}>
+                <text key={t} x={sxA(t)} y={aBot + 14} textAnchor="middle" className={styles.plotTick}>
                   {t}
                 </text>
               ))}
-              <text x={leftOx + PAD.l + plotWA / 2} y={H - 2} textAnchor="middle" className={styles.plotAxis}>
-                {a.xLabel}
-              </text>
             </g>
 
             <g>
-              <text x={rightOx + PAD.l} y={28} className={styles.plotAnnotate}>
+              <text x={fBox.ox + fBox.pad.l} y={fBox.oy + 16} className={styles.plotAnnotate}>
                 A₁g FWHM
               </text>
-              <text x={rightOx + PAD.l} y={48} className={styles.plotTick}>
+              <text x={fBox.ox + fBox.pad.l} y={fBox.oy + 32} className={styles.plotTick}>
                 Fig 5A · smoothed · same playhead
               </text>
-              <line
-                x1={rightOx + PAD.l}
-                y1={PAD.t + plotH}
-                x2={rightOx + PAD.l + plotWR}
-                y2={PAD.t + plotH}
-                stroke={C_AXIS}
-              />
-              <line x1={rightOx + PAD.l} y1={PAD.t} x2={rightOx + PAD.l} y2={PAD.t + plotH} stroke={C_AXIS} />
+              <line x1={fBox.ox + fBox.pad.l} y1={fBot} x2={fBox.ox + fBox.pad.l + fPlotW} y2={fBot} stroke={C_AXIS} />
+              <line x1={fBox.ox + fBox.pad.l} y1={fTop} x2={fBox.ox + fBox.pad.l} y2={fBot} stroke={C_AXIS} />
               {[0, 25, 50].map((w) => (
                 <g key={w}>
-                  <line x1={rightOx + PAD.l} y1={syF(w)} x2={rightOx + PAD.l + plotWR} y2={syF(w)} stroke={C_GRID} />
-                  <text x={rightOx + PAD.l - 8} y={syF(w) + 4} textAnchor="end" className={styles.plotTick}>
+                  <line x1={fBox.ox + fBox.pad.l} y1={syF(w)} x2={fBox.ox + fBox.pad.l + fPlotW} y2={syF(w)} stroke={C_GRID} />
+                  <text x={fBox.ox + fBox.pad.l - 8} y={syF(w) + 4} textAnchor="end" className={styles.plotTick}>
                     {w}
                   </text>
                 </g>
               ))}
-              <rect
-                x={rightOx + PAD.l}
-                y={PAD.t}
-                width={plotWR}
-                height={plotH}
-                fill="transparent"
-              />
+              <rect x={fBox.ox + fBox.pad.l} y={fTop} width={fPlotW} height={fPlotH} fill="transparent" />
               <g clipPath="url(#ramanRightClip)">
                 <path
-                  d={`${fPathD} L ${sxF(fSmooth[fSmooth.length - 1].t)} ${PAD.t + plotH} L ${sxF(fSmooth[0].t)} ${PAD.t + plotH} Z`}
+                  d={`${fPathD} L ${sxF(fSmooth[fSmooth.length - 1].t)} ${fBot} L ${sxF(fSmooth[0].t)} ${fBot} Z`}
                   fill="url(#fwhmFill)"
                   opacity={active ? reveal : 0}
                 />
@@ -623,27 +618,20 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               </g>
               {active && (
                 <g>
-                  <line
-                    x1={cursorF.x}
-                    y1={PAD.t}
-                    x2={cursorF.x}
-                    y2={PAD.t + plotH}
-                    stroke={C_FWHM}
-                    strokeOpacity={0.35}
-                  />
-                  <circle cx={cursorF.x} cy={cursorF.y} r={14} fill={C_FWHM} fillOpacity={0.12} />
-                  <circle cx={cursorF.x} cy={cursorF.y} r={6} fill={C_FWHM} />
-                  <text x={cursorF.x + 10} y={cursorF.y - 10} className={styles.plotAnnotate} fontSize={15}>
+                  <line x1={cursorF.x} y1={fTop} x2={cursorF.x} y2={fBot} stroke={C_FWHM} strokeOpacity={0.35} />
+                  <circle cx={cursorF.x} cy={cursorF.y} r={12} fill={C_FWHM} fillOpacity={0.12} />
+                  <circle cx={cursorF.x} cy={cursorF.y} r={5} fill={C_FWHM} />
+                  <text x={cursorF.x + 10} y={cursorF.y - 8} className={styles.plotAnnotate} fontSize={14}>
                     {Math.round(liveFwhm)} cm⁻¹
                   </text>
                 </g>
               )}
               {[0, 20, 40, 60].map((t) => (
-                <text key={t} x={sxF(t)} y={H - 18} textAnchor="middle" className={styles.plotTick}>
+                <text key={t} x={sxF(t)} y={fBot + 14} textAnchor="middle" className={styles.plotTick}>
                   {t}
                 </text>
               ))}
-              <text x={rightOx + PAD.l + plotWR / 2} y={H - 2} textAnchor="middle" className={styles.plotAxis}>
+              <text x={fBox.ox + fBox.pad.l + fPlotW / 2} y={fBox.oy + fBox.h - 2} textAnchor="middle" className={styles.plotAxis}>
                 {f.xLabel}
               </text>
             </g>

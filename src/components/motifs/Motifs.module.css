@@ -53,12 +53,12 @@
 }
 
 .cubaneDock[data-open] {
-  left: 0.4vw;
-  top: 50%;
+  left: 0.6vw;
+  top: 52%;
   bottom: auto;
   transform: translateY(-50%);
-  width: min(320px, 32vw);
-  height: min(320px, 48vh);
+  width: min(46vw, 560px);
+  height: min(70vh, 580px);
 }
 
 .cubaneCap {
