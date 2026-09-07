@@ -341,7 +341,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Li removed. Accessible void = places a 0.4 Å probe sphere fits without overlapping Mn/O hard spheres — the connected 8a→16c→8a channel tubing along ⟨111⟩. Drawn as a 2×2×2 void block around one Mn–O cell. That tunnel geometry is the product.',
+          'Li removed. Accessible void = where a 0.4 Å probe fits without overlapping Mn/O. Computed on a 2×2×2 supercell so the 8a→16c→8a channels run as continuous tubing, not a tiled one-cell mesh. That tunnel geometry is the product.',
       },
       {
         id: '8a',

@@ -27,12 +27,12 @@ const MN_O_MAX = 2.25
  * 16c neck clearance (~0.87 Å) so the 8a→16c→8a path stays open as tubing,
  * not a foam that fills every interstitial gap.
  */
-const GRID = 64
+const GRID = 72
 const PROBE = 0.4
 const MIN_VOID_VOXELS = 24
-const SMOOTH_ITERS = 14
+const SMOOTH_ITERS = 18
 const RADII = { Mn: 1.4, O: 1.35 }
-/** Replicate void mesh into a 2×2×2 block so channels read as continuous tubing */
+/** Compute the SDF on a real 2×2×2 supercell — do not tile a 1-cell mesh */
 const VOID_SUPERCELL = 2
 
 function parseNum(value) {
@@ -357,8 +357,10 @@ console.log(
   `Cubanes: ${cubaneUnique.length} · coreO=${cubaneUnique[0]?.coreO.length} · termO=${cubaneUnique[0]?.terminalO.length} · bonds=${cubaneUnique[0]?.bonds.length}`,
 )
 
-// ── Void mesh: Mn+O framework only (Li removed → 8a interstitial network) ──
-const framework = atoms
+// ── Void mesh on a 2×2×2 supercell (Li removed → continuous 8a→16c tubing) ──
+const sc = VOID_SUPERCELL
+const A = a * sc
+const unitFw = atoms
   .filter((p) => p.element === 'Mn' || p.element === 'O')
   .map((p) => ({
     x: p.x + a * 0.5,
@@ -366,6 +368,17 @@ const framework = atoms
     z: p.z + a * 0.5,
     r: RADII[p.element],
   }))
+const framework = []
+for (let ix = 0; ix < sc; ix++) {
+  for (let iy = 0; iy < sc; iy++) {
+    for (let iz = 0; iz < sc; iz++) {
+      for (const p of unitFw) {
+        framework.push({ x: p.x + ix * a, y: p.y + iy * a, z: p.z + iz * a, r: p.r })
+      }
+    }
+  }
+}
+console.log(`Void supercell ${sc}×${sc}×${sc} · box ${A.toFixed(2)} Å · ${framework.length} Mn/O images`)
 
 const n = GRID
 const field = new Float64Array((n + 1) ** 3)
@@ -375,9 +388,9 @@ function fIndex(i, j, k) {
 function sdfAt(x, y, z) {
   let best = Infinity
   for (const atom of framework) {
-    const dx = minImage(x - atom.x, a)
-    const dy = minImage(y - atom.y, a)
-    const dz = minImage(z - atom.z, a)
+    const dx = minImage(x - atom.x, A)
+    const dy = minImage(y - atom.y, A)
+    const dz = minImage(z - atom.z, A)
     const d = Math.hypot(dx, dy, dz) - atom.r
     if (d < best) best = d
   }
@@ -385,11 +398,11 @@ function sdfAt(x, y, z) {
 }
 
 for (let i = 0; i <= n; i++) {
-  const x = (i / n) * a
+  const x = (i / n) * A
   for (let j = 0; j <= n; j++) {
-    const y = (j / n) * a
+    const y = (j / n) * A
     for (let k = 0; k <= n; k++) {
-      field[fIndex(i, j, k)] = sdfAt(x, y, (k / n) * a)
+      field[fIndex(i, j, k)] = sdfAt(x, y, (k / n) * A)
     }
   }
 }
@@ -493,9 +506,9 @@ function cubeVertex(i, j, k) {
     if (va * vb > 0) continue
     const t = va === vb ? 0.5 : va / (va - vb)
     crossings.push([
-      ((i + ax + t * (bx - ax)) / n) * a,
-      ((j + ay + t * (by - ay)) / n) * a,
-      ((k + az + t * (bz - az)) / n) * a,
+      ((i + ax + t * (bx - ax)) / n) * A,
+      ((j + ay + t * (by - ay)) / n) * A,
+      ((k + az + t * (bz - az)) / n) * A,
     ])
   }
   if (!crossings.length) return null
@@ -532,7 +545,7 @@ for (let i = 0; i < n; i++) {
       const v = cubeVerts[cubeKey(i, j, k)]
       if (!v) continue
       vertId[cubeKey(i, j, k)] = positions.length / 3
-      positions.push(r3(v[0] - a * 0.5), r3(v[1] - a * 0.5), r3(v[2] - a * 0.5))
+      positions.push(r3(v[0] - A * 0.5), r3(v[1] - A * 0.5), r3(v[2] - A * 0.5))
     }
   }
 }
@@ -609,11 +622,11 @@ function taubinSmooth(pos, faces, iterations, lambda = 0.5, mu = -0.53) {
 }
 
 function projectToIso(pos) {
-  const step = a / n
+  const step = A / n
   for (let i = 0; i < pos.length; i += 3) {
-    const x = pos[i] + a * 0.5
-    const y = pos[i + 1] + a * 0.5
-    const z = pos[i + 2] + a * 0.5
+    const x = pos[i] + A * 0.5
+    const y = pos[i + 1] + A * 0.5
+    const z = pos[i + 2] + A * 0.5
     const s = sdfAt(x, y, z) - iso
     const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
     const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
@@ -695,11 +708,11 @@ projectToIso(positions)
 }
 
 const normals = new Array(positions.length).fill(0)
-const step = a / n
+const step = A / n
 for (let i = 0; i < positions.length; i += 3) {
-  const x = positions[i] + a * 0.5
-  const y = positions[i + 1] + a * 0.5
-  const z = positions[i + 2] + a * 0.5
+  const x = positions[i] + A * 0.5
+  const y = positions[i + 1] + A * 0.5
+  const z = positions[i + 2] + A * 0.5
   const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
   const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
   const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
@@ -712,36 +725,13 @@ for (let i = 0; i < positions.length; i += 3) {
 for (let i = 0; i < normals.length; i++) normals[i] = r3(normals[i])
 for (let i = 0; i < positions.length; i++) positions[i] = r3(positions[i])
 
-// Tile void into a supercell so the tubing spans like the reference figure
-const sc = VOID_SUPERCELL
-const half = (sc - 1) * 0.5
-const tilePos = []
-const tileNrm = []
-const tileIdx = []
-const nBase = positions.length / 3
-for (let ix = 0; ix < sc; ix++) {
-  for (let iy = 0; iy < sc; iy++) {
-    for (let iz = 0; iz < sc; iz++) {
-      const ox = (ix - half) * a
-      const oy = (iy - half) * a
-      const oz = (iz - half) * a
-      const base = tilePos.length / 3
-      for (let i = 0; i < nBase; i++) {
-        tilePos.push(positions[i * 3] + ox, positions[i * 3 + 1] + oy, positions[i * 3 + 2] + oz)
-        tileNrm.push(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2])
-      }
-      for (let t = 0; t < index.length; t++) tileIdx.push(index[t] + base)
-    }
-  }
-}
-
 function mean(xs) {
   return xs.reduce((s, v) => s + v, 0) / Math.max(1, xs.length)
 }
 
 const payload = {
   mineral: 'Lithium manganese oxide (spinel)',
-  source: 'LiMn2O4.cif · Fd-3m · probe-accessible void tubing (Li removed)',
+  source: 'LiMn2O4.cif · Fd-3m · 2×2×2 probe-accessible void (Li removed)',
   paper: 'Celestian et al., J. Raman Spectrosc. 2026, 57:131–139',
   cell: { a },
   polyhedra,
@@ -754,10 +744,11 @@ const payload = {
     grid: GRID,
     radii: RADII,
     supercell: sc,
-    note: `Probe-accessible void (sdf > ${PROBE} Å) of Mn–O only; ${sc}³ tiled 8a→16c→8a tubing`,
-    positions: tilePos.map(r3),
-    normals: tileNrm.map(r3),
-    index: tileIdx,
+    box: A,
+    note: `SDF on a ${sc}×${sc}×${sc} supercell (${A.toFixed(2)} Å); void where sdf > ${PROBE} Å`,
+    positions,
+    normals,
+    index,
   },
   stats: {
     counts,
@@ -767,11 +758,10 @@ const payload = {
     oCount: oxygen.length,
     liCount: lithium.length,
     cubaneCount: cubaneUnique.length,
-    voidVerts: tilePos.length / 3,
-    voidTris: tileIdx.length / 3,
+    voidVerts: positions.length / 3,
+    voidTris: index.length / 3,
     voidFraction: r3(voidCount / totalSamples),
     voidComponents: sizes.filter((c) => c.size >= MIN_VOID_VOXELS).length,
-    unitVoidVerts: nBase,
   },
 }
 

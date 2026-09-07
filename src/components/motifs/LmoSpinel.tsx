@@ -7,13 +7,13 @@ import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
 import styles from './Motifs.module.css'
 
-const SCALE = 0.42
+const SCALE = 0.38
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
-/** Pull back for 2×2×2 void tubing + central Mn–O */
-const VOID_HOME = new THREE.Vector3(7.4, 5.0, 8.2)
+/** Pull back for the 2×2×2 supercell void (~16.8 Å box) */
+const VOID_HOME = new THREE.Vector3(9.2, 6.2, 10.4)
 const POLY_COLOR = '#9a6ab8'
-const VOID_OUT = '#9eb4c6'
-const VOID_IN = '#e8eef2'
+const VOID_OUT = '#8eabc0'
+const VOID_IN = '#d5e2ea'
 const VOID_GHOST = '#e0b15c'
 const LI_COLOR = '#6ecf7a'
 const MN_COLOR = '#8b5cad'
@@ -32,7 +32,7 @@ function phaseForBeat(id?: string): Phase {
 
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · MnO₆ polyhedra · drag to orbit',
-  voids: 'Probe void tubing · Mn–O · Li removed · 0.4 Å',
+  voids: '2×2×2 probe void · Mn–O · Li removed · 0.4 Å',
   lithium: 'Li in tetrahedral 8a voids',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
@@ -162,11 +162,11 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_OUT}
             transparent
-            opacity={0.72}
-            roughness={0.42}
-            metalness={0.08}
-            clearcoat={0.25}
-            clearcoatRoughness={0.4}
+            opacity={0.48}
+            roughness={0.38}
+            metalness={0.06}
+            clearcoat={0.18}
+            clearcoatRoughness={0.45}
             side={THREE.BackSide}
             depthWrite={false}
           />
@@ -175,9 +175,9 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_IN}
             transparent
-            opacity={0.55}
-            roughness={0.5}
-            metalness={0.04}
+            opacity={0.32}
+            roughness={0.48}
+            metalness={0.03}
             side={THREE.FrontSide}
             depthWrite={false}
           />
@@ -203,15 +203,34 @@ function VoidSurface({ pore }: { pore: boolean }) {
   )
 }
 
-function OxygenAtoms() {
+function cellOffsets(n: number, cell: number) {
+  const half = (n - 1) / 2
+  const out: [number, number, number][] = []
+  for (let ix = 0; ix < n; ix++) {
+    for (let iy = 0; iy < n; iy++) {
+      for (let iz = 0; iz < n; iz++) {
+        out.push([(ix - half) * cell, (iy - half) * cell, (iz - half) * cell])
+      }
+    }
+  }
+  return out
+}
+
+function OxygenAtoms({ offsets }: { offsets: [number, number, number][] }) {
   return (
     <group>
-      {data.oxygen.map((ox, i) => (
-        <mesh key={i} position={[ox.x, ox.y, ox.z]} renderOrder={2}>
-          <sphereGeometry args={[0.26, 16, 16]} />
-          <meshStandardMaterial color={O_COLOR} roughness={0.35} metalness={0.1} />
-        </mesh>
-      ))}
+      {offsets.map((off, oi) =>
+        data.oxygen.map((ox, i) => (
+          <mesh
+            key={`${oi}-${i}`}
+            position={[ox.x + off[0], ox.y + off[1], ox.z + off[2]]}
+            renderOrder={2}
+          >
+            <sphereGeometry args={[0.26, 16, 16]} />
+            <meshStandardMaterial color={O_COLOR} roughness={0.35} metalness={0.1} />
+          </mesh>
+        )),
+      )}
     </group>
   )
 }
@@ -441,7 +460,8 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
   const showCubane = phase === 'cubane'
   const showPoly = phase === 'framework' || phase === 'voids' || phase === 'lithium'
   const showOxygen = phase === 'voids'
-  const polyOpacity = phase === 'framework' ? 0.72 : phase === 'voids' ? 0.62 : 0.32
+  const polyOpacity = phase === 'framework' ? 0.72 : phase === 'voids' ? 0.55 : 0.32
+  const fwOffsets = poreView ? cellOffsets(2, data.cell.a) : ([[0, 0, 0]] as [number, number, number][])
 
   const heroCubane = data.cubanes[0] as CubaneData
 
@@ -470,10 +490,14 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
       <group ref={group} scale={SCALE}>
         {!cubaneFocus && !poreView && <CellWire size={data.cell.a} opacity={0.28} />}
         {showPoly &&
-          data.polyhedra.map((poly, i) => (
-            <Polyhedron key={i} vertices={poly.vertices} faces={poly.faces} opacity={polyOpacity} />
-          ))}
-        {showOxygen && <OxygenAtoms />}
+          fwOffsets.flatMap((off, oi) =>
+            data.polyhedra.map((poly, i) => (
+              <group key={`${oi}-${i}`} position={off}>
+                <Polyhedron vertices={poly.vertices} faces={poly.faces} opacity={polyOpacity} />
+              </group>
+            )),
+          )}
+        {showOxygen && <OxygenAtoms offsets={fwOffsets} />}
         {showVoids && <VoidSurface pore={poreView} />}
         {showLi &&
           data.lithium.map((li, i) => (
