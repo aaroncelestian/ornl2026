@@ -21,11 +21,13 @@ const MN_O_MAX = 2.25
  * Iso at the probe radius traces accessible empty space (8a → 16c → 8a).
  * Polyhedra are display-only — they are not subtracted from the field.
  */
-const GRID = 96
+const GRID = 120
 /** Clearance outside the VdW spheres — the wall must never enter an atom. */
 const PROBE = 0.18
 const MIN_VOID_VOXELS = 40
-const SMOOTH_ITERS = 8
+const SMOOTH_ITERS = 18
+/** Extra Taubin after the last iso snap — rounds patches without re-faceting. */
+const RELAX_ITERS = 22
 const BOUNDARY_SMOOTH = 16
 const RADII = { Mn: 2.0, O: 1.52 }
 /** Keep only channel mouths (Å from loop centroid). */
@@ -393,7 +395,7 @@ const field = new Float64Array((n + 1) ** 3)
 function fIndex(i, j, k) {
   return (i * (n + 1) + j) * (n + 1) + k
 }
-function atomSdf(x, y, z) {
+function hardAtomSdf(x, y, z) {
   let best = Infinity
   for (const atom of unitFw) {
     const dx = minImage(x - atom.x, a)
@@ -404,9 +406,8 @@ function atomSdf(x, y, z) {
   }
   return best
 }
-/** Projection field: atom spheres only (needs a real gradient). */
 function sdfAt(x, y, z) {
-  return atomSdf(x, y, z)
+  return hardAtomSdf(x, y, z)
 }
 
 const iso = PROBE
@@ -417,7 +418,7 @@ for (let i = 0; i <= n; i++) {
     const y = (j / n) * A
     for (let k = 0; k <= n; k++) {
       const z = (k / n) * A
-      field[fIndex(i, j, k)] = atomSdf(x, y, z)
+      field[fIndex(i, j, k)] = hardAtomSdf(x, y, z)
     }
   }
 }
@@ -635,6 +636,49 @@ function taubinSmooth(pos, faces, iterations, lambda = 0.5, mu = -0.53) {
   }
 }
 
+/** Laplacian that refuses any step into a VdW sphere — rounds patches, keeps atoms hollow. */
+function constrainedSmooth(pos, faces, iterations, lambda = 0.38, skip = null) {
+  const nV = pos.length / 3
+  const nbrs = Array.from({ length: nV }, () => new Set())
+  for (let t = 0; t < faces.length; t += 3) {
+    const a0 = faces[t]
+    const a1 = faces[t + 1]
+    const a2 = faces[t + 2]
+    nbrs[a0].add(a1)
+    nbrs[a0].add(a2)
+    nbrs[a1].add(a0)
+    nbrs[a1].add(a2)
+    nbrs[a2].add(a0)
+    nbrs[a2].add(a1)
+  }
+  const adj = nbrs.map((set) => [...set])
+  for (let k = 0; k < iterations; k++) {
+    const next = pos.slice()
+    for (let i = 0; i < nV; i++) {
+      if (skip?.has(i)) continue
+      const list = adj[i]
+      if (!list.length) continue
+      let ax = 0
+      let ay = 0
+      let az = 0
+      for (const j of list) {
+        ax += pos[j * 3]
+        ay += pos[j * 3 + 1]
+        az += pos[j * 3 + 2]
+      }
+      const inv = 1 / list.length
+      const nx = pos[i * 3] + lambda * (ax * inv - pos[i * 3])
+      const ny = pos[i * 3 + 1] + lambda * (ay * inv - pos[i * 3 + 1])
+      const nz = pos[i * 3 + 2] + lambda * (az * inv - pos[i * 3 + 2])
+      if (hardAtomSdf(nx + A * 0.5, ny + A * 0.5, nz + A * 0.5) < iso) continue
+      next[i * 3] = nx
+      next[i * 3 + 1] = ny
+      next[i * 3 + 2] = nz
+    }
+    for (let i = 0; i < pos.length; i++) pos[i] = next[i]
+  }
+}
+
 function projectToIso(pos, iters = 8, skip = null) {
   const step = A / n
   for (let k = 0; k < iters; k++) {
@@ -655,7 +699,7 @@ function projectToIso(pos, iters = 8, skip = null) {
   }
 }
 
-/** Newton-push any leftover verts out of the atom spheres onto the iso. */
+/** Newton-push any leftover verts out of the atom spheres onto the hard VdW iso. */
 function enforceOutsideAtoms(pos, skip = null) {
   const step = A / n
   for (let i = 0; i < pos.length; i += 3) {
@@ -664,11 +708,11 @@ function enforceOutsideAtoms(pos, skip = null) {
       const x = pos[i] + A * 0.5
       const y = pos[i + 1] + A * 0.5
       const z = pos[i + 2] + A * 0.5
-      const s = sdfAt(x, y, z) - iso
+      const s = hardAtomSdf(x, y, z) - iso
       if (s >= -1e-4) break
-      const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
-      const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
-      const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
+      const gx = hardAtomSdf(x + step, y, z) - hardAtomSdf(x - step, y, z)
+      const gy = hardAtomSdf(x, y + step, z) - hardAtomSdf(x, y - step, z)
+      const gz = hardAtomSdf(x, y, z + step) - hardAtomSdf(x, y, z - step)
       const glen = Math.hypot(gx, gy, gz) || 1
       pos[i] -= (s * gx) / glen
       pos[i + 1] -= (s * gy) / glen
@@ -1122,7 +1166,7 @@ function sdfStats(pos, label) {
   let minS = Infinity
   let maxS = -Infinity
   for (let i = 0; i < pos.length; i += 3) {
-    const s = sdfAt(pos[i] + A * 0.5, pos[i + 1] + A * 0.5, pos[i + 2] + A * 0.5)
+    const s = hardAtomSdf(pos[i] + A * 0.5, pos[i + 1] + A * 0.5, pos[i + 2] + A * 0.5)
     if (s < 0) inside++
     if (s < minS) minS = s
     if (s > maxS) maxS = s
@@ -1134,16 +1178,16 @@ function sdfStats(pos, label) {
 }
 
 console.log(
-  `Smoothing LMO void (${SMOOTH_ITERS} Taubin, VdW Mn ${RADII.Mn} / O ${RADII.O} Å, iso ${PROBE} Å)…`,
+  `Smoothing LMO void (${SMOOTH_ITERS} Taubin + ${RELAX_ITERS} relax, VdW Mn ${RADII.Mn} / O ${RADII.O} Å, iso ${PROBE} Å)…`,
 )
 sdfStats(positions, 'before smooth')
 taubinSmooth(positions, index, SMOOTH_ITERS)
 sdfStats(positions, 'after Taubin')
 projectToIso(positions)
 sdfStats(positions, 'after project')
-taubinSmooth(positions, index, 4)
-projectToIso(positions, 6)
-sdfStats(positions, 'after second smooth')
+constrainedSmooth(positions, index, RELAX_ITERS)
+enforceOutsideAtoms(positions)
+sdfStats(positions, 'after relax')
 
 // Keep only the dominant connected channel network (drop tiny cavities)
 {
@@ -1210,9 +1254,9 @@ sdfStats(positions, 'after second smooth')
   }
 }
 
-projectToIso(positions, 6)
+constrainedSmooth(positions, index, 10)
 enforceOutsideAtoms(positions)
-sdfStats(positions, 'after extra project')
+sdfStats(positions, 'after extra relax')
 
 {
   const clipped = clipMeshToBox(positions, index, CLIP_HALF)
@@ -1235,12 +1279,17 @@ sdfStats(positions, 'after extra project')
     positions[i * 3 + 2] = s[2]
   }
   smoothBoundaryOnBox(positions, index, bound, CLIP_HALF, BOUNDARY_SMOOTH)
-  projectToIso(positions, 6, bound)
+  constrainedSmooth(positions, index, 8, 0.38, bound)
+  for (const i of bound) {
+    const s = snapToBoxFace(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], CLIP_HALF)
+    positions[i * 3] = s[0]
+    positions[i * 3 + 1] = s[1]
+    positions[i * 3 + 2] = s[2]
+  }
   enforceOutsideAtoms(positions, bound)
   const mouths = boundaryLoops(index)
   const rounded = circularizeLoopsOnBox(positions, mouths, CLIP_HALF, 0.6)
   smoothBoundaryOnBox(positions, index, bound, CLIP_HALF, 8)
-  projectToIso(positions, 4, bound)
   enforceOutsideAtoms(positions)
   for (const i of bound) {
     const s = snapToBoxFace(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], CLIP_HALF)
@@ -1259,7 +1308,7 @@ sdfStats(positions, 'final')
   const drop = new Uint8Array(positions.length / 3)
   let nDrop = 0
   for (let i = 0; i < positions.length; i += 3) {
-    if (sdfAt(positions[i] + A * 0.5, positions[i + 1] + A * 0.5, positions[i + 2] + A * 0.5) < 0) {
+    if (hardAtomSdf(positions[i] + A * 0.5, positions[i + 1] + A * 0.5, positions[i + 2] + A * 0.5) < 0) {
       drop[i / 3] = 1
       nDrop++
     }
@@ -1296,7 +1345,7 @@ sdfStats(positions, 'final')
       const x = positions[ia * 3] * (1 - t) + positions[ib * 3] * t
       const y = positions[ia * 3 + 1] * (1 - t) + positions[ib * 3 + 1] * t
       const z = positions[ia * 3 + 2] * (1 - t) + positions[ib * 3 + 2] * t
-      if (sdfAt(x + A * 0.5, y + A * 0.5, z + A * 0.5) < 0) return true
+      if (hardAtomSdf(x + A * 0.5, y + A * 0.5, z + A * 0.5) < 0) return true
     }
     return false
   }
@@ -1310,7 +1359,7 @@ sdfStats(positions, 'final')
     const cy = (positions[a0 * 3 + 1] + positions[a1 * 3 + 1] + positions[a2 * 3 + 1]) / 3
     const cz = (positions[a0 * 3 + 2] + positions[a1 * 3 + 2] + positions[a2 * 3 + 2]) / 3
     if (
-      sdfAt(cx + A * 0.5, cy + A * 0.5, cz + A * 0.5) < 0 ||
+      hardAtomSdf(cx + A * 0.5, cy + A * 0.5, cz + A * 0.5) < 0 ||
       insideSeg(a0, a1) ||
       insideSeg(a1, a2) ||
       insideSeg(a2, a0)
@@ -1344,6 +1393,29 @@ const voidAtoms = []
 
 const normals = new Array(positions.length).fill(0)
 const step = A / n
+for (let t = 0; t < index.length; t += 3) {
+  const i0 = index[t]
+  const i1 = index[t + 1]
+  const i2 = index[t + 2]
+  const ax = positions[i1 * 3] - positions[i0 * 3]
+  const ay = positions[i1 * 3 + 1] - positions[i0 * 3 + 1]
+  const az = positions[i1 * 3 + 2] - positions[i0 * 3 + 2]
+  const bx = positions[i2 * 3] - positions[i0 * 3]
+  const by = positions[i2 * 3 + 1] - positions[i0 * 3 + 1]
+  const bz = positions[i2 * 3 + 2] - positions[i0 * 3 + 2]
+  const nx = ay * bz - az * by
+  const ny = az * bx - ax * bz
+  const nz = ax * by - ay * bx
+  normals[i0 * 3] += nx
+  normals[i0 * 3 + 1] += ny
+  normals[i0 * 3 + 2] += nz
+  normals[i1 * 3] += nx
+  normals[i1 * 3 + 1] += ny
+  normals[i1 * 3 + 2] += nz
+  normals[i2 * 3] += nx
+  normals[i2 * 3 + 1] += ny
+  normals[i2 * 3 + 2] += nz
+}
 for (let i = 0; i < positions.length; i += 3) {
   const x = positions[i] + A * 0.5
   const y = positions[i + 1] + A * 0.5
@@ -1351,11 +1423,19 @@ for (let i = 0; i < positions.length; i += 3) {
   const gx = sdfAt(x + step, y, z) - sdfAt(x - step, y, z)
   const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
   const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
-  const len = Math.hypot(gx, gy, gz) || 1
   // Point out of the void, toward the framework (same as rowleyite).
-  normals[i] = -gx / len
-  normals[i + 1] = -gy / len
-  normals[i + 2] = -gz / len
+  const wantX = -gx
+  const wantY = -gy
+  const wantZ = -gz
+  if (normals[i] * wantX + normals[i + 1] * wantY + normals[i + 2] * wantZ < 0) {
+    normals[i] *= -1
+    normals[i + 1] *= -1
+    normals[i + 2] *= -1
+  }
+  const len = Math.hypot(normals[i], normals[i + 1], normals[i + 2]) || 1
+  normals[i] /= len
+  normals[i + 1] /= len
+  normals[i + 2] /= len
 }
 for (let i = 0; i < normals.length; i++) normals[i] = r3(normals[i])
 for (let i = 0; i < positions.length; i++) positions[i] = r3(positions[i])
@@ -1386,7 +1466,7 @@ const payload = {
     box: A,
     clipHalf: CLIP_HALF,
     clipShape: 'cube',
-    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Li removed; cube-clipped`,
+    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Taubin-smoothed; Li removed; cube-clipped`,
     positions,
     normals,
     index,

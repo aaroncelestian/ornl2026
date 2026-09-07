@@ -496,9 +496,92 @@
   opacity: 1;
 }
 
-.legend {
+.vibeBtn {
   position: absolute;
   top: var(--pad-y);
+  right: var(--pad-x);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+  background: color-mix(in srgb, var(--color-bg) 72%, transparent);
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.vibeBtn[data-on] {
+  color: var(--color-text);
+  border-color: color-mix(in srgb, #7ec4d4 55%, transparent);
+}
+
+.vibeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-text) 28%, transparent);
+}
+
+.vibeBtn[data-on] .vibeDot {
+  background: #7ec4d4;
+  box-shadow: 0 0 8px #7ec4d4;
+}
+
+.vibeBtn:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--color-text) 40%, transparent);
+  outline-offset: 3px;
+}
+
+.ramanHud {
+  position: absolute;
+  right: var(--pad-x);
+  bottom: calc(var(--pad-y) + 2.4rem);
+  z-index: 2;
+  width: min(300px, 34vw);
+  padding: 10px 12px 8px;
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  pointer-events: none;
+  color: var(--color-text);
+}
+
+.ramanHudSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 4px;
+}
+
+.ramanHudTitle {
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--color-text) 82%, transparent);
+}
+
+.ramanHudMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--color-text) 68%, transparent);
+}
+
+.ramanHudMode {
+  margin-top: 2px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #7ec4d4;
+}
+
+.legend {
+  position: absolute;
+  top: calc(var(--pad-y) + 44px);
   right: var(--pad-x);
   z-index: 2;
   display: flex;

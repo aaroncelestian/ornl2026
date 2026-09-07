@@ -66,7 +66,7 @@ Outline: [`docs/ORNL_Talk_Outline.md`](docs/ORNL_Talk_Outline.md). Slides source
 
 ## Timing guide (~45 min)
 
-- Open + thesis: ~6 min
+- Open + history + thesis: ~8 min
 - Spinel / DLE + plume + cycle: ~12–14 min
 - Lokelma lineage + pore + structure: ~12–14 min
 - Rowleyite: ~8–10 min

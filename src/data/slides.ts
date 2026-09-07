@@ -230,6 +230,79 @@ export const slides: Slide[] = [
       'Museum collections as blueprints for engineered materials. Not display cases. Not nostalgia. A searchable library of framework topologies whose selectivity had to be rediscovered under synthetic control before it became deployable.',
   },
   {
+    id: 'history',
+    label: 'The names',
+    chapter: 'open',
+    layout: 'stage',
+    clearPlate: true,
+    camera: 'hold',
+    scene: [
+      {
+        id: 'hist-zeolite',
+        label: 'Zeolite',
+        kicker: '1756',
+        title: 'Zeolite',
+        subtitle: 'Molecular sieves · 1956',
+        notes:
+          'Cronstedt names zeolites in 1756 — stones that boil. Two hundred years later Union Carbide ships Linde A. Selective channels first; industrial sieves and cracking after. Drop a specimen photo on this beat when you have one.',
+      },
+      {
+        id: 'hist-olivine',
+        label: 'Olivine',
+        kicker: '1790',
+        title: 'Olivine',
+        subtitle: 'LiFePO₄ · 1997',
+        notes:
+          'Werner names olivine in 1790. Padhi and Goodenough make LiFePO₄ an olivine cathode in 1997. Same preview as spinel: the structure waits; the battery arrives later.',
+      },
+      {
+        id: 'hist-fluorite',
+        label: 'Fluorite',
+        kicker: '1797',
+        title: 'Fluorite',
+        subtitle: 'YSZ · oxide electrolytes',
+        notes:
+          'Species name: 1797, Napione. Not Agricola’s 1530 fluorspar — that citation is already a smelting flux, which is industry. The date that belongs in this list is the mineral name, then the afterlife: the fluorite structure as YSZ, doped ceria, nuclear oxides. Optical fluorite is late nineteenth century; the electrolyte family is the line for this room.',
+      },
+      {
+        id: 'hist-garnet',
+        label: 'Garnet',
+        kicker: '1803',
+        title: 'Garnet',
+        subtitle: 'YIG · 1956   ·   LLZO · 2007',
+        notes:
+          'Not the gem. Pyrope is named in 1803 — Ludwig, Handbuch der Mineralogie nach A. G. Werner. First industrial use of the structure is yttrium iron garnet, Bertaut and Forrat 1956, microwave. Then LLZO solid electrolytes, 2007. Same architecture, two centuries apart.',
+      },
+      {
+        id: 'hist-stibnite',
+        label: 'Stibnite',
+        kicker: '1832',
+        title: 'Stibnite',
+        subtitle: 'Thin-film PV · 2009',
+        notes:
+          'Not kohl, not the antimony ore. Beudant names stibnite in 1832. The afterlife is the semiconductor: Sb₂S₃ ribbons, bandgap about 1.7 eV, earth-abundant thin-film absorber. Savadogo’s photoelectrochemical cell is 1992 if someone asks; the thin-film story the room will recognize starts with Itzhaik et al. 2009. Same sentence as perovskite solar — a mineral name that became a photovoltaic materials family.',
+      },
+      {
+        id: 'hist-perovskite',
+        label: 'Perovskite',
+        kicker: '1839',
+        title: 'Perovskite',
+        subtitle: 'Ferroelectrics · solar',
+        notes:
+          'Gustav Rose, 1839, Urals, named for Lev Perovski. BaTiO₃ ceramics in the 1940s; halide perovskite solar after 2009. The mineralogist named the architecture. Industry showed up speaking the name as if it were a materials term.',
+      },
+      {
+        id: 'hist-turn',
+        label: 'The names',
+        title: 'The lab already\nspeaks mineralogy.',
+        notes:
+          'Zeolite, olivine, fluorite, garnet, stibnite, perovskite. Those are species names that became process names after a long lag. Spinel is next — hold it. The collection is where the names still have specimens attached.',
+      },
+    ],
+    notes:
+      'Six minerals known as species before the materials afterlife. Pictures later — this scene is built so each beat can take a specimen layer.',
+  },
+  {
     id: 'thesis',
     label: 'Thesis',
     chapter: 'open',
