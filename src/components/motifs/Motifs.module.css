@@ -19,18 +19,67 @@
   overflow: visible;
 }
 
-.plotSvg[data-playhead] {
+.plotSvg[data-has-scrub] {
+  max-height: calc(100% - 76px);
+}
+
+.timeScrub {
+  position: relative;
+  z-index: 4;
+  box-sizing: border-box;
+  padding: 0 14px 0 38px;
+  pointer-events: auto;
+}
+
+.timeScrubLabel {
+  margin-bottom: 4px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 52%, transparent);
+}
+
+.timeScrubRange {
+  display: block;
+  width: 100%;
+  margin: 0;
+  accent-color: #e07040;
   cursor: grab;
   touch-action: none;
 }
 
-.plotSvg[data-playhead]:focus-visible {
-  outline: 1px solid color-mix(in srgb, var(--color-text) 35%, transparent);
-  outline-offset: 4px;
+.timeScrubRange:active {
+  cursor: grabbing;
 }
 
-.plotSvg[data-dragging] {
-  cursor: grabbing;
+.timeScrubRange:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--color-text) 35%, transparent);
+  outline-offset: 3px;
+}
+
+.timeScrubTicks {
+  position: relative;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.timeScrubTicks span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 48%, transparent);
+}
+
+.timeScrubNow {
+  position: absolute;
+  right: 14px;
+  top: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-text) 72%, transparent);
 }
 
 .cubaneDock {

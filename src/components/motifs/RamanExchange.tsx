@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
 import data from '../../data/ramanExchange.json'
@@ -85,26 +85,6 @@ function xrdSticks(
   })
 }
 
-function svgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
-  const rect = svg.getBoundingClientRect()
-  return {
-    x: ((clientX - rect.left) / Math.max(1, rect.width)) * W,
-    y: ((clientY - rect.top) / Math.max(1, rect.height)) * H,
-  }
-}
-
-function inPlot(
-  x: number,
-  y: number,
-  ox: number,
-  top: number,
-  plotW: number,
-  plotH: number,
-  padL: number,
-) {
-  return y >= top - 8 && y <= top + plotH + 16 && x >= ox + padL - 10 && x <= ox + padL + plotW + 10
-}
-
 export function RamanExchange({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
@@ -170,71 +150,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const partPts = m.partialLoad.map((p) => ({ x: sxM(p.n), y: syM(p.pct) }))
 
   const [playT, setPlayT] = useState(t0)
-  const [dragging, setDragging] = useState(false)
-  const grabbed = useRef(false)
-  const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
-    grabbed.current = false
-    setDragging(false)
     setPlayT(t0)
   }, [active, showOperando, beatKey, t0])
-
-  const setTimeFromClient = useCallback(
-    (clientX: number, clientY: number) => {
-      const svg = svgRef.current
-      if (!svg) return
-      const { x, y } = svgPoint(svg, clientX, clientY)
-      const inA = inPlot(x, y, aBox.ox, aTop, aPlotW, aPlotH, aBox.pad.l)
-      const inF = inPlot(x, y, fBox.ox, fTop, fPlotW, fPlotH, fBox.pad.l)
-      if (!inA && !inF) return
-      const box = inA ? aBox : fBox
-      const pw = inA ? aPlotW : fPlotW
-      const xmax = inA ? a.xMax : f.xMax
-      const t = ((x - box.ox - box.pad.l) / Math.max(1, pw)) * xmax
-      setPlayT(Math.max(t0, Math.min(tMax, t)))
-    },
-    [aBox, fBox, aTop, fTop, aPlotW, fPlotW, aPlotH, fPlotH, a.xMax, f.xMax, t0, tMax],
-  )
-
-  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!showOperando) return
-    const svg = svgRef.current
-    if (!svg) return
-    const { x, y } = svgPoint(svg, e.clientX, e.clientY)
-    const inA = inPlot(x, y, aBox.ox, aTop, aPlotW, aPlotH, aBox.pad.l)
-    const inF = inPlot(x, y, fBox.ox, fTop, fPlotW, fPlotH, fBox.pad.l)
-    if (!inA && !inF) return
-    grabbed.current = true
-    setDragging(true)
-    e.currentTarget.setPointerCapture(e.pointerId)
-    setTimeFromClient(e.clientX, e.clientY)
-  }
-
-  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragging) return
-    setTimeFromClient(e.clientX, e.clientY)
-  }
-
-  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragging) return
-    setDragging(false)
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId)
-    }
-  }
-
-  const onKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
-    if (!showOperando) return
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      e.preventDefault()
-      e.stopPropagation()
-      grabbed.current = true
-      const step = e.shiftKey ? 5 : 1
-      const next = playT + (e.key === 'ArrowRight' ? step : -step)
-      setPlayT(Math.max(t0, Math.min(tMax, next)))
-    }
-  }
 
   const liveW = atTime(aSmooth, playT)
   const liveFwhm = atTime(fSmooth, playT)
@@ -303,23 +222,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
         open={showOperando}
       />
       <svg
-        ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
         className={styles.plotSvg}
-        role={showOperando ? 'slider' : 'img'}
-        tabIndex={showOperando ? 0 : undefined}
-        data-playhead={showOperando || undefined}
-        data-dragging={dragging || undefined}
-        aria-valuemin={t0}
-        aria-valuemax={tMax}
-        aria-valuenow={Math.round(playT)}
-        aria-valuetext={`${playT.toFixed(0)} min · ${Math.round(liveW)} cm⁻¹ · Γ ${Math.round(liveFwhm)}`}
-        aria-label="Operando A₁g playhead. Drag to scrub time."
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onKeyDown={onKeyDown}
+        data-has-scrub={showOperando || undefined}
+        role="img"
       >
         <defs>
           <linearGradient id="ramanFill" x1="0" y1="0" x2="0" y2="1">
@@ -465,7 +371,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 A₁g peak · Li back in
               </text>
               <text x={aBox.ox + aBox.pad.l} y={aBox.oy + 32} className={styles.plotTick}>
-                Fig 5B · smoothed licl2-1 · drag the marker
+                Fig 5B · smoothed licl2-1
               </text>
               <line x1={aBox.ox + aBox.pad.l} y1={aBot} x2={aBox.ox + aBox.pad.l + aPlotW} y2={aBot} stroke={C_AXIS} />
               <line x1={aBox.ox + aBox.pad.l} y1={aTop} x2={aBox.ox + aBox.pad.l} y2={aBot} stroke={C_AXIS} />
@@ -477,7 +383,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                   </text>
                 </g>
               ))}
-              <rect x={aBox.ox + aBox.pad.l} y={aTop} width={aPlotW} height={aPlotH} fill="transparent" />
               <g clipPath="url(#ramanLeftClip)">
                 <path d={fillD} fill="url(#ramanFill)" opacity={active ? reveal : 0} />
                 <path
@@ -516,9 +421,8 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 )
               })}
               {active && (
-                <g>
+                <g pointerEvents="none">
                   <line x1={cursor.x} y1={aTop} x2={cursor.x} y2={aBot} stroke={C_PEAK} strokeOpacity={0.35} />
-                  <circle cx={cursor.x} cy={cursor.y} r={14} fill={C_PEAK} fillOpacity={0.12} />
                   <circle cx={cursor.x} cy={cursor.y} r={6} fill={C_PEAK} />
                   <text x={cursor.x + 10} y={cursor.y - 10} className={styles.plotHiLabel} fontSize={18}>
                     {Math.round(liveW)}
@@ -540,7 +444,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 A₁g FWHM
               </text>
               <text x={fBox.ox + fBox.pad.l} y={fBox.oy + 32} className={styles.plotTick}>
-                Fig 5A · smoothed · same playhead
+                Fig 5A · smoothed
               </text>
               <line x1={fBox.ox + fBox.pad.l} y1={fBot} x2={fBox.ox + fBox.pad.l + fPlotW} y2={fBot} stroke={C_AXIS} />
               <line x1={fBox.ox + fBox.pad.l} y1={fTop} x2={fBox.ox + fBox.pad.l} y2={fBot} stroke={C_AXIS} />
@@ -552,7 +456,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                   </text>
                 </g>
               ))}
-              <rect x={fBox.ox + fBox.pad.l} y={fTop} width={fPlotW} height={fPlotH} fill="transparent" />
               <g clipPath="url(#ramanRightClip)">
                 <path
                   d={`${fPathD} L ${sxF(fSmooth[fSmooth.length - 1].t)} ${fBot} L ${sxF(fSmooth[0].t)} ${fBot} Z`}
@@ -569,23 +472,14 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 />
               </g>
               {active && (
-                <g>
+                <g pointerEvents="none">
                   <line x1={cursorF.x} y1={fTop} x2={cursorF.x} y2={fBot} stroke={C_FWHM} strokeOpacity={0.35} />
-                  <circle cx={cursorF.x} cy={cursorF.y} r={12} fill={C_FWHM} fillOpacity={0.12} />
                   <circle cx={cursorF.x} cy={cursorF.y} r={5} fill={C_FWHM} />
                   <text x={cursorF.x + 10} y={cursorF.y - 8} className={styles.plotAnnotate} fontSize={14}>
                     {Math.round(liveFwhm)} cm⁻¹
                   </text>
                 </g>
               )}
-              {[0, 20, 40, 60].map((t) => (
-                <text key={t} x={sxF(t)} y={fBot + 14} textAnchor="middle" className={styles.plotTick}>
-                  {t}
-                </text>
-              ))}
-              <text x={fBox.ox + fBox.pad.l + fPlotW / 2} y={fBox.oy + fBox.h - 2} textAnchor="middle" className={styles.plotAxis}>
-                {f.xLabel}
-              </text>
             </g>
           </>
         )}
@@ -694,6 +588,42 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           </g>
         )}
       </svg>
+      {showOperando && (
+        <div
+          className={styles.timeScrub}
+          style={{
+            marginLeft: `${(STACK_LEFT / W) * 100}%`,
+            width: `${((W - STACK_LEFT) / W) * 100}%`,
+          }}
+        >
+          <div className={styles.timeScrubLabel}>Time (min)</div>
+          <input
+            className={styles.timeScrubRange}
+            type="range"
+            min={t0}
+            max={tMax}
+            step={0.1}
+            value={playT}
+            data-playhead=""
+            aria-label="Time in minutes"
+            aria-valuemin={t0}
+            aria-valuemax={tMax}
+            aria-valuenow={Math.round(playT)}
+            aria-valuetext={`${playT.toFixed(0)} minutes`}
+            onChange={(e) => setPlayT(Number(e.target.value))}
+          />
+          <div className={styles.timeScrubTicks} aria-hidden>
+            {[0, 20, 40, 60].map((t) => (
+              <span key={t} style={{ left: `${(t / a.xMax) * 100}%` }}>
+                {t}
+              </span>
+            ))}
+          </div>
+          <div className={styles.timeScrubNow}>
+            {playT.toFixed(0)} min
+          </div>
+        </div>
+      )}
     </div>
   )
 }

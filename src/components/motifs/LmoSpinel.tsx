@@ -29,6 +29,12 @@ const _QUAT = new THREE.Quaternion()
 
 type Phase = 'framework' | 'voids' | 'hydrogen' | 'lithium' | 'cubane'
 
+const CELL_PHASES: Phase[] = ['framework', 'voids', 'hydrogen', 'lithium']
+
+function isCellPhase(phase: Phase | null): phase is Phase {
+  return phase != null && CELL_PHASES.includes(phase)
+}
+
 function phaseForBeat(id?: string): Phase {
   if (id === 'voids') return 'voids'
   if (id === '8a') return 'hydrogen'
@@ -341,7 +347,7 @@ function VibratingCell({
   }, [model])
 
   useEffect(() => {
-    elapsed.current = 0
+    if (phase === 'hydrogen') elapsed.current = 0
   }, [phase])
 
   useFrame(({ clock }, dt) => {
@@ -490,10 +496,6 @@ function Scene({
   const heroCubane = data.cubanes[0] as CubaneData
   const controls = useRef<{ enabled: boolean; target: THREE.Vector3 } | null>(null)
 
-  useEffect(() => {
-    if (exchange && group.current) group.current.rotation.set(0, 0, 0)
-  }, [exchange, phase])
-
   useFrame((_, dt) => {
     const root = group.current
     if (controls.current) {
@@ -501,9 +503,9 @@ function Scene({
       if (ride.current.wide) controls.current.target.set(0, 0, 0)
     }
     if (!root || !active || reduced) return
+    // Hold the current yaw through H / Li so beat changes do not snap the cell.
     if (exchange) return
-    if (cubaneFocus) root.rotation.y += dt * 0.12
-    else root.rotation.y += dt * (poreView ? 0.055 : 0.1)
+    root.rotation.y += dt * (cubaneFocus ? 0.12 : 0.08)
   })
 
   return (
@@ -587,6 +589,11 @@ function CameraHome({
     }
 
     if (prev.current === phase) return
+    // lattice → voids → H → Li share one orbit. Homing here is the snap.
+    if (isCellPhase(prev.current) && isCellPhase(phase)) {
+      prev.current = phase
+      return
+    }
     const targetPos = phase === 'cubane' ? cubaneHome : HOME
     const targetLook = phase === 'cubane' ? cubaneTarget : new THREE.Vector3(0, 0, 0)
     camera.position.lerp(targetPos, 0.12)
