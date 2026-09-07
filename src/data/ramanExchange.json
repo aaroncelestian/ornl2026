@@ -1,26 +1,72 @@
 {
-  "source": "Celestian et al., J. Raman Spectrosc. 2026, 57:131–139",
+  "source": "Celestian et al., J. Raman Spectrosc. 2026, 57:131–139 · Figs 4–5, 8",
   "a1g": {
     "xLabel": "Time (min)",
-    "yLabel": "A₁g (cm⁻¹)",
-    "yMin": 620,
-    "yMax": 670,
-    "xMax": 45,
+    "yLabel": "A₁g peak (cm⁻¹)",
+    "yMin": 628,
+    "yMax": 668,
+    "xMax": 65,
     "points": [
-      { "t": 0, "w": 635 },
-      { "t": 2, "w": 635 },
-      { "t": 4, "w": 642 },
-      { "t": 6, "w": 648 },
-      { "t": 8, "w": 652 },
-      { "t": 12, "w": 656 },
-      { "t": 22, "w": 656 },
-      { "t": 30, "w": 654 },
-      { "t": 42, "w": 650 }
+      { "t": 0, "w": 645 },
+      { "t": 2, "w": 644 },
+      { "t": 3.5, "w": 650 },
+      { "t": 5, "w": 657.5 },
+      { "t": 8, "w": 657.5 },
+      { "t": 12, "w": 657.5 },
+      { "t": 18, "w": 657.5 },
+      { "t": 22, "w": 657.5 },
+      { "t": 25, "w": 655 },
+      { "t": 27, "w": 646 },
+      { "t": 29, "w": 633 },
+      { "t": 30, "w": 632 },
+      { "t": 32, "w": 636 },
+      { "t": 35, "w": 644 },
+      { "t": 40, "w": 658 },
+      { "t": 45, "w": 658 },
+      { "t": 52, "w": 657 },
+      { "t": 60, "w": 656 },
+      { "t": 65, "w": 655 }
     ],
     "markers": [
-      { "t": 2, "label": "Li on" },
-      { "t": 12, "label": "656 cm⁻¹" },
-      { "t": 22, "label": "symmetry breakup" }
+      { "t": 5, "label": "Li → 8a · 657 cm⁻¹" },
+      { "t": 29, "label": "A₁g breakup" }
+    ],
+    "note": "Fig 5B fit — operando A₁g peak position (digitized)"
+  },
+  "fwhm": {
+    "xLabel": "Time (min)",
+    "yLabel": "A₁g FWHM (cm⁻¹)",
+    "yMin": 0,
+    "yMax": 58,
+    "xMax": 65,
+    "points": [
+      { "t": 0, "w": 16 },
+      { "t": 3, "w": 14 },
+      { "t": 5, "w": 9 },
+      { "t": 8, "w": 8 },
+      { "t": 12, "w": 8 },
+      { "t": 18, "w": 8.5 },
+      { "t": 22, "w": 9 },
+      { "t": 24, "w": 12 },
+      { "t": 26, "w": 24 },
+      { "t": 28, "w": 42 },
+      { "t": 29.5, "w": 53 },
+      { "t": 31, "w": 46 },
+      { "t": 33, "w": 22 },
+      { "t": 36, "w": 18 },
+      { "t": 42, "w": 20 },
+      { "t": 50, "w": 18 },
+      { "t": 58, "w": 20 },
+      { "t": 65, "w": 19 }
+    ],
+    "note": "Fig 5A — narrows as Li fills 8a, spikes as A₁g splits (Model 3)"
+  },
+  "models": {
+    "source": "Fig 8 · calculated vs measured A₁g",
+    "items": [
+      { "id": 1, "label": "H-LMO", "formula": "H₄Li₀Mn₅O₁₂", "calc": [674], "meas": [635], "color": "#7ec4d4" },
+      { "id": 2, "label": "Li-LMO", "formula": "H₀Li₄Mn₅O₁₂", "calc": [686], "meas": [656], "color": "#e07040" },
+      { "id": 3, "label": "Li in cubane + Mn loss", "formula": "H₀Li₅Mn₃.₇₅O₁₀₊□", "calc": [655, 696, 725], "meas": [622, 657, 690], "color": "#6ecf7a" }
     ]
   },
   "mnLoss": {
@@ -45,7 +91,7 @@
     ]
   },
   "footnotes": {
-    "raman": "A₁g Mn–O stretch tracks Li entry into H-LMO (in situ 532 nm)",
-    "durability": "Full load costs Mn. Partial load keeps the lattice intact."
+    "raman": "A₁g is the Mn₄O₄ cubane stretch — Fig 5 tracks it as Li enters H-LMO (532 nm)",
+    "durability": "Full load costs Mn (24% / 100 cycles). Partial load keeps the lattice intact."
   }
 }

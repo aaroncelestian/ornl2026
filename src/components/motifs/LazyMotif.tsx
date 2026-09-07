@@ -21,6 +21,8 @@ const loaders: Partial<Record<MotifKind, () => Promise<{ default: ComponentType<
   'ion-chart': () => import('../motifs/IonChart').then((m) => ({ default: m.IonChart })),
   'raman-exchange': () =>
     import('../motifs/RamanExchange').then((m) => ({ default: m.RamanExchange })),
+  'lmo-spinel': () =>
+    import('../motifs/LmoSpinel').then((m) => ({ default: m.LmoSpinel })),
   'double-lever': () =>
     import('../motifs/DoubleLever').then((m) => ({ default: m.DoubleLever })),
   'framework-density': () =>

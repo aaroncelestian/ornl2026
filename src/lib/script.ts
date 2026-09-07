@@ -146,7 +146,10 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: guest orbs sized against the rowleyite cage'
   }
   if (slide.motif === 'raman-exchange') {
-    return 'Motif: LMO A₁g Raman shift and Mn-loss durability'
+    return 'Motif: LMO A₁g Raman (Figs 4–5) and Mn-loss durability'
+  }
+  if (slide.motif === 'lmo-spinel') {
+    return 'Motif: LiMn₂O₄ CIF — MnO₆ polyhedra and interstitial voids'
   }
   if (slide.motif === 'double-lever') {
     return 'Motif: CZS double-lever K⁺ exchange mechanism'
@@ -276,8 +279,19 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'raman-exchange') {
         lines.push(
           beat?.id === 'durability'
-            ? 'Motif: Raman exchange — Mn loss vs cycle protocol (full load 24% vs partial ~0%)'
-            : 'Motif: Raman exchange — A₁g 635→656 cm⁻¹ during Li uptake into H-LMO',
+            ? 'Motif: Raman — Mn loss vs cycle protocol (full load 24% vs partial ~0%)'
+            : 'Motif: Raman Figs 4–5 — A₁g ~645→657 cm⁻¹ + FWHM (8a fill → breakup ~29 min)',
+        )
+      }
+      if (layer?.kind === 'motif' && layer.motif === 'lmo-spinel') {
+        lines.push(
+          beat?.id === 'voids'
+            ? 'Motif: LMO CIF — interstitial void network (Li removed)'
+            : beat?.id === '8a'
+              ? 'Motif: LMO CIF — Li in tetrahedral 8a voids'
+              : beat?.id === 'cubane'
+                ? 'Motif: LMO CIF — A₁g Mn₄O₄ cubane breathing'
+                : 'Motif: LMO CIF — MnO₆ polyhedral framework',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-density') {

@@ -27,6 +27,7 @@ export type MotifKind =
   | 'raman-exchange'
   | 'double-lever'
   | 'framework-density'
+  | 'lmo-spinel'
 
 export type ChapterId = 'open' | 'spinel' | 'lokelma' | 'rowleyite' | 'pipeline' | 'close'
 
@@ -308,6 +309,11 @@ export const slides: Slide[] = [
         kind: 'motif',
         motif: 'raman-exchange',
       },
+      {
+        id: 'lmo',
+        kind: 'motif',
+        motif: 'lmo-spinel',
+      },
     ],
     scene: [
       {
@@ -318,6 +324,33 @@ export const slides: Slide[] = [
         layers: ['spinel'],
         notes:
           'Look at this spinel. Nobody accessioned it as battery feedstock. Natural AB₂O₄ spinels already know how to host a small cation in tetrahedral interstices — selective, reversible, geometrically fussy. The engineered rebuild is Li₄Mn₅O₁₂ spinel (λ-MnO₂ after H⁺ priming). We take the interstitial property, not the hand specimen, and put it under synthetic control.',
+      },
+      {
+        id: 'lattice',
+        label: 'Lattice',
+        kicker: 'LiMn₂O₄ · Fd-3m',
+        title: 'MnO₆ builds the cage.',
+        layers: ['lmo'],
+        notes:
+          'Real CIF: sixteen MnO₆ octahedra in the conventional cell. Edge- and face-sharing Mn octahedra make the spinel framework — the Mn₄O₄ cubane units whose A₁g stretch the Raman tracks. Drag to orbit.',
+      },
+      {
+        id: 'voids',
+        label: 'Voids',
+        kicker: 'Interstitial geometry',
+        title: 'The voids are the product.',
+        layers: ['lmo'],
+        notes:
+          'Li removed from the model — what remains is the interstitial void network. Tetrahedral 8a sites and the 8a→16c→8a channels along [111]. That is the gate the brine Li has to fit.',
+      },
+      {
+        id: '8a',
+        label: '8a sites',
+        kicker: 'First landing',
+        title: 'Li lands in 8a first.',
+        layers: ['lmo'],
+        notes:
+          'Paper mechanism: Li first occupies structural interstitial tetrahedral (8a) voids — stable, back-exchangeable, no Mn loss yet. A₁g HWHM narrows as Li fills 8a. Later migration into cubane 8b is what stresses the lattice.',
       },
       {
         id: 'cloud',
@@ -413,11 +446,20 @@ export const slides: Slide[] = [
       {
         id: 'raman',
         label: 'Raman',
-        kicker: 'J. Raman Spectrosc. 2026',
+        kicker: 'J. Raman Spectrosc. 2026 · Figs 4–5',
         title: 'Watch the lattice\ntake the lithium.',
         layers: ['raman'],
         notes:
-          'Left panel: A₁g climbs from 635 to 656 cm⁻¹ as Li enters H-LMO; by ~22 min local Mn–O symmetry breaks. Right panel stays soft until the durability beat. This is the operando half of the ORNL story — not a capacity claim, a mechanism claim.',
+          'Fig 5 dual panel (digitized): A₁g peak jumps ~645→657 cm⁻¹ by ~5 min as Li fills 8a; FWHM narrows to ~8 cm⁻¹ with it. Near 29 min the mode breaks — peak dips to ~632 and FWHM spikes to ~53 cm⁻¹ as Li migrates toward cubane 8b (Fig 4 / Model 3). Operando mechanism, not a capacity claim.',
+      },
+      {
+        id: 'cubane',
+        label: 'Cubane',
+        kicker: 'Fig 8 · A₁g assignment',
+        title: 'A₁g is the cubane\nbreathing.',
+        layers: ['lmo'],
+        notes:
+          'Fig 7–8: A₁g is the symmetric stretch of the Mn₄O₄ cubane — four face-shared MnO₆. Model 1 H-LMO matches measured 635 cm⁻¹; Model 2 Li-filled 656 cm⁻¹; Model 3 Li-in-cubane + Mn loss splits into three A₁g components (622 / 657 / 690). That is why full load costs Mn.',
       },
       {
         id: 'durability',

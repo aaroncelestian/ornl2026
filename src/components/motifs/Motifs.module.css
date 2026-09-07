@@ -52,6 +52,36 @@
   font-size: 16px;
 }
 
+.a1gVibe {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: a1gBreathe var(--a1g-period, 0.7s) ease-in-out infinite;
+}
+
+.a1gMnLabel {
+  fill: #1a1814;
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+@keyframes a1gBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a1gVibe {
+    animation: none;
+  }
+}
+
 .plotFoot {
   margin: 0;
   max-width: 52ch;

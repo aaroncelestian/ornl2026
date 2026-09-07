@@ -252,7 +252,8 @@
 .scene[data-motif='double-lever'] .stageCopy,
 .scene[data-motif='framework-density'] .stageCopy,
 .scene[data-motif='crystal-viewer'] .stageCopy,
-.scene[data-motif='void-viewer'] .stageCopy {
+.scene[data-motif='void-viewer'] .stageCopy,
+.scene[data-motif='lmo-spinel'] .stageCopy {
   position: absolute;
   max-width: min(24ch, 30vw);
   top: var(--pad-y);
@@ -271,7 +272,8 @@
 .scene[data-motif='double-lever'] .stageScrim,
 .scene[data-motif='framework-density'] .stageScrim,
 .scene[data-motif='crystal-viewer'] .stageScrim,
-.scene[data-motif='void-viewer'] .stageScrim {
+.scene[data-motif='void-viewer'] .stageScrim,
+.scene[data-motif='lmo-spinel'] .stageScrim {
   background: linear-gradient(
     105deg,
     color-mix(in srgb, var(--color-bg) 78%, transparent) 0%,
