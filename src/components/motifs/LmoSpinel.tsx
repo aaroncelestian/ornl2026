@@ -586,36 +586,6 @@ function CameraHome({
       }
     }
 
-    if (phase === 'lithium' && r.following) {
-      const rate =
-        r.stage === 'approach'
-          ? 0.82
-          : r.stage === 'chase'
-            ? 2.6
-            : r.stage === 'escape'
-              ? 1.7
-              : r.stage === 'pullback'
-                ? 0.52
-                : 1.35
-      camera.position.x = THREE.MathUtils.damp(camera.position.x, r.pos.x, rate, dt)
-      camera.position.y = THREE.MathUtils.damp(camera.position.y, r.pos.y, rate, dt)
-      camera.position.z = THREE.MathUtils.damp(camera.position.z, r.pos.z, rate, dt)
-      look.current.x = THREE.MathUtils.damp(look.current.x, r.look.x, rate, dt)
-      look.current.y = THREE.MathUtils.damp(look.current.y, r.look.y, rate, dt)
-      look.current.z = THREE.MathUtils.damp(look.current.z, r.look.z, rate, dt)
-      camera.lookAt(look.current)
-      const persp = camera as THREE.PerspectiveCamera
-      persp.fov = THREE.MathUtils.damp(persp.fov, r.fov, 1.15, dt)
-      persp.updateProjectionMatrix()
-      if (r.stage === 'pullback' && camera.position.distanceTo(HOME) < 0.1) {
-        camera.position.copy(HOME)
-        r.wide = true
-        r.following = false
-      }
-      prev.current = null
-      return
-    }
-
     if (prev.current === phase) return
     const targetPos = phase === 'cubane' ? cubaneHome : HOME
     const targetLook = phase === 'cubane' ? cubaneTarget : new THREE.Vector3(0, 0, 0)

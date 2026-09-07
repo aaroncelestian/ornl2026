@@ -33,14 +33,6 @@
   cursor: grabbing;
 }
 
-.plotPlay {
-  position: absolute;
-  top: clamp(16px, 2.4vh, 32px);
-  right: clamp(20px, 3vw, 44px);
-  z-index: 4;
-  pointer-events: auto;
-}
-
 .cubaneDock {
   position: absolute;
   left: 0;

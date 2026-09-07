@@ -46,8 +46,6 @@ function linePath(pts: Pt[]): string {
   return pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
 }
 
-const PLAY_MS = 30000
-
 function spectrumPath(
   peaks: { w: number; h: number }[],
   sx: (w: number) => number,
@@ -173,39 +171,14 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   const [playT, setPlayT] = useState(t0)
   const [dragging, setDragging] = useState(false)
-  const [playing, setPlaying] = useState(false)
   const grabbed = useRef(false)
-  const playTRef = useRef(t0)
   const svgRef = useRef<SVGSVGElement>(null)
-  playTRef.current = playT
 
   useEffect(() => {
     grabbed.current = false
     setDragging(false)
-    setPlaying(false)
     setPlayT(t0)
   }, [active, showOperando, beatKey, t0])
-
-  useEffect(() => {
-    if (!playing || !showOperando || !active) return
-    const startT = playTRef.current >= tMax - 0.05 ? t0 : playTRef.current
-    if (startT !== playTRef.current) setPlayT(startT)
-    const span = Math.max(1e-6, tMax - t0)
-    const wall0 = performance.now() - ((startT - t0) / span) * PLAY_MS
-    let raf = 0
-    const tick = (now: number) => {
-      if (grabbed.current) {
-        setPlaying(false)
-        return
-      }
-      const u = Math.min(1, (now - wall0) / PLAY_MS)
-      setPlayT(t0 + u * span)
-      if (u < 1) raf = requestAnimationFrame(tick)
-      else setPlaying(false)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [playing, showOperando, active, t0, tMax])
 
   const setTimeFromClient = useCallback(
     (clientX: number, clientY: number) => {
@@ -233,7 +206,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
     const inF = inPlot(x, y, fBox.ox, fTop, fPlotW, fPlotH, fBox.pad.l)
     if (!inA && !inF) return
     grabbed.current = true
-    setPlaying(false)
     setDragging(true)
     e.currentTarget.setPointerCapture(e.pointerId)
     setTimeFromClient(e.clientX, e.clientY)
@@ -258,7 +230,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
       e.preventDefault()
       e.stopPropagation()
       grabbed.current = true
-      setPlaying(false)
       const step = e.shiftKey ? 5 : 1
       const next = playT + (e.key === 'ArrowRight' ? step : -step)
       setPlayT(Math.max(t0, Math.min(tMax, next)))
@@ -331,25 +302,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
         caption={showOperando ? undefined : cubaneCaption}
         open={showOperando}
       />
-      {showOperando && (
-        <button
-          type="button"
-          className={`${styles.vibeBtn} ${styles.plotPlay}`}
-          data-on={playing || undefined}
-          aria-pressed={playing}
-          onClick={() => {
-            if (playing) {
-              setPlaying(false)
-              return
-            }
-            grabbed.current = false
-            setPlaying(true)
-          }}
-        >
-          <span className={styles.vibeDot} />
-          {playing ? 'Pause' : 'Play 30s'}
-        </button>
-      )}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}

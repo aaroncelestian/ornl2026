@@ -32,18 +32,7 @@ const LI_GATHER = 2.6
 const LI_STAGGER = 0.55
 const LI_TRAVEL = 2.9
 const H_EXIT_TRAVEL = 1.15
-const CHASE_BACK = 2.55
-const CHASE_AHEAD = 1.48
-const CHASE_HEIGHT = 0.92
-const ESCAPE_BACK = 3.7
-const ESCAPE_SIDE = 1.85
-const ESCAPE_LIFT = 1.28
-const ESCAPE_LOOK = 2.4
-const ALIGN_S = 1.85
-const ESCAPE_HOLD = 0.48
-const APPROACH_FROM = -1.18
-const APPROACH_TO = 0.16
-const CAM_HOME = new THREE.Vector3(4.2, 2.6, 5.8)
+const BOLT_AFTER = 0.55
 
 export type RideStage = 'idle' | 'approach' | 'chase' | 'orbit' | 'flash' | 'escape' | 'hold' | 'pullback'
 
@@ -274,7 +263,6 @@ export function ExchangeIons({
   const liMat = useRef<(THREE.MeshStandardMaterial | null)[]>([])
   const extraMesh = useRef<(THREE.Mesh | null)[]>([])
   const flashLight = useRef<THREE.PointLight>(null)
-  const heroTan = useRef(new THREE.Vector3(0, 0, 1))
   const heroH = useMemo(() => new THREE.Vector3(), [])
   const tmpA = useMemo(() => new THREE.Vector3(), [])
   const tmpB = useMemo(() => new THREE.Vector3(), [])
@@ -289,8 +277,8 @@ export function ExchangeIons({
     boltT: Infinity,
     orbitT: 0,
     startYaw: 0,
-    radius: CHASE_BACK,
-    height: CHASE_HEIGHT,
+    radius: 2.55,
+    height: 0.92,
     dir: 1,
     targetYaw: 0,
   })
@@ -374,13 +362,11 @@ export function ExchangeIons({
           lx = site.liIn[0][0]
           ly = site.liIn[0][1]
           lz = site.liIn[0][2]
-          if (i === HERO) heroTan.current.copy(samplePath(site.liIn, 0).tan)
         } else {
           const samp = samplePath(site.liIn, local)
           lx = samp.p.x
           ly = samp.p.y
           lz = samp.p.z
-          if (i === HERO) heroTan.current.copy(samp.tan)
         }
 
         const stagger = i === HERO ? 0 : 0.12 + i * 0.05
@@ -460,105 +446,25 @@ export function ExchangeIons({
     })
 
     if (phase === 'lithium' && !reduced) {
-      const hero = sites[HERO]
       const heroLocal = (t - LI_GATHER - HERO * LI_STAGGER) / LI_TRAVEL
-      const tan = heroTan.current
       const r = ride.current
       const c = cam.current
+      r.following = false
+      r.pullable = false
+      r.fov = 40
+      r.stage = 'idle'
 
-      tmpA.copy(heroWorld).addScaledVector(tan, -CHASE_BACK)
-      tmpA.y = heroWorld.y + CHASE_HEIGHT
-      tmpB.copy(heroWorld).addScaledVector(tan, CHASE_AHEAD)
-      const chasePos = tmpA.multiplyScalar(scale)
-      const chaseLook = tmpB.multiplyScalar(scale)
-
-      const out = tmpDir.set(hero.outward[0], hero.outward[1], hero.outward[2])
-      const side = tmpA.set(-out.z, 0, out.x)
-      if (side.lengthSq() < 1e-6) side.set(1, 0, 0)
-      else side.normalize()
-      const escapeU = c.bolted ? Math.min(1, Math.max(0, (t - c.boltT) / H_EXIT_TRAVEL)) : 0
-      const back = ESCAPE_BACK + 1.9 * escapeU
-      tmpB.copy(heroWorld).addScaledVector(out, -back).addScaledVector(side, ESCAPE_SIDE)
-      tmpB.y += ESCAPE_LIFT
-      const readyPos = tmpB.clone().multiplyScalar(scale)
-      tmpA.copy(heroWorld).addScaledVector(out, ESCAPE_LOOK)
-      const readyLook = tmpA.clone().multiplyScalar(scale)
-      tmpA.copy(heroH).lerp(heroWorld, 0.32)
-      const escapeLook = tmpA.multiplyScalar(scale)
-
-      if (capturing) {
-        r.stage = 'chase'
-        r.following = true
-        r.done = false
-        r.pullable = false
-        r.flash = 0
-        r.fov = 33
-        r.pos.copy(chasePos)
-        r.look.copy(chaseLook)
-      } else if (r.wide) {
-        r.stage = 'idle'
-        r.following = false
-        r.done = true
-        r.pullable = false
-        r.flash = 0
-        r.fov = 40
-      } else if (r.pull) {
-        r.stage = 'pullback'
-        r.following = true
-        r.done = false
-        r.pullable = false
-        r.flash = 0
-        r.fov = 40
-        r.pos.copy(CAM_HOME)
-        r.look.set(0, 0, 0)
-      } else if (heroLocal < 1) {
-        const u = THREE.MathUtils.smoothstep(APPROACH_FROM, APPROACH_TO, heroLocal)
-        r.stage = u < 0.999 ? 'approach' : 'chase'
-        r.following = u > 0.01
-        r.done = false
-        r.pullable = false
-        r.flash = 0
-        r.fov = THREE.MathUtils.lerp(40, 33, u)
-        r.pos.lerpVectors(CAM_HOME, chasePos, easeInOut(u))
-        r.look.lerpVectors(tmpDir.set(0, 0, 0), chaseLook, easeInOut(u))
-      } else {
+      if (heroLocal >= 1 && !c.bolted) {
         c.orbitT += capturing ? 0 : dt
-        const flashAge = t - c.boltT
-
-        if (!c.bolted) {
-          const u = easeInOut(Math.min(1, c.orbitT / ALIGN_S))
-          r.stage = 'orbit'
-          r.following = true
-          r.done = false
-          r.pullable = false
-          r.flash = 0
-          r.fov = THREE.MathUtils.lerp(33, 36, u)
-          r.pos.lerpVectors(chasePos, readyPos, u)
-          r.look.lerpVectors(chaseLook, readyLook, u)
-          if (u >= 1) {
-            c.bolted = true
-            c.boltT = t
-          }
-        } else if (flashAge < H_EXIT_TRAVEL + ESCAPE_HOLD) {
-          r.stage = flashAge < 0.45 ? 'flash' : 'escape'
-          r.following = true
-          r.done = false
-          r.pullable = false
-          r.flash = Math.exp(-flashAge * 3.8) * (flashAge < 0.07 ? flashAge / 0.07 : 1)
-          r.fov = THREE.MathUtils.lerp(36, 40, escapeU)
-          r.pos.copy(readyPos)
-          r.look.copy(escapeLook)
-        } else {
-          r.stage = 'pullback'
-          r.following = true
-          r.done = false
-          r.pullable = false
-          r.flash = 0
-          r.fov = 40
-          r.pos.copy(CAM_HOME)
-          r.look.set(0, 0, 0)
+        if (capturing || c.orbitT >= BOLT_AFTER) {
+          c.bolted = true
+          c.boltT = t
         }
       }
+
+      const flashAge = t - c.boltT
+      r.flash = !c.bolted || flashAge < 0 ? 0 : Math.exp(-flashAge * 3.8) * (flashAge < 0.07 ? flashAge / 0.07 : 1)
+      r.done = c.bolted && flashAge > H_EXIT_TRAVEL
 
       const hm = hMat.current[HERO]
       const lm = liMat.current[HERO]
