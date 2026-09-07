@@ -169,17 +169,27 @@ function VoidSurface({ pore }: { pore: boolean }) {
     return geo
   }, [])
 
-  // Tube wall stays steel on both sides. Cream is reserved for the
-  // planar discs that seal the spherical clip (CrystalMaker mouths).
+  // Steel on the outer skin, cream on the channel interior (cut-open look).
+  // Caps stay the cream discs on the spherical clip.
   if (pore) {
     return (
       <group>
         <mesh geometry={geometry} renderOrder={1}>
           <meshStandardMaterial
             color={VOID_OUT}
-            roughness={0.34}
-            metalness={0.08}
-            side={THREE.DoubleSide}
+            roughness={0.36}
+            metalness={0.1}
+            side={THREE.BackSide}
+          />
+        </mesh>
+        <mesh geometry={geometry} renderOrder={2}>
+          <meshStandardMaterial
+            color={VOID_IN}
+            emissive={VOID_IN}
+            emissiveIntensity={0.16}
+            roughness={0.58}
+            metalness={0.02}
+            side={THREE.FrontSide}
           />
         </mesh>
         {capGeometry && (
@@ -187,7 +197,7 @@ function VoidSurface({ pore }: { pore: boolean }) {
             <meshStandardMaterial
               color={VOID_IN}
               emissive={VOID_IN}
-              emissiveIntensity={0.28}
+              emissiveIntensity={0.22}
               roughness={0.4}
               metalness={0.02}
               side={THREE.DoubleSide}
@@ -220,12 +230,8 @@ function VoidSurface({ pore }: { pore: boolean }) {
 
 type VoidAtom = { element: string; x: number; y: number; z: number }
 
-/** Match the void-field VdW radii, slightly short so the wall sits just outside. */
-const VOID_RADII = (data.void as { radii?: { Mn: number; O: number } }).radii
-const ATOM_DRAW = {
-  Mn: (VOID_RADII?.Mn ?? 2.0) * 0.9,
-  O: (VOID_RADII?.O ?? 1.52) * 0.9,
-}
+/** Markers only — void field still uses full VdW radii. */
+const ATOM_DRAW = { Mn: 0.28, O: 0.2 }
 
 function FrameworkAtoms() {
   const atoms = (data as { voidAtoms?: VoidAtom[] }).voidAtoms
@@ -517,6 +523,7 @@ function Scene({
         color="#9ec4d4"
       />
       {cubaneFocus && <directionalLight position={[2, -4, 5]} intensity={0.3} color="#f0c878" />}
+      {poreView && <pointLight position={[0, 0, 0]} intensity={0.55} color="#f0d7a0" distance={8} />}
       <group ref={group} scale={SCALE}>
         {!cubaneFocus && !poreView && <CellWire size={data.cell.a} opacity={0.28} />}
         {showPoly &&
