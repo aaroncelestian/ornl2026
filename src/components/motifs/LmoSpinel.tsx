@@ -10,7 +10,7 @@ import styles from './Motifs.module.css'
 const SCALE = 0.42
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
 /** Framework in the home cell; void network extends through the 2×2×2 box */
-const VOID_HOME = new THREE.Vector3(8.4, 5.6, 9.6)
+const VOID_HOME = new THREE.Vector3(6.4, 4.2, 7.4)
 const POLY_COLOR = '#9a6ab8'
 const VOID_OUT = '#9bb4c8'
 const VOID_IN = '#f2f5f7'
@@ -32,7 +32,7 @@ function phaseForBeat(id?: string): Phase {
 
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · MnO₆ polyhedra · drag to orbit',
-  voids: 'Probe void · outside Mn/O and MnO₆ · Li removed',
+  voids: 'VdW empty space · Mn/O spheres · Li removed',
   lithium: 'Li in tetrahedral 8a voids',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
@@ -162,11 +162,11 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_OUT}
             transparent
-            opacity={0.55}
-            roughness={0.35}
-            metalness={0.04}
-            transmission={0.18}
-            thickness={0.45}
+            opacity={0.62}
+            roughness={0.28}
+            metalness={0.03}
+            transmission={0.22}
+            thickness={0.55}
             side={THREE.BackSide}
             depthWrite={false}
           />
@@ -175,8 +175,8 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_IN}
             transparent
-            opacity={0.4}
-            roughness={0.42}
+            opacity={0.48}
+            roughness={0.38}
             metalness={0.02}
             side={THREE.FrontSide}
             depthWrite={false}
@@ -203,13 +203,30 @@ function VoidSurface({ pore }: { pore: boolean }) {
   )
 }
 
-function OxygenAtoms() {
+type VoidAtom = { element: string; x: number; y: number; z: number }
+
+/** Display radii — short of full VdW so the pore surface stays readable. */
+const ATOM_DRAW = { Mn: 0.58, O: 0.4 }
+
+function FrameworkAtoms() {
+  const atoms = (data as { voidAtoms?: VoidAtom[] }).voidAtoms
+  const list: VoidAtom[] =
+    atoms ??
+    [
+      ...data.manganese.map((p) => ({ element: 'Mn', ...p })),
+      ...data.oxygen.map((p) => ({ element: 'O', ...p })),
+    ]
+
   return (
     <group>
-      {data.oxygen.map((ox, i) => (
-        <mesh key={i} position={[ox.x, ox.y, ox.z]} renderOrder={2}>
-          <sphereGeometry args={[0.26, 16, 16]} />
-          <meshStandardMaterial color={O_COLOR} roughness={0.35} metalness={0.1} />
+      {list.map((atom, i) => (
+        <mesh key={i} position={[atom.x, atom.y, atom.z]} renderOrder={2}>
+          <sphereGeometry args={[atom.element === 'Mn' ? ATOM_DRAW.Mn : ATOM_DRAW.O, 20, 20]} />
+          <meshStandardMaterial
+            color={atom.element === 'Mn' ? MN_COLOR : O_COLOR}
+            roughness={0.34}
+            metalness={atom.element === 'Mn' ? 0.22 : 0.1}
+          />
         </mesh>
       ))}
     </group>
@@ -439,9 +456,9 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
   const showVoids = phase === 'voids' || phase === 'lithium'
   const showLi = phase === 'lithium'
   const showCubane = phase === 'cubane'
-  const showPoly = phase === 'framework' || phase === 'voids' || phase === 'lithium'
-  const showOxygen = phase === 'voids'
-  const polyOpacity = phase === 'framework' ? 0.72 : phase === 'voids' ? 0.55 : 0.32
+  const showPoly = phase === 'framework' || phase === 'lithium'
+  const showAtoms = phase === 'voids'
+  const polyOpacity = phase === 'framework' ? 0.72 : 0.32
   const heroCubane = data.cubanes[0] as CubaneData
 
   useFrame((_, dt) => {
@@ -472,7 +489,7 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
           data.polyhedra.map((poly, i) => (
             <Polyhedron key={i} vertices={poly.vertices} faces={poly.faces} opacity={polyOpacity} />
           ))}
-        {showOxygen && <OxygenAtoms />}
+        {showAtoms && <FrameworkAtoms />}
         {showVoids && <VoidSurface pore={poreView} />}
         {showLi &&
           data.lithium.map((li, i) => (
@@ -495,8 +512,8 @@ function Scene({ active, phase }: { active: boolean; phase: Phase }) {
       </group>
       <OrbitControls
         enablePan={false}
-        minDistance={cell * (cubaneFocus ? 0.85 : poreView ? 2.2 : 1.25)}
-        maxDistance={cell * (poreView ? 7 : 4.5)}
+        minDistance={cell * (cubaneFocus ? 0.85 : poreView ? 1.6 : 1.25)}
+        maxDistance={cell * (poreView ? 5.5 : 4.5)}
         makeDefault
       />
     </>

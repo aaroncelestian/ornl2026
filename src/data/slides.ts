@@ -341,7 +341,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Li removed. Void is where a probe fits without overlapping Mn, O, or the MnO₆ octahedra — the 8a→16c→8a channels, not the framework. That tunnel geometry is the product.',
+          'Li removed. Atoms as van der Waals spheres; the blue mesh is the leftover volume — the 8a→16c→8a channels, not the framework. That tunnel geometry is the product.',
       },
       {
         id: '8a',

@@ -14,22 +14,22 @@ const outPath = join(root, 'src', 'data', 'lmoSpinel.json')
 
 const MN_O_MAX = 2.25
 /**
- * Accessible void of the Mn–O framework (Li removed).
+ * CrystalMaker-style pore space of the Mn–O framework (Li removed).
  *
- * Void = space a probe can sit without overlapping:
- *   • Mn / O hard spheres (radii below)
- *   • MnO₆ octahedron interiors (so the surface cannot cut the polyhedra)
- *   sdf = dist_to_nearest_atom − radius; void where sdf > PROBE
- *
- * The earlier Gaussian density contour ignored those volumes, which is why
- * the mesh ran through atoms and octahedra.
+ * Atoms are van der Waals spheres (Bondi / CrystalMaker defaults).
+ * Empty space is the complement: sdf = dist_to_nucleus − r_vdw.
+ * Iso at ~0 traces the VdW surface; the mesh is the leftover volume
+ * (8a → 16c → 8a channels). Polyhedra are display-only — they are not
+ * subtracted from the field (that made the old mesh hug octahedron faces).
  */
-const GRID = 64
-const PROBE = 0.28
+const GRID = 80
+const PROBE = 0.04
 const MIN_VOID_VOXELS = 40
-const SMOOTH_ITERS = 6
-const RADII = { Mn: 1.4, O: 1.35 }
+const SMOOTH_ITERS = 3
+const RADII = { Mn: 2.0, O: 1.52 }
 const VOID_SUPERCELL = 2
+/** Spherical cluster, CrystalMaker range-style. Just inside the 2×2×2 box. */
+const CLIP_RADIUS = 8.15
 
 function parseNum(value) {
   return Number(String(value).replace(/\([^)]*\)/g, ''))
@@ -359,6 +359,7 @@ const A = a * sc
 const unitFw = atoms
   .filter((p) => p.element === 'Mn' || p.element === 'O')
   .map((p) => ({
+    element: p.element,
     x: p.x + a * 0.5,
     y: p.y + a * 0.5,
     z: p.z + a * 0.5,
@@ -369,50 +370,18 @@ for (let ix = 0; ix < sc; ix++) {
   for (let iy = 0; iy < sc; iy++) {
     for (let iz = 0; iz < sc; iz++) {
       for (const p of unitFw) {
-        framework.push({ x: p.x + ix * a, y: p.y + iy * a, z: p.z + iz * a, r: p.r })
+        framework.push({
+          element: p.element,
+          x: p.x + ix * a,
+          y: p.y + iy * a,
+          z: p.z + iz * a,
+          r: p.r,
+        })
       }
     }
   }
 }
 console.log(`Void supercell ${sc}×${sc}×${sc} · box ${A.toFixed(2)} Å · ${framework.length} Mn/O images`)
-
-const polys01 = polyhedra.map((p) => ({
-  center: [p.center[0] + a * 0.5, p.center[1] + a * 0.5, p.center[2] + a * 0.5],
-  vertices: p.vertices.map((v) => [v[0] + a * 0.5, v[1] + a * 0.5, v[2] + a * 0.5]),
-  faces: p.faces,
-}))
-
-function insidePoly(x, y, z, poly) {
-  const px = poly.center[0] + minImage(x - poly.center[0], a)
-  const py = poly.center[1] + minImage(y - poly.center[1], a)
-  const pz = poly.center[2] + minImage(z - poly.center[2], a)
-  for (const face of poly.faces) {
-    const A0 = poly.vertices[face[0]]
-    const B0 = poly.vertices[face[1]]
-    const C0 = poly.vertices[face[2]]
-    let nx = (B0[1] - A0[1]) * (C0[2] - A0[2]) - (B0[2] - A0[2]) * (C0[1] - A0[1])
-    let ny = (B0[2] - A0[2]) * (C0[0] - A0[0]) - (B0[0] - A0[0]) * (C0[2] - A0[2])
-    let nz = (B0[0] - A0[0]) * (C0[1] - A0[1]) - (B0[1] - A0[1]) * (C0[0] - A0[0])
-    const fx = A0[0] - poly.center[0]
-    const fy = A0[1] - poly.center[1]
-    const fz = A0[2] - poly.center[2]
-    if (nx * fx + ny * fy + nz * fz < 0) {
-      nx = -nx
-      ny = -ny
-      nz = -nz
-    }
-    // Slightly expanded solid so the void surface stays off the faces
-    if (nx * (px - A0[0]) + ny * (py - A0[1]) + nz * (pz - A0[2]) > -0.06) return false
-  }
-  return true
-}
-
-function insideFramework(x, y, z) {
-  for (const poly of polys01) {
-    if (insidePoly(x, y, z, poly)) return true
-  }
-  return false
-}
 
 const n = GRID
 const field = new Float64Array((n + 1) ** 3)
@@ -443,9 +412,7 @@ for (let i = 0; i <= n; i++) {
     const y = (j / n) * A
     for (let k = 0; k <= n; k++) {
       const z = (k / n) * A
-      let s = atomSdf(x, y, z)
-      if (insideFramework(x, y, z)) s = Math.min(s, iso - 1)
-      field[fIndex(i, j, k)] = s
+      field[fIndex(i, j, k)] = atomSdf(x, y, z)
     }
   }
 }
@@ -698,7 +665,9 @@ function sdfStats(pos, label) {
   )
 }
 
-console.log(`Smoothing LMO void (${SMOOTH_ITERS} Taubin, probe ${PROBE} Å, atoms+MnO₆ excluded)…`)
+console.log(
+  `Smoothing LMO void (${SMOOTH_ITERS} Taubin, VdW Mn ${RADII.Mn} / O ${RADII.O} Å, iso ${PROBE} Å)…`,
+)
 sdfStats(positions, 'before smooth')
 taubinSmooth(positions, index, SMOOTH_ITERS)
 sdfStats(positions, 'after Taubin')
@@ -796,7 +765,53 @@ sdfStats(positions, 'after project')
   for (let i = 0; i < newPos.length; i++) positions.push(newPos[i])
   index.length = 0
   for (let i = 0; i < newIndex.length; i++) index.push(newIndex[i])
-  console.log(`  culled ${dropped} verts still inside the framework`)
+  console.log(`  culled ${dropped} verts still inside a VdW sphere`)
+}
+
+{
+  const nV = positions.length / 3
+  const r2 = CLIP_RADIUS * CLIP_RADIUS
+  const remap = new Int32Array(nV).fill(-1)
+  const newPos = []
+  let dropped = 0
+  for (let i = 0; i < nV; i++) {
+    const x = positions[i * 3]
+    const y = positions[i * 3 + 1]
+    const z = positions[i * 3 + 2]
+    if (x * x + y * y + z * z > r2) {
+      dropped++
+      continue
+    }
+    remap[i] = newPos.length / 3
+    newPos.push(x, y, z)
+  }
+  const newIndex = []
+  for (let t = 0; t < index.length; t += 3) {
+    const a0 = remap[index[t]]
+    const a1 = remap[index[t + 1]]
+    const a2 = remap[index[t + 2]]
+    if (a0 < 0 || a1 < 0 || a2 < 0) continue
+    newIndex.push(a0, a1, a2)
+  }
+  positions.length = 0
+  for (let i = 0; i < newPos.length; i++) positions.push(newPos[i])
+  index.length = 0
+  for (let i = 0; i < newIndex.length; i++) index.push(newIndex[i])
+  console.log(`  clipped to ${CLIP_RADIUS} Å sphere · dropped ${dropped} verts`)
+}
+
+const voidAtoms = []
+{
+  const rKeep = CLIP_RADIUS + 0.35
+  const r2 = rKeep * rKeep
+  for (const atom of framework) {
+    const x = atom.x - A * 0.5
+    const y = atom.y - A * 0.5
+    const z = atom.z - A * 0.5
+    if (x * x + y * y + z * z > r2) continue
+    voidAtoms.push({ element: atom.element, x: r3(x), y: r3(y), z: r3(z) })
+  }
+  console.log(`Void cluster atoms: ${voidAtoms.length} within ${rKeep.toFixed(2)} Å`)
 }
 
 const normals = new Array(positions.length).fill(0)
@@ -823,7 +838,7 @@ function mean(xs) {
 
 const payload = {
   mineral: 'Lithium manganese oxide (spinel)',
-  source: 'LiMn2O4.cif · Fd-3m · probe void excluding Mn/O spheres and MnO₆ (Li removed)',
+  source: 'LiMn2O4.cif · Fd-3m · van der Waals empty space (Li removed)',
   paper: 'Celestian et al., J. Raman Spectrosc. 2026, 57:131–139',
   cell: { a },
   polyhedra,
@@ -831,13 +846,15 @@ const payload = {
   oxygen,
   lithium,
   cubanes: cubaneUnique.slice(0, 8),
+  voidAtoms,
   void: {
     probe: PROBE,
     radii: RADII,
     grid: GRID,
     supercell: sc,
     box: A,
-    note: `Void where sdf > ${PROBE} Å; Mn/O spheres and MnO₆ interiors excluded`,
+    clipRadius: CLIP_RADIUS,
+    note: `Empty space outside Bondi/CrystalMaker VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å); Li removed`,
     positions,
     normals,
     index,
@@ -854,6 +871,7 @@ const payload = {
     voidTris: index.length / 3,
     voidFraction: r3(voidCount / totalSamples),
     voidComponents: sizes.filter((c) => c.size >= MIN_VOID_VOXELS).length,
+    voidAtomCount: voidAtoms.length,
   },
 }
 
