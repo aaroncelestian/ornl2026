@@ -414,7 +414,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Li removed. Atoms as van der Waals spheres; the blue mesh is the leftover volume — the 8a→16c→8a channels, not the framework. That tunnel geometry is the product.',
+          'Li removed. Ball-and-stick Mn–O framework; the blue mesh is the leftover van der Waals volume — the 8a→16c→8a channels, not the framework. That tunnel geometry is the product.',
       },
       {
         id: '8a',
@@ -437,8 +437,7 @@ export const slides: Slide[] = [
       {
         id: 'li-return',
         label: 'Li returns',
-        kicker: 'Figs 4–5 · operando',
-        title: 'Li returns.\nRaman returns — changed.',
+        title: 'Li returns.\nRaman Returns',
         layers: ['raman'],
         notes:
           'As Li goes back in, XRD is still good. Raman pattern comes back — not identical to as-synthesized. licl2-1 Fit Series (Fig 5): A₁g jumps ~645→657 cm⁻¹ by ~3 min, FWHM narrows to ~8, then breakup near 28 min (peak ~632, FWHM ~53). Operando proof Li entered the lattice, not a capacity claim.',

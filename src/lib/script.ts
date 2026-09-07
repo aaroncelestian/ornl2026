@@ -290,7 +290,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'lmo-spinel') {
         lines.push(
           beat?.id === 'voids'
-            ? 'Motif: LMO van der Waals void — empty space outside Mn/O spheres (Li removed)'
+            ? 'Motif: LMO van der Waals void — empty space with ball-and-stick Mn/O (Li removed)'
             : beat?.id === '8a'
               ? 'Motif: LMO — H sits on O; OH dominates, Mn–O muted, modes go non-symmetric'
               : beat?.id === 'li-in'

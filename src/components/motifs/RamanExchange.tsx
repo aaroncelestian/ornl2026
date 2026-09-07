@@ -291,7 +291,12 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   return (
     <div className={styles.plot} aria-label={label || 'LMO XRD stays good; Raman blanks then returns changed'}>
-      <CubaneInset active={active} vibe={vibe} caption={cubaneCaption} />
+      <CubaneInset
+        active={active}
+        vibe={vibe}
+        caption={showOperando ? undefined : cubaneCaption}
+        open={showOperando}
+      />
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
@@ -328,7 +333,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           </clipPath>
         </defs>
 
-        {(storyMode || showOperando) && (
+        {storyMode && (
           <g opacity={active ? 1 : 0.45}>
             <text x={148} y={118} textAnchor="middle" className={styles.plotAnnotate} fontSize={15}>
               {stateLabel}
@@ -344,10 +349,8 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               { id: 'h-ex', y: 222, label: '2 · H-exchange' },
               { id: 'li-return', y: 256, label: '3 · Li returns' },
             ].map((step) => {
-              const on = phase === step.id || (phase === 'li-return' && step.id === 'li-return')
-              const done =
-                (phase === 'h-ex' && step.id === 'as-synth') ||
-                (phase === 'li-return' && step.id !== 'li-return')
+              const on = phase === step.id
+              const done = phase === 'h-ex' && step.id === 'as-synth'
               return (
                 <g key={step.id} opacity={on || done ? 1 : 0.35}>
                   <circle cx={60} cy={step.y} r={5} fill={on ? C_PEAK : done ? C_XRD : C_GONE} />

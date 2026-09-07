@@ -43,6 +43,14 @@
   pointer-events: none;
 }
 
+.cubaneDock[data-open] {
+  left: 2.4vw;
+  top: auto;
+  bottom: 10vh;
+  width: min(300px, 28vw);
+  height: min(340px, 48vh);
+}
+
 .cubaneCap {
   position: absolute;
   left: 8px;

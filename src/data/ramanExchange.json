@@ -248,19 +248,19 @@
       },
       {
         "t": 32,
-        "w": 657.72
+        "w": 640.37
       },
       {
         "t": 33,
-        "w": 640.0
+        "w": 643.04
       },
       {
         "t": 34,
-        "w": 657.52
+        "w": 645.72
       },
       {
         "t": 35,
-        "w": 643.55
+        "w": 648.39
       },
       {
         "t": 36,
@@ -369,7 +369,7 @@
         "label": "A\u2081g breakup"
       }
     ],
-    "note": "licl2-1 A1g peak column (Curve 2.x0 fill where blank)"
+    "note": "licl2-1 A1g peak column. t=32–35 omitted: spectrum too weak to fit (blank/unstable peak picks)."
   },
   "fwhm": {
     "xLabel": "Time (min)",

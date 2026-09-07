@@ -264,6 +264,14 @@
   padding: 0;
 }
 
+.scene[data-motif='raman-exchange'] .stageCopy {
+  max-width: min(16ch, 38vw);
+}
+
+.scene[data-motif='raman-exchange'] .stageCopy h2 span {
+  white-space: nowrap;
+}
+
 .scene[data-motif='selectivity-plume'] .stageScrim,
 .scene[data-motif='pore-gate'] .stageScrim,
 .scene[data-motif='framework-lineage'] .stageScrim,

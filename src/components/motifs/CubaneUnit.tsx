@@ -272,17 +272,19 @@ export function CubaneInset({
   active,
   vibe,
   caption,
+  open,
 }: {
   active: boolean
   vibe: CubaneVibe
   caption?: string
+  open?: boolean
 }) {
   const reduced = usePrefersReducedMotion()
   return (
-    <div className={styles.cubaneDock} aria-hidden>
+    <div className={styles.cubaneDock} data-open={open || undefined} aria-hidden>
       <Canvas
         dpr={[1, 1.5]}
-        camera={{ position: [2.55, 1.55, 3.15], fov: 36 }}
+        camera={{ position: open ? [3.4, 2.0, 4.2] : [2.55, 1.55, 3.15], fov: open ? 32 : 36 }}
         gl={{ antialias: true, alpha: true }}
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       >

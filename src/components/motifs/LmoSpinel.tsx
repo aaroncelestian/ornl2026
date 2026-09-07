@@ -41,7 +41,7 @@ function phaseForBeat(id?: string): Phase {
 
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
-  voids: 'VdW empty space · Mn/O spheres · Li removed',
+  voids: 'VdW empty space · ball-and-stick · Li removed',
   hydrogen: 'OH dominates · Mn–O muted at H–O',
   lithium: 'Li in · H out the pore',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
@@ -206,10 +206,6 @@ function VoidSurface({ pore }: { pore: boolean }) {
 type VoidAtom = { element: string; x: number; y: number; z: number }
 
 const ATOM_DRAW = { Mn: 0.36, O: 0.24 }
-const VDW_DRAW = {
-  Mn: Number(data.void.radii?.Mn ?? 2),
-  O: Number(data.void.radii?.O ?? 1.52),
-}
 const MN_O_MIN = 1.4
 const MN_O_MAX = 2.25
 
@@ -324,10 +320,6 @@ function VibratingCell({
   const muteOf = useRef<Float32Array>(new Float32Array(0))
   const kind = vibeKind(phase)
   const capturing = isCaptureMode()
-  const vdw = phase === 'voids'
-  const clip = useMemo(() => (vdw ? cellClipPlanes() : null), [vdw])
-  const rMn = vdw ? VDW_DRAW.Mn : ATOM_DRAW.Mn
-  const rO = vdw ? VDW_DRAW.O : ATOM_DRAW.O
   const protonated = useMemo(() => {
     const sites = buildExchangeSites()
     const { atoms } = model
@@ -434,27 +426,26 @@ function VibratingCell({
 
   return (
     <group>
-      {!vdw &&
-        model.bonds.map((bond, i) => (
-          <group key={`b-${i}`}>
-            <mesh
-              ref={(el) => {
-                bondA.current[i] = el
-              }}
-            >
-              <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
-              <meshStandardMaterial color={MN_COLOR} roughness={0.4} metalness={0.2} />
-            </mesh>
-            <mesh
-              ref={(el) => {
-                bondB.current[i] = el
-              }}
-            >
-              <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
-              <meshStandardMaterial color={O_COLOR} roughness={0.4} metalness={0.15} />
-            </mesh>
-          </group>
-        ))}
+      {model.bonds.map((bond, i) => (
+        <group key={`b-${i}`}>
+          <mesh
+            ref={(el) => {
+              bondA.current[i] = el
+            }}
+          >
+            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
+            <meshStandardMaterial color={MN_COLOR} roughness={0.4} metalness={0.2} />
+          </mesh>
+          <mesh
+            ref={(el) => {
+              bondB.current[i] = el
+            }}
+          >
+            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
+            <meshStandardMaterial color={O_COLOR} roughness={0.4} metalness={0.15} />
+          </mesh>
+        </group>
+      ))}
       {model.atoms.map((atom, i) => (
         <mesh
           key={i}
@@ -464,13 +455,11 @@ function VibratingCell({
           position={[atom.x, atom.y, atom.z]}
           renderOrder={2}
         >
-          <sphereGeometry args={[atom.element === 'Mn' ? rMn : rO, vdw ? 28 : 20, vdw ? 28 : 20]} />
+          <sphereGeometry args={[atom.element === 'Mn' ? ATOM_DRAW.Mn : ATOM_DRAW.O, 20, 20]} />
           <meshStandardMaterial
             color={atom.element === 'Mn' ? MN_COLOR : O_COLOR}
             roughness={0.34}
             metalness={atom.element === 'Mn' ? 0.22 : 0.1}
-            clippingPlanes={clip ?? undefined}
-            clipShadows={Boolean(clip)}
           />
         </mesh>
       ))}
@@ -741,7 +730,7 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
   const phase = phaseForBeat(scene.beat?.id)
-  const [vibeOn, setVibeOn] = useState(true)
+  const [vibeOn, setVibeOn] = useState(false)
   const ride = useRef<RideState>({
     following: false,
     done: false,
