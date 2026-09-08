@@ -1,12 +1,25 @@
-import { AnimatePresence, motion, useSpring, useTransform } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Html, OrbitControls, Stars } from '@react-three/drei'
+import * as THREE from 'three'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
+import { STRUCTURE_DPR, STRUCTURE_GL_OPAQUE } from '../../lib/structureCanvas'
 import data from '../../data/mineralConstellation.json'
 import styles from './Motifs.module.css'
 
 type Tier = 'hero' | 'peer' | 'field'
 type Domain = keyof typeof data.domains
+type Habit =
+  | 'cube'
+  | 'octa'
+  | 'dodeca'
+  | 'hexprism'
+  | 'needle'
+  | 'ortho'
+  | 'tetra'
+  | 'bipyramid'
+  | 'rhombo'
 
 type Mineral = {
   id: string
@@ -22,10 +35,54 @@ type Mineral = {
 
 type Phase = 'peri' | 'peers' | 'sky' | 'cabinets' | 'instrument' | 'turn'
 
-const W = data.view.w
-const H = data.view.h
+type Body = Mineral & {
+  pos: THREE.Vector3
+  color: string
+  habit: Habit
+  scale: number
+}
+
 const minerals = data.minerals as Mineral[]
-const hero = minerals.find((m) => m.tier === 'hero') ?? minerals[0]
+const WORLD_UP = new THREE.Vector3(0, 1, 0)
+const TMP = new THREE.Vector3()
+
+const HABIT_BY_ID: Record<string, Habit> = {
+  perovskite: 'cube',
+  zeolite: 'hexprism',
+  olivine: 'ortho',
+  fluorite: 'cube',
+  garnet: 'dodeca',
+  stibnite: 'needle',
+  quartz: 'hexprism',
+  corundum: 'hexprism',
+  beryl: 'hexprism',
+  diamond: 'octa',
+  spinel: 'octa',
+  magnetite: 'octa',
+  pyrite: 'cube',
+  halite: 'cube',
+  calcite: 'rhombo',
+  dolomite: 'rhombo',
+  tourmaline: 'hexprism',
+  apatite: 'hexprism',
+  topaz: 'ortho',
+  gypsum: 'ortho',
+  barite: 'ortho',
+  rutile: 'needle',
+  graphite: 'hexprism',
+  mica: 'ortho',
+  rowleyite: 'dodeca',
+}
+
+const HABIT_BY_DOMAIN: Record<Domain, Habit> = {
+  energy: 'cube',
+  medicine: 'hexprism',
+  optics: 'octa',
+  sieves: 'hexprism',
+  electronics: 'octa',
+  structural: 'ortho',
+  other: 'tetra',
+}
 
 function phaseForBeat(id?: string): Phase {
   if (id === 'peers') return 'peers'
@@ -36,135 +93,665 @@ function phaseForBeat(id?: string): Phase {
   return 'peri'
 }
 
-function cameraFor(phase: Phase, focus: Mineral | null) {
-  if (focus) {
-    return { cx: focus.x, cy: focus.y, scale: 3.2 }
+function hash01(s: string) {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
   }
-  if (phase === 'peri') return { cx: hero.x - 18, cy: hero.y + 6, scale: 4.6 }
-  if (phase === 'peers') return { cx: 420, cy: 310, scale: 1.85 }
-  if (phase === 'sky') return { cx: W / 2, cy: H / 2, scale: 1 }
-  // cabinets and later: pull slightly wider then hide under cabinet plate
-  return { cx: W / 2, cy: H / 2, scale: 0.72 }
+  return (h >>> 0) / 4294967296
 }
 
-function rayEnds(m: Mineral, count: number) {
-  const base = (m.id.charCodeAt(0) * 17 + m.id.length * 13) % 360
-  return m.apps.slice(0, count).map((app, i) => {
-    const ang = ((base + i * (360 / Math.max(count, 1)) + i * 28) * Math.PI) / 180
-    const len = m.tier === 'hero' ? 78 : m.tier === 'peer' ? 58 : 36
+function habitFor(m: Mineral): Habit {
+  return HABIT_BY_ID[m.id] ?? HABIT_BY_DOMAIN[m.domain] ?? 'octa'
+}
+
+function toWorld(m: Mineral): THREE.Vector3 {
+  // Flatten museum map into a shallow celestial disc with depth jitter
+  const x = (m.x - 500) * 0.028
+  const z = (m.y - 300) * 0.028
+  const y = (hash01(m.id) - 0.5) * 3.4 + (m.tier === 'hero' ? 0.15 : 0)
+  return new THREE.Vector3(x, y, z)
+}
+
+function buildBodies(): Body[] {
+  return minerals.map((m) => {
+    const scale = m.tier === 'hero' ? 0.42 : m.tier === 'peer' ? 0.26 : 0.09 + hash01(m.id + 's') * 0.05
     return {
-      app,
-      x2: m.x + Math.cos(ang) * len,
-      y2: m.y + Math.sin(ang) * len,
-      lx: m.x + Math.cos(ang) * (len + 10),
-      ly: m.y + Math.sin(ang) * (len + 10),
+      ...m,
+      pos: toWorld(m),
+      color: data.domains[m.domain],
+      habit: habitFor(m),
+      scale,
     }
   })
 }
 
-function Cabinets({
-  phase,
-  reduced,
-}: {
-  phase: Phase
-  reduced: boolean
-}) {
-  const show = phase === 'cabinets' || phase === 'instrument' || phase === 'turn'
-  const focusDrawer = phase === 'turn'
-  const openDrawers = phase === 'instrument' || phase === 'turn' ? [1, 3, 5] : [2, 4]
+const BODIES = buildBodies()
+const HERO = BODIES.find((b) => b.tier === 'hero') ?? BODIES[0]
+const PEERS = BODIES.filter((b) => b.tier === 'peer' || b.tier === 'hero')
 
-  const units = useMemo(() => {
-    const cols = 5
-    const rows = 2
-    const out: { x: number; y: number; drawers: number }[] = []
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        out.push({ x: 48 + c * 184, y: 70 + r * 250, drawers: 6 })
-      }
-    }
+function CrystalMesh({
+  habit,
+  color,
+  emissive = 0.55,
+}: {
+  habit: Habit
+  color: string
+  emissive?: number
+}) {
+  const material = (
+    <meshStandardMaterial
+      color={color}
+      emissive={color}
+      emissiveIntensity={emissive}
+      roughness={0.28}
+      metalness={0.35}
+      transparent
+      opacity={0.92}
+    />
+  )
+  if (habit === 'cube') {
+    return (
+      <mesh>
+        <boxGeometry args={[1, 1, 1]} />
+        {material}
+      </mesh>
+    )
+  }
+  if (habit === 'octa') {
+    return (
+      <mesh>
+        <octahedronGeometry args={[0.72, 0]} />
+        {material}
+      </mesh>
+    )
+  }
+  if (habit === 'dodeca') {
+    return (
+      <mesh>
+        <dodecahedronGeometry args={[0.62, 0]} />
+        {material}
+      </mesh>
+    )
+  }
+  if (habit === 'tetra') {
+    return (
+      <mesh>
+        <tetrahedronGeometry args={[0.78, 0]} />
+        {material}
+      </mesh>
+    )
+  }
+  if (habit === 'needle') {
+    return (
+      <mesh rotation={[0, 0, 0.35]}>
+        <cylinderGeometry args={[0.12, 0.18, 1.6, 6]} />
+        {material}
+      </mesh>
+    )
+  }
+  if (habit === 'ortho') {
+    return (
+      <mesh>
+        <boxGeometry args={[0.7, 1.15, 0.55]} />
+        {material}
+      </mesh>
+    )
+  }
+  if (habit === 'rhombo') {
+    return (
+      <mesh rotation={[0.55, 0.35, 0.2]}>
+        <boxGeometry args={[0.85, 0.85, 0.85]} />
+        {material}
+      </mesh>
+    )
+  }
+  if (habit === 'bipyramid') {
+    return (
+      <mesh>
+        <octahedronGeometry args={[0.7, 0]} />
+        {material}
+      </mesh>
+    )
+  }
+  return (
+    <group>
+      <mesh>
+        <cylinderGeometry args={[0.42, 0.42, 0.85, 6]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={emissive}
+          roughness={0.28}
+          metalness={0.35}
+          transparent
+          opacity={0.92}
+        />
+      </mesh>
+      <mesh position={[0, 0.55, 0]}>
+        <coneGeometry args={[0.42, 0.35, 6]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={emissive}
+          roughness={0.28}
+          metalness={0.35}
+          transparent
+          opacity={0.92}
+        />
+      </mesh>
+      <mesh position={[0, -0.55, 0]} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.42, 0.35, 6]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={emissive}
+          roughness={0.28}
+          metalness={0.35}
+          transparent
+          opacity={0.92}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function MoonSystem({
+  apps,
+  color,
+  radius,
+  showLabels,
+  reduced,
+  count,
+}: {
+  apps: string[]
+  color: string
+  radius: number
+  showLabels: boolean
+  reduced: boolean
+  count: number
+}) {
+  const group = useRef<THREE.Group>(null)
+  const moons = useMemo(() => {
+    const n = Math.max(count, apps.length)
+    return Array.from({ length: n }, (_, i) => {
+      const app = apps[i % apps.length]
+      const u = hash01(`${app}-${i}`)
+      const incl = (u - 0.5) * 0.9
+      const phase = (i / n) * Math.PI * 2 + u
+      const r = radius * (0.85 + u * 0.45)
+      const speed = 0.18 + u * 0.35
+      const size = 0.035 + (i % 3) * 0.012
+      return { app, incl, phase, r, speed, size, label: i < apps.length }
+    })
+  }, [apps, count, radius])
+
+  useFrame((_, dt) => {
+    if (!group.current || reduced) return
+    group.current.rotation.y += dt * 0.22
+  })
+
+  return (
+    <group ref={group}>
+      {moons.map((m, i) => {
+        const x = Math.cos(m.phase) * m.r
+        const z = Math.sin(m.phase) * m.r
+        const y = Math.sin(m.phase * 1.7) * m.r * m.incl
+        return (
+          <group key={`${m.app}-${i}`} position={[x, y, z]}>
+            <mesh>
+              <sphereGeometry args={[m.size, 12, 12]} />
+              <meshStandardMaterial
+                color={color}
+                emissive={color}
+                emissiveIntensity={1.1}
+                roughness={0.35}
+              />
+            </mesh>
+            {/* soft halo */}
+            <mesh>
+              <sphereGeometry args={[m.size * 2.4, 10, 10]} />
+              <meshBasicMaterial color={color} transparent opacity={0.14} depthWrite={false} />
+            </mesh>
+            {showLabels && m.label && (
+              <Html
+                center
+                distanceFactor={8}
+                style={{ pointerEvents: 'none' }}
+                wrapperClass={styles.constellationMoonLabel}
+              >
+                <span>{m.app}</span>
+              </Html>
+            )}
+          </group>
+        )
+      })}
+      {/* faint orbit rings */}
+      {[0.92, 1.18].map((f, i) => (
+        <mesh key={i} rotation={[Math.PI / 2 + i * 0.25, i * 0.4, 0]}>
+          <torusGeometry args={[radius * f, 0.004, 6, 64]} />
+          <meshBasicMaterial color={color} transparent opacity={0.16} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function MineralBody({
+  body,
+  phase,
+  focused,
+  reduced,
+  onSelect,
+}: {
+  body: Body
+  phase: Phase
+  focused: boolean
+  reduced: boolean
+  onSelect: (id: string) => void
+}) {
+  const root = useRef<THREE.Group>(null)
+  const isHero = body.tier === 'hero'
+  const isPeer = body.tier === 'peer'
+  const inCabinets = phase === 'cabinets' || phase === 'instrument' || phase === 'turn'
+
+  const visible =
+    focused ||
+    isHero ||
+    (isPeer && phase !== 'peri') ||
+    phase === 'sky' ||
+    phase === 'peers' ||
+    inCabinets
+
+  const showMoons =
+    focused ||
+    (phase === 'peri' && isHero) ||
+    (phase === 'peers' && (isHero || isPeer)) ||
+    phase === 'sky'
+
+  const moonCount =
+    focused || isHero
+      ? Math.max(5, body.apps.length + 2)
+      : isPeer
+        ? Math.max(3, body.apps.length)
+        : 3
+
+  const showLabel =
+    focused ||
+    (phase === 'peri' && isHero) ||
+    (phase === 'peers' && (isHero || isPeer)) ||
+    (phase === 'sky' && (isHero || isPeer))
+
+  const showCrystal = focused || isHero || isPeer || phase === 'sky'
+
+  useFrame((_, dt) => {
+    if (!root.current || reduced) return
+    root.current.rotation.y += dt * (isHero ? 0.15 : isPeer ? 0.1 : 0.05)
+  })
+
+  if (!visible && body.tier === 'field' && phase === 'peri') return null
+
+  return (
+    <group
+      ref={root}
+      position={body.pos}
+      scale={body.scale * (focused ? 1.35 : 1)}
+      visible={visible}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (phase === 'sky') onSelect(body.id)
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        if (phase === 'sky') document.body.style.cursor = 'pointer'
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto'
+      }}
+    >
+      {(isHero || isPeer || focused) && (
+        <mesh>
+          <sphereGeometry args={[1.55, 16, 16]} />
+          <meshBasicMaterial color={body.color} transparent opacity={0.08} depthWrite={false} />
+        </mesh>
+      )}
+      {showCrystal ? (
+        <CrystalMesh
+          habit={body.habit}
+          color={body.color}
+          emissive={focused ? 0.95 : isHero ? 0.7 : isPeer ? 0.55 : 0.28}
+        />
+      ) : (
+        body.tier === 'field' &&
+        phase === 'peers' && (
+          <mesh>
+            <sphereGeometry args={[0.45, 8, 8]} />
+            <meshBasicMaterial color={body.color} transparent opacity={0.4} />
+          </mesh>
+        )
+      )}
+      {showMoons && (
+        <MoonSystem
+          apps={body.apps}
+          color={body.color}
+          radius={isHero || focused ? 2.1 : isPeer ? 1.55 : 1.1}
+          showLabels={Boolean(showMoons && (isHero || isPeer || focused))}
+          reduced={reduced}
+          count={moonCount}
+        />
+      )}
+      {showLabel && (
+        <Html
+          position={[0, 1.55, 0]}
+          center
+          distanceFactor={10}
+          style={{ pointerEvents: 'none' }}
+          wrapperClass={styles.constellationNameLabel}
+        >
+          <div data-hero={isHero || focused || undefined}>
+            {isHero && phase === 'peri' && body.named ? <em>{body.named}</em> : null}
+            <strong>{body.name}</strong>
+          </div>
+        </Html>
+      )}
+    </group>
+  )
+}
+
+function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
+  const show = phase === 'cabinets' || phase === 'instrument' || phase === 'turn'
+  const group = useRef<THREE.Group>(null)
+
+  useFrame((_, dt) => {
+    if (!group.current) return
+    const target = show ? 1 : 0
+    const cur = group.current.scale.x
+    const next = reduced ? target : THREE.MathUtils.damp(cur, target, 2.4, dt)
+    group.current.scale.setScalar(Math.max(0.001, next))
+    group.current.visible = next > 0.02
+    group.current.position.y = THREE.MathUtils.lerp(-2.4, -1.2, next)
+  })
+
+  const cabinets = useMemo(() => {
+    const out: { x: number; z: number; rot: number }[] = []
+    for (let i = 0; i < 7; i++) out.push({ x: -9 + i * 3, z: -6.5, rot: 0 })
+    for (let i = 0; i < 3; i++) out.push({ x: -10.5, z: -4 + i * 3.2, rot: Math.PI / 2 })
+    for (let i = 0; i < 3; i++) out.push({ x: 10.5, z: -4 + i * 3.2, rot: -Math.PI / 2 })
     return out
   }, [])
 
   return (
-    <motion.g
-      initial={false}
-      animate={{ opacity: show ? 1 : 0 }}
-      transition={{ duration: reduced ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] }}
-      style={{ pointerEvents: show ? 'auto' : 'none' }}
-    >
-      <rect x={0} y={0} width={W} height={H} fill="#050505" opacity={0.55} />
-      {units.map((unit, ui) => {
-        const w = 168
-        const h = 228
-        const drawerH = 28
+    <group ref={group} position={[0, -1.2, 18]} scale={0.001} visible={false}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+        <planeGeometry args={[40, 28]} />
+        <meshStandardMaterial color="#0a0908" roughness={0.92} metalness={0.05} />
+      </mesh>
+      <pointLight position={[0, 4, 0]} intensity={0.35} color="#e8d4a8" distance={28} />
+      <pointLight position={[-6, 3, -4]} intensity={0.2} color="#7ec4a8" distance={16} />
+
+      {cabinets.map((c, ci) => (
+        <CabinetUnit
+          key={ci}
+          index={ci}
+          x={c.x}
+          z={c.z}
+          rotY={c.rot}
+          phase={phase}
+          reduced={reduced}
+        />
+      ))}
+    </group>
+  )
+}
+
+function CabinetUnit({
+  index,
+  x,
+  z,
+  rotY,
+  phase,
+  reduced,
+}: {
+  index: number
+  x: number
+  z: number
+  rotY: number
+  phase: Phase
+  reduced: boolean
+}) {
+  const drawers = 6
+  const openSet =
+    phase === 'turn'
+      ? new Set([2])
+      : phase === 'instrument'
+        ? new Set([1, 3, 4])
+        : new Set([2, 4])
+  const isFeature = index === 3 || index === 1 || index === 8
+
+  return (
+    <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
+      {/* carcass */}
+      <mesh position={[0, 1.55, 0]}>
+        <boxGeometry args={[2.4, 3.1, 1.1]} />
+        <meshStandardMaterial color="#161410" roughness={0.85} metalness={0.08} />
+      </mesh>
+      {/* face frame */}
+      <mesh position={[0, 1.55, 0.56]}>
+        <boxGeometry args={[2.35, 3.05, 0.04]} />
+        <meshStandardMaterial color="#1c1914" roughness={0.7} metalness={0.12} />
+      </mesh>
+      {Array.from({ length: drawers }).map((_, di) => {
+        const y = 0.35 + di * 0.48
+        const wantOpen = isFeature && openSet.has(di)
         return (
-          <g key={ui} transform={`translate(${unit.x} ${unit.y})`}>
-            <rect
-              width={w}
-              height={h}
-              rx={2}
-              fill="#12110f"
-              stroke="rgba(220,210,190,0.18)"
-              strokeWidth={1}
-            />
-            <rect x={6} y={6} width={w - 12} height={14} fill="rgba(220,210,190,0.06)" />
-            {Array.from({ length: unit.drawers }).map((_, di) => {
-              const open = openDrawers.includes(di) && (ui === 1 || ui === 3 || ui === 6)
-              const y = 28 + di * (drawerH + 4)
-              const pull = open ? (focusDrawer && ui === 3 && di === 3 ? 54 : 34) : 0
-              const glow = open
-              return (
-                <g key={di} transform={`translate(${pull} 0)`}>
-                  <rect
-                    x={8}
-                    y={y}
-                    width={w - 16}
-                    height={drawerH}
-                    rx={1}
-                    fill={open ? '#1a1814' : '#161512'}
-                    stroke="rgba(220,210,190,0.14)"
-                    strokeWidth={1}
-                  />
-                  <rect
-                    x={w / 2 - 10}
-                    y={y + drawerH / 2 - 1.5}
-                    width={20}
-                    height={3}
-                    rx={1}
-                    fill="rgba(220,210,190,0.28)"
-                  />
-                  {glow &&
-                    [0, 1, 2, 3, 4].map((gi) => {
-                      const gx = 22 + gi * 26 + (gi % 2) * 4
-                      const gy = y + 10 + (gi % 3)
-                      const color =
-                        gi % 3 === 0 ? '#e8b86a' : gi % 3 === 1 ? '#7ec4a8' : '#8eb4d8'
-                      return (
-                        <g key={gi}>
-                          <circle cx={gx} cy={gy} r={7} fill={color} opacity={0.12} />
-                          <circle cx={gx} cy={gy} r={2.4} fill={color} opacity={0.85} />
-                        </g>
-                      )
-                    })}
-                  {focusDrawer && ui === 3 && di === 3 && (
-                    <circle cx={w / 2} cy={y + drawerH / 2} r={10} fill="#e8b86a" opacity={0.35}>
-                      {!reduced && (
-                        <animate
-                          attributeName="opacity"
-                          values="0.2;0.45;0.2"
-                          dur="2.4s"
-                          repeatCount="indefinite"
-                        />
-                      )}
-                    </circle>
-                  )}
-                </g>
-              )
-            })}
-          </g>
+          <Drawer
+            key={di}
+            y={y}
+            open={wantOpen}
+            highlight={phase === 'turn' && index === 3 && di === 2}
+            reduced={reduced}
+            seed={index * 10 + di}
+          />
         )
       })}
-    </motion.g>
+    </group>
+  )
+}
+
+function Drawer({
+  y,
+  open,
+  highlight,
+  reduced,
+  seed,
+}: {
+  y: number
+  open: boolean
+  highlight: boolean
+  reduced: boolean
+  seed: number
+}) {
+  const ref = useRef<THREE.Group>(null)
+  const pull = useRef(0)
+
+  useFrame((_, dt) => {
+    if (!ref.current) return
+    const target = open ? (highlight ? 1.15 : 0.78) : 0
+    pull.current = reduced ? target : THREE.MathUtils.damp(pull.current, target, 2.6, dt)
+    ref.current.position.z = 0.55 + pull.current
+  })
+
+  const specimens = useMemo(() => {
+    return Array.from({ length: 5 }, (_, i) => {
+      const u = hash01(`d${seed}-${i}`)
+      const colors = ['#e8b86a', '#7ec4a8', '#8eb4d8', '#d4a574', '#9bc48a']
+      return {
+        x: -0.75 + i * 0.38 + (u - 0.5) * 0.08,
+        y: 0.06,
+        z: 0.05,
+        color: colors[i % colors.length],
+        habit: (['octa', 'cube', 'hexprism', 'dodeca', 'needle'] as Habit[])[i % 5],
+        s: 0.09 + u * 0.05,
+      }
+    })
+  }, [seed])
+
+  return (
+    <group ref={ref} position={[0, y, 0.55]}>
+      <mesh>
+        <boxGeometry args={[2.15, 0.4, 0.95]} />
+        <meshStandardMaterial color={highlight ? '#242018' : '#1a1712'} roughness={0.8} />
+      </mesh>
+      {/* handle */}
+      <mesh position={[0, 0, 0.48]}>
+        <boxGeometry args={[0.35, 0.04, 0.04]} />
+        <meshStandardMaterial color="#cfc3a4" metalness={0.5} roughness={0.35} />
+      </mesh>
+      {open &&
+        specimens.map((s, i) => (
+          <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
+            <CrystalMesh habit={s.habit} color={s.color} emissive={highlight ? 1.1 : 0.65} />
+            {highlight && i === 2 && (
+              <pointLight color={s.color} intensity={1.2} distance={2.4} />
+            )}
+          </group>
+        ))}
+    </group>
+  )
+}
+
+function CameraRig({
+  phase,
+  focusId,
+  reduced,
+  scripted,
+}: {
+  phase: Phase
+  focusId: string | null
+  reduced: boolean
+  scripted: boolean
+}) {
+  const { camera } = useThree()
+  const focus = BODIES.find((b) => b.id === focusId) ?? null
+  const goalPos = useRef(new THREE.Vector3(0.2, 0.5, 2.2))
+  const goalLook = useRef(new THREE.Vector3().copy(HERO.pos))
+  const look = useRef(new THREE.Vector3().copy(HERO.pos))
+
+  useFrame((_, dt) => {
+    if (!scripted) return
+
+    if (focus) {
+      goalPos.current.set(focus.pos.x + 1.6, focus.pos.y + 0.9, focus.pos.z + 2.4)
+      goalLook.current.copy(focus.pos)
+    } else if (phase === 'peri') {
+      goalPos.current.set(HERO.pos.x + 0.15, HERO.pos.y + 0.35, HERO.pos.z + 1.55)
+      goalLook.current.copy(HERO.pos)
+    } else if (phase === 'peers') {
+      const c = PEERS.reduce((acc, b) => acc.add(TMP.copy(b.pos)), new THREE.Vector3()).multiplyScalar(
+        1 / PEERS.length,
+      )
+      goalPos.current.set(c.x + 0.4, c.y + 2.2, c.z + 6.2)
+      goalLook.current.copy(c)
+    } else if (phase === 'sky') {
+      goalPos.current.set(0.8, 4.8, 14.5)
+      goalLook.current.set(0, 0.2, 0)
+    } else if (phase === 'cabinets') {
+      goalPos.current.set(0.2, 2.4, 26.5)
+      goalLook.current.set(0, 1.2, 18)
+    } else if (phase === 'instrument') {
+      goalPos.current.set(-1.2, 2.1, 24.2)
+      goalLook.current.set(0, 1.4, 16.5)
+    } else {
+      goalPos.current.set(0.6, 1.55, 22.4)
+      goalLook.current.set(-0.2, 1.25, 17.8)
+    }
+
+    const k = reduced ? 1 : 2.1
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, goalPos.current.x, k, dt)
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, goalPos.current.y, k, dt)
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, goalPos.current.z, k, dt)
+    camera.up.copy(WORLD_UP)
+    look.current.x = THREE.MathUtils.damp(look.current.x, goalLook.current.x, k, dt)
+    look.current.y = THREE.MathUtils.damp(look.current.y, goalLook.current.y, k, dt)
+    look.current.z = THREE.MathUtils.damp(look.current.z, goalLook.current.z, k, dt)
+    camera.lookAt(look.current)
+  })
+
+  return null
+}
+
+function Scene({
+  active,
+  phase,
+  focusId,
+  setFocusId,
+  reduced,
+}: {
+  active: boolean
+  phase: Phase
+  focusId: string | null
+  setFocusId: (id: string | null) => void
+  reduced: boolean
+}) {
+  const inHall = phase === 'cabinets' || phase === 'instrument' || phase === 'turn'
+  const [skySettled, setSkySettled] = useState(false)
+  const canOrbit = phase === 'sky' || phase === 'peers'
+  const orbit = active && canOrbit && !focusId && !reduced && skySettled
+  const scripted = !orbit
+
+  useEffect(() => {
+    setSkySettled(false)
+    if (!canOrbit || focusId) return
+    const id = window.setTimeout(() => setSkySettled(true), reduced ? 0 : 1100)
+    return () => window.clearTimeout(id)
+  }, [phase, focusId, reduced, canOrbit])
+
+  return (
+    <>
+      <color attach="background" args={['#030303']} />
+      <fog attach="fog" args={['#030303', inHall ? 8 : 14, inHall ? 36 : 44]} />
+      <ambientLight intensity={0.18} />
+      <directionalLight position={[4, 8, 3]} intensity={0.55} color="#f2e6c8" />
+      <pointLight position={[0, 2, 2]} intensity={0.4} color="#e8b86a" distance={24} />
+
+      <Stars
+        radius={80}
+        depth={40}
+        count={reduced ? 800 : 2800}
+        factor={3.2}
+        saturation={0}
+        fade
+        speed={reduced ? 0 : 0.35}
+      />
+
+      <CameraRig phase={phase} focusId={focusId} reduced={reduced} scripted={scripted} />
+
+      <group visible={!inHall}>
+        {BODIES.map((body) => (
+          <MineralBody
+            key={body.id}
+            body={body}
+            phase={phase}
+            focused={focusId === body.id}
+            reduced={reduced}
+            onSelect={(id) => setFocusId(focusId === id ? null : id)}
+          />
+        ))}
+      </group>
+
+      <CabinetsRoom phase={phase} reduced={reduced} />
+
+      <OrbitControls
+        enabled={orbit}
+        enablePan={false}
+        enableZoom
+        minDistance={phase === 'peers' ? 3.5 : 6}
+        maxDistance={phase === 'peers' ? 14 : 28}
+        maxPolarAngle={Math.PI * 0.48}
+        target={phase === 'peers' ? HERO.pos.toArray() : [0, 0.2, 0]}
+      />
+    </>
   )
 }
 
@@ -173,14 +760,7 @@ export function MineralConstellation({ active, label }: { active: boolean; label
   const reduced = usePrefersReducedMotion()
   const phase = phaseForBeat(scene.beat?.id)
   const [focusId, setFocusId] = useState<string | null>(null)
-  const wrapRef = useRef<HTMLDivElement>(null)
 
-  const focus = useMemo(
-    () => (focusId ? minerals.find((m) => m.id === focusId) ?? null : null),
-    [focusId],
-  )
-
-  // Clear exploratory zoom when leaving sky or changing beat
   useEffect(() => {
     if (phase !== 'sky') setFocusId(null)
   }, [phase])
@@ -201,265 +781,55 @@ export function MineralConstellation({ active, label }: { active: boolean; label
     return () => window.removeEventListener('keydown', onKey)
   }, [focusId])
 
-  const cam = cameraFor(phase, focus)
-  const springCfg = reduced
-    ? { stiffness: 400, damping: 40, mass: 0.2 }
-    : { stiffness: 48, damping: 18, mass: 0.85 }
-
-  const scale = useSpring(cam.scale, springCfg)
-  const cx = useSpring(cam.cx, springCfg)
-  const cy = useSpring(cam.cy, springCfg)
-
-  useEffect(() => {
-    scale.set(cam.scale)
-    cx.set(cam.cx)
-    cy.set(cam.cy)
-  }, [cam.cx, cam.cy, cam.scale, cx, cy, scale])
-
-  const viewBox = useTransform([scale, cx, cy], ([s, x, y]) => {
-    const sw = W / Number(s)
-    const sh = H / Number(s)
-    return `${Number(x) - sw / 2} ${Number(y) - sh / 2} ${sw} ${sh}`
-  })
-
-  const [vb, setVb] = useState(() => {
-    const s = cam.scale
-    const sw = W / s
-    const sh = H / s
-    return `${cam.cx - sw / 2} ${cam.cy - sh / 2} ${sw} ${sh}`
-  })
-
-  useEffect(() => {
-    const unsub = viewBox.on('change', (v) => setVb(String(v)))
-    return () => unsub()
-  }, [viewBox])
-
-  const showField = phase === 'sky' || phase === 'cabinets' || Boolean(focus)
-  const showPeers = phase !== 'peri' || Boolean(focus)
-  const constellationOpacity =
-    phase === 'cabinets' || phase === 'instrument' || phase === 'turn' ? 0.08 : 1
-  const labelMode: 'hero' | 'peers' | 'sky' | 'focus' | 'none' =
-    focus ? 'focus' : phase === 'peri' ? 'hero' : phase === 'peers' ? 'peers' : phase === 'sky' ? 'sky' : 'none'
-
-  const clickable = phase === 'sky' && !focus
+  const focusName = BODIES.find((b) => b.id === focusId)?.name
 
   return (
     <div
-      ref={wrapRef}
       className={styles.constellation}
-      aria-label={label || 'Mineral constellation — from perovskite to the collection'}
-      onClick={(e) => {
-        if (focus && e.target === e.currentTarget) setFocusId(null)
-      }}
+      aria-label={label || 'Night-sky mineral constellation with idealized crystals'}
     >
-      <svg
-        className={styles.constellationSvg}
-        viewBox={vb}
-        width="100%"
-        height="100%"
-        role="img"
-        onClick={(e) => {
-          if (focus && (e.target as Element).tagName === 'svg') setFocusId(null)
+      <Canvas
+        dpr={STRUCTURE_DPR}
+        camera={{ position: [0.2, 0.5, 2.2], fov: 42, near: 0.05, far: 120 }}
+        gl={STRUCTURE_GL_OPAQUE}
+        style={{ width: '100%', height: '100%' }}
+        onPointerMissed={() => {
+          if (focusId) setFocusId(null)
         }}
       >
-        <defs>
-          <radialGradient id="mc-glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#f0d9a0" stopOpacity="0.55" />
-            <stop offset="55%" stopColor="#e8b86a" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#e8b86a" stopOpacity="0" />
-          </radialGradient>
-          <filter id="mc-soft" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="3.2" />
-          </filter>
-        </defs>
+        <Suspense fallback={null}>
+          <Scene
+            active={active}
+            phase={phase}
+            focusId={focusId}
+            setFocusId={setFocusId}
+            reduced={reduced}
+          />
+        </Suspense>
+      </Canvas>
 
-        <motion.g
-          initial={false}
-          animate={{ opacity: constellationOpacity }}
-          transition={{ duration: reduced ? 0 : 0.85, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {minerals.map((m) => {
-            const isHero = m.tier === 'hero'
-            const isPeer = m.tier === 'peer'
-            const isFocus = focus?.id === m.id
-            const visible =
-              isFocus ||
-              isHero ||
-              (isPeer && showPeers) ||
-              (m.tier === 'field' && showField)
-
-            if (!visible && m.tier === 'field') {
-              // keep faint dust on peers beat
-              if (phase === 'peers') {
-                return (
-                  <circle
-                    key={m.id}
-                    cx={m.x}
-                    cy={m.y}
-                    r={1.2}
-                    fill={data.domains[m.domain]}
-                    opacity={0.18}
-                  />
-                )
-              }
-              return null
-            }
-
-            const color = data.domains[m.domain]
-            const r = isHero ? 14 : isPeer ? 8.5 : isFocus ? 10 : 3.2
-            const showRays =
-              isFocus ||
-              (labelMode === 'hero' && isHero) ||
-              (labelMode === 'peers' && (isHero || isPeer)) ||
-              (labelMode === 'sky' && (isHero || isPeer)) ||
-              (labelMode === 'focus' && isFocus)
-
-            const rays = showRays ? rayEnds(m, isHero || isFocus ? m.apps.length : Math.min(2, m.apps.length)) : []
-            const showName =
-              isFocus ||
-              (labelMode === 'hero' && isHero) ||
-              (labelMode === 'peers' && (isHero || isPeer)) ||
-              (labelMode === 'sky' && (isHero || isPeer || m.tier === 'field'))
-
-            const nameSize = isFocus ? 11 : labelMode === 'sky' && m.tier === 'field' ? 4.2 : isHero ? 13 : 8
-            const appSize = isFocus ? 8 : labelMode === 'sky' && m.tier === 'field' ? 3.4 : 6.5
-
-            return (
-              <g
-                key={m.id}
-                className={clickable || isFocus ? styles.constellationNode : undefined}
-                style={{ cursor: clickable || isFocus ? 'pointer' : 'default' }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (phase !== 'sky') return
-                  setFocusId((cur) => (cur === m.id ? null : m.id))
-                }}
-              >
-                {(isHero || isPeer || isFocus) && (
-                  <circle
-                    cx={m.x}
-                    cy={m.y}
-                    r={r * 3.4}
-                    fill="url(#mc-glow)"
-                    opacity={isFocus ? 1 : isHero ? 0.95 : 0.55}
-                    filter="url(#mc-soft)"
-                    style={{ pointerEvents: 'none' }}
-                  />
-                )}
-                {rays.map((ray) => (
-                  <g key={ray.app} style={{ pointerEvents: 'none' }}>
-                    <line
-                      x1={m.x}
-                      y1={m.y}
-                      x2={ray.x2}
-                      y2={ray.y2}
-                      stroke={color}
-                      strokeWidth={isFocus || isHero ? 1.1 : 0.7}
-                      opacity={0.55}
-                    />
-                    <circle cx={ray.x2} cy={ray.y2} r={1.6} fill={color} opacity={0.7} />
-                    <text
-                      x={ray.lx}
-                      y={ray.ly}
-                      fill="rgba(236,228,210,0.82)"
-                      fontSize={appSize}
-                      fontFamily="var(--font-body), sans-serif"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      {ray.app}
-                    </text>
-                  </g>
-                ))}
-                <circle
-                  cx={m.x}
-                  cy={m.y}
-                  r={Math.max(r, clickable ? 10 : r)}
-                  fill="transparent"
-                  opacity={0}
-                />
-                <circle
-                  cx={m.x}
-                  cy={m.y}
-                  r={r}
-                  fill={color}
-                  opacity={m.tier === 'field' && !isFocus ? 0.72 : 0.95}
-                  stroke="rgba(255,248,230,0.35)"
-                  strokeWidth={isHero || isFocus ? 1.2 : 0.4}
-                  style={{ pointerEvents: 'none' }}
-                />
-                {showName && (
-                  <text
-                    x={m.x}
-                    y={m.y + r + (labelMode === 'sky' && m.tier === 'field' ? 6 : 16)}
-                    fill={
-                      m.tier === 'field' && !isFocus
-                        ? 'rgba(236,228,210,0.42)'
-                        : 'rgba(245,238,220,0.92)'
-                    }
-                    fontSize={nameSize}
-                    fontFamily="var(--font-display, var(--font-body)), serif"
-                    fontWeight={isHero || isFocus ? 600 : 500}
-                    textAnchor="middle"
-                    style={{ pointerEvents: 'none' }}
-                  >
-                    {m.name}
-                  </text>
-                )}
-                {isFocus && m.afterlife && (
-                  <text
-                    x={m.x}
-                    y={m.y + r + 28}
-                    fill="rgba(236,228,210,0.55)"
-                    fontSize={7}
-                    fontFamily="var(--font-body), sans-serif"
-                    textAnchor="middle"
-                    style={{ pointerEvents: 'none' }}
-                  >
-                    {m.named ? `${m.named} · ${m.afterlife}` : m.afterlife}
-                  </text>
-                )}
-                {isHero && labelMode === 'hero' && m.named && (
-                  <text
-                    x={m.x}
-                    y={m.y - r - 22}
-                    fill="rgba(236,228,210,0.5)"
-                    fontSize={7}
-                    fontFamily="var(--font-body), sans-serif"
-                    letterSpacing="0.12em"
-                    textAnchor="middle"
-                    style={{ pointerEvents: 'none' }}
-                  >
-                    {m.named}
-                  </text>
-                )}
-              </g>
-            )
-          })}
-        </motion.g>
-
-        <Cabinets phase={phase} reduced={reduced} />
-      </svg>
-
-      <AnimatePresence>
-        {focus && (
-          <motion.button
-            type="button"
-            className={styles.constellationHint}
-            initial={reduced ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduced ? 0 : 0.25 }}
-            onClick={() => setFocusId(null)}
-          >
-            {focus.name} · click empty / Esc to pull back
-          </motion.button>
-        )}
-      </AnimatePresence>
-
-      {phase === 'sky' && !focus && (
+      {phase === 'sky' && !focusId && (
         <div className={styles.constellationHint} data-idle="">
-          Click a mineral to zoom in
+          Drag to orbit · click a crystal to zoom
+        </div>
+      )}
+      {phase === 'peers' && (
+        <div className={styles.constellationHint} data-idle="">
+          Drag to orbit the peer cluster
+        </div>
+      )}
+      {focusName && (
+        <button
+          type="button"
+          className={styles.constellationHint}
+          onClick={() => setFocusId(null)}
+        >
+          {focusName} · Esc / click empty to pull back
+        </button>
+      )}
+      {(phase === 'cabinets' || phase === 'instrument' || phase === 'turn') && (
+        <div className={styles.constellationHint} data-idle="">
+          Collection hall · drawers open
         </div>
       )}
     </div>

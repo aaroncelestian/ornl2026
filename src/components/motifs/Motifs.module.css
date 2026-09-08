@@ -986,7 +986,7 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: radial-gradient(ellipse at 42% 48%, #12100c 0%, #050505 62%, #000 100%);
+  background: #030303;
 }
 
 .constellationSvg {
@@ -1022,6 +1022,56 @@
 .constellationHint[data-idle] {
   pointer-events: none;
   cursor: default;
+}
+
+.constellationNameLabel {
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.constellationNameLabel div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: rgba(245, 238, 220, 0.9);
+  font-family: var(--font-display, var(--font-body)), Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.85);
+}
+
+.constellationNameLabel div[data-hero] {
+  font-size: 20px;
+}
+
+.constellationNameLabel em {
+  font-style: normal;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(236, 228, 210, 0.45);
+}
+
+.constellationNameLabel strong {
+  font-weight: 650;
+}
+
+.constellationMoonLabel {
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.constellationMoonLabel span {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: rgba(236, 228, 210, 0.72);
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.9);
 }
 
 @media (max-width: 900px) {

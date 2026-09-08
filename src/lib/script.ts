@@ -313,14 +313,14 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
             : beat?.id === 'peers'
               ? 'Motif: constellation — peer minerals with application rays'
               : beat?.id === 'sky'
-                ? 'Motif: constellation — ~100 minerals; click a node to zoom'
+                ? 'Motif: night-sky constellation — ~100 crystals; drag to orbit, click to zoom'
                 : beat?.id === 'cabinets'
-                  ? 'Motif: constellation — museum cabinets; drawers pulled open'
+                  ? 'Motif: 3D collection hall — cabinets with open drawers of specimens'
                   : beat?.id === 'instrument'
-                    ? 'Motif: constellation — cabinets as materials instrument'
+                    ? 'Motif: collection hall — cabinets as materials instrument'
                     : beat?.id === 'turn'
-                      ? 'Motif: constellation — one open drawer; next sorbent waiting'
-                      : 'Motif: mineral constellation zoom-out',
+                      ? 'Motif: collection hall — one glowing drawer; next sorbent waiting'
+                      : 'Motif: mineral night-sky constellation',
         )
       }
     }
