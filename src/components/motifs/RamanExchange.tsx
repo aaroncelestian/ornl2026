@@ -227,7 +227,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
       aria-label={label || 'LMO XRD stays good; Raman blanks then returns changed'}
     >
       {showOperando ? (
-        <>
+        <div className={styles.cubaneStack}>
           <div className={styles.exchangeDock} data-compact="">
             <div className={styles.exchangeHead}>
               <div className={styles.exchangeFill} aria-hidden>
@@ -275,7 +275,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           </div>
           <CubaneInset active={active} vibe={vibe} open />
           <p className={styles.cubaneReadout}>{exchange.cubane}</p>
-        </>
+        </div>
       ) : (
         <CubaneInset active={active} vibe={vibe} caption={cubaneCaption} />
       )}

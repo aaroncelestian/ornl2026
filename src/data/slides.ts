@@ -414,7 +414,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Li removed. Ball-and-stick Mn–O framework; the blue mesh is the leftover van der Waals volume — the 8a→16c→8a channels, not the framework. That tunnel geometry is the product.',
+          'Ball-and-stick Mn–O framework. The mesh is the crystallographic 8a→16c→8a Li path — soft tubes on the interstitial graph, not leftover VdW space. That tunnel geometry is the product.',
       },
       {
         id: '8a',
@@ -428,7 +428,6 @@ export const slides: Slide[] = [
       {
         id: 'li-return',
         label: 'Li returns',
-        title: 'Li returns. Raman returns',
         layers: ['raman'],
         notes:
           'Start H-form: cubane is there, A₁g is muted. First Li into 8a jumps A₁g 645→657 and narrows it — the cubane breathes again. More Li makes the big dip: A₁g splits and F₂g turns on. That is local Oh breaking — the four Mn–O environments are no longer equivalent — not the spinel dissolving. After the front passes the Raman is weak but settles: the cubane reordered as a weaker Li-occupied oscillator. Rewritten, not gone.',

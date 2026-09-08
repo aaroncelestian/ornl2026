@@ -14,15 +14,16 @@ const outPath = join(root, 'src', 'data', 'lmoSpinel.json')
 
 const MN_O_MAX = 2.25
 /**
- * Same void pipeline as rowleyite (SDF → cavities → surface nets → Taubin),
- * but radii/probe tuned so 8a→16c→8a stays ONE connected channel network.
- * (Water probe 1.35 Å leaves almost nothing in spinel.)
+ * Void = crystallographic 8a→16c→8a channel graph (not VdW residual space).
+ * Spinel Li hops 8a→16c→8a; we build soft tubes on that graph, then surface-nets.
+ * CIF origin: Li at (0,0,0) ⇒ 8a; empty 16c at (⅛,⅛,⅛).
  */
-const GRID = 56
-const PROBE = 0.22
-const MIN_VOID_VOXELS = 40
-const SMOOTH_ITERS = 10
-const RADII = { Mn: 1.18, O: 1.12 }
+const GRID = 72
+const TUBE_R = 0.58
+const SITE_8A_R = 0.72
+const SITE_16C_R = 0.5
+const SMOOTH_ITERS = 4
+const CARVE = { Mn: 0.72, O: 0.62 }
 
 function parseNum(value) {
   return Number(String(value).replace(/\([^)]*\)/g, ''))
@@ -346,15 +347,100 @@ console.log(
   `Cubanes: ${cubaneUnique.length} · coreO=${cubaneUnique[0]?.coreO.length} · termO=${cubaneUnique[0]?.terminalO.length} · bonds=${cubaneUnique[0]?.bonds.length}`,
 )
 
-// ── Void mesh: Mn+O framework only (Li removed → 8a interstitial network) ──
+// ── Void mesh: 8a→16c→8a channel graph (Li path), carved by Mn/O ──────────
+function toCell(p) {
+  return { x: p.x + a * 0.5, y: p.y + a * 0.5, z: p.z + a * 0.5 }
+}
+
+const sites8a = lis.map(toCell)
+const unit16c = new Map()
+const seed16c = { x: 0.125, y: 0.125, z: 0.125 }
+for (const op of ops) {
+  const parts = op.split(',')
+  const w = {
+    x: wrap01(evalCoord(parts[0], seed16c.x, seed16c.y, seed16c.z)),
+    y: wrap01(evalCoord(parts[1], seed16c.x, seed16c.y, seed16c.z)),
+    z: wrap01(evalCoord(parts[2], seed16c.x, seed16c.y, seed16c.z)),
+  }
+  unit16c.set(`${w.x.toFixed(4)},${w.y.toFixed(4)},${w.z.toFixed(4)}`, w)
+}
+const sites16c = [...unit16c.values()].map((p) => ({
+  x: p.x * a,
+  y: p.y * a,
+  z: p.z * a,
+}))
+
+// Ideal 8a–16c hop along <111>: a√3/8
+const hopIdeal = (a * Math.sqrt(3)) / 8
+const hopMin = hopIdeal - 0.25
+const hopMax = hopIdeal + 0.25
+const segments = []
+for (const s of sites8a) {
+  for (const t of sites16c) {
+    const dx = minImage(t.x - s.x, a)
+    const dy = minImage(t.y - s.y, a)
+    const dz = minImage(t.z - s.z, a)
+    const d = Math.hypot(dx, dy, dz)
+    if (d < hopMin || d > hopMax) continue
+    segments.push({
+      ax: s.x,
+      ay: s.y,
+      az: s.z,
+      bx: s.x + dx,
+      by: s.y + dy,
+      bz: s.z + dz,
+    })
+  }
+}
+
 const framework = atoms
   .filter((p) => p.element === 'Mn' || p.element === 'O')
-  .map((p) => ({
-    x: p.x + a * 0.5,
-    y: p.y + a * 0.5,
-    z: p.z + a * 0.5,
-    r: RADII[p.element],
-  }))
+  .map((p) => ({ ...toCell(p), r: CARVE[p.element] }))
+
+console.log(
+  `Channel graph: ${sites8a.length}×8a · ${sites16c.length}×16c · ${segments.length} hops · ` +
+    `ideal ${hopIdeal.toFixed(3)} Å · tube ${TUBE_R} Å`,
+)
+
+function distPointSeg(px, py, pz, ax, ay, az, bx, by, bz) {
+  const abx = bx - ax
+  const aby = by - ay
+  const abz = bz - az
+  const apx = minImage(px - ax, a)
+  const apy = minImage(py - ay, a)
+  const apz = minImage(pz - az, a)
+  const ab2 = abx * abx + aby * aby + abz * abz || 1
+  let t = (apx * abx + apy * aby + apz * abz) / ab2
+  if (t < 0) t = 0
+  else if (t > 1) t = 1
+  const qx = apx - abx * t
+  const qy = apy - aby * t
+  const qz = apz - abz * t
+  return Math.hypot(qx, qy, qz)
+}
+
+function channelField(x, y, z) {
+  let best = -Infinity
+  for (const s of sites8a) {
+    const d = Math.hypot(minImage(x - s.x, a), minImage(y - s.y, a), minImage(z - s.z, a))
+    best = Math.max(best, SITE_8A_R - d)
+  }
+  for (const s of sites16c) {
+    const d = Math.hypot(minImage(x - s.x, a), minImage(y - s.y, a), minImage(z - s.z, a))
+    best = Math.max(best, SITE_16C_R - d)
+  }
+  for (const seg of segments) {
+    best = Math.max(best, TUBE_R - distPointSeg(x, y, z, seg.ax, seg.ay, seg.az, seg.bx, seg.by, seg.bz))
+  }
+  let carve = Infinity
+  for (const atom of framework) {
+    const d =
+      Math.hypot(minImage(x - atom.x, a), minImage(y - atom.y, a), minImage(z - atom.z, a)) - atom.r
+    if (d < carve) carve = d
+  }
+  // Inside channel AND outside Mn/O carve spheres.
+  return Math.min(best, carve)
+}
 
 const n = GRID
 const field = new Float64Array((n + 1) ** 3)
@@ -362,15 +448,7 @@ function fIndex(i, j, k) {
   return (i * (n + 1) + j) * (n + 1) + k
 }
 function sdfAt(x, y, z) {
-  let best = Infinity
-  for (const atom of framework) {
-    const dx = minImage(x - atom.x, a)
-    const dy = minImage(y - atom.y, a)
-    const dz = minImage(z - atom.z, a)
-    const d = Math.hypot(dx, dy, dz) - atom.r
-    if (d < best) best = d
-  }
-  return best
+  return channelField(x, y, z)
 }
 
 for (let i = 0; i <= n; i++) {
@@ -383,64 +461,13 @@ for (let i = 0; i <= n; i++) {
   }
 }
 
-const iso = PROBE
+const iso = 0
 const totalSamples = (n + 1) ** 3
-const label = new Int32Array(totalSamples).fill(-1)
 let voidCount = 0
 for (let i = 0; i < totalSamples; i++) {
-  if (field[i] > iso) {
-    label[i] = 0
-    voidCount++
-  }
+  if (field[i] > iso) voidCount++
 }
-
-function decode(idx) {
-  const s = n + 1
-  const k = idx % s
-  const j = Math.floor(idx / s) % s
-  const i = Math.floor(idx / (s * s))
-  return [i, j, k]
-}
-function wrapI(v) {
-  if (v < 0) return v + n + 1
-  if (v > n) return v - (n + 1)
-  return v
-}
-
-const sizes = []
-let next = 1
-for (let start = 0; start < totalSamples; start++) {
-  if (label[start] !== 0) continue
-  const stack = [start]
-  label[start] = next
-  let size = 0
-  while (stack.length) {
-    const idx = stack.pop()
-    size++
-    const [i, j, k] = decode(idx)
-    for (const [ni, nj, nk] of [
-      [i + 1, j, k],
-      [i - 1, j, k],
-      [i, j + 1, k],
-      [i, j - 1, k],
-      [i, j, k + 1],
-      [i, j, k - 1],
-    ]) {
-      const nidx = fIndex(wrapI(ni), wrapI(nj), wrapI(nk))
-      if (label[nidx] === 0) {
-        label[nidx] = next
-        stack.push(nidx)
-      }
-    }
-  }
-  sizes.push({ id: next, size })
-  next++
-}
-sizes.sort((p, q) => q.size - p.size)
-const keep = new Set(sizes.filter((c) => c.size >= MIN_VOID_VOXELS).map((c) => c.id))
-for (let i = 0; i < totalSamples; i++) {
-  if (label[i] > 0 && !keep.has(label[i])) field[i] = iso - 1
-}
+console.log(`Channel void fraction ${(voidCount / totalSamples).toFixed(3)}`)
 
 const CORNER = [
   [0, 0, 0],
@@ -614,7 +641,7 @@ function projectToIso(pos) {
   }
 }
 
-console.log(`Smoothing LMO void surface (${SMOOTH_ITERS} Taubin iterations, probe ${PROBE} Å)…`)
+console.log(`Smoothing channel surface (${SMOOTH_ITERS} Taubin iterations)…`)
 taubinSmooth(positions, index, SMOOTH_ITERS)
 projectToIso(positions)
 
@@ -693,7 +720,7 @@ for (let i = 0; i < positions.length; i += 3) {
   const gy = sdfAt(x, y + step, z) - sdfAt(x, y - step, z)
   const gz = sdfAt(x, y, z + step) - sdfAt(x, y, z - step)
   const len = Math.hypot(gx, gy, gz) || 1
-  // Point out of the void, toward the framework (same as rowleyite).
+  // Outward from channel interior (positive field → void).
   normals[i] = -gx / len
   normals[i + 1] = -gy / len
   normals[i + 2] = -gz / len
@@ -707,7 +734,7 @@ function mean(xs) {
 
 const payload = {
   mineral: 'Lithium manganese oxide (spinel)',
-  source: 'LiMn2O4.cif · Fd-3m · Taubin-smoothed probe void (Li removed)',
+  source: 'LiMn2O4.cif · Fd-3m · 8a→16c channel graph',
   paper: 'Celestian et al., J. Raman Spectrosc. 2026, 57:131–139',
   cell: { a },
   polyhedra,
@@ -716,9 +743,13 @@ const payload = {
   lithium,
   cubanes: cubaneUnique.slice(0, 8),
   void: {
-    probe: PROBE,
+    method: 'channel-graph',
+    tubeR: TUBE_R,
+    site8aR: SITE_8A_R,
+    site16cR: SITE_16C_R,
     grid: GRID,
-    note: 'Connected 8a→16c→8a pore channels of Mn–O framework (Li removed); Taubin-smoothed',
+    hops: segments.length,
+    note: 'Soft tubes on crystallographic 8a→16c→8a Li path; carved by Mn/O',
     positions: [...positions],
     normals: [...normals],
     index,
@@ -734,7 +765,9 @@ const payload = {
     voidVerts: positions.length / 3,
     voidTris: index.length / 3,
     voidFraction: r3(voidCount / totalSamples),
-    voidComponents: sizes.filter((c) => c.size >= MIN_VOID_VOXELS).length,
+    voidHops: segments.length,
+    void8a: sites8a.length,
+    void16c: sites16c.length,
   },
 }
 

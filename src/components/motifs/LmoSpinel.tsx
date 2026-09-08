@@ -24,9 +24,9 @@ import styles from './Motifs.module.css'
 const SCALE = 0.42
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
 const CELL_A = data.cell.a
-const VOID_OUT = '#5e87a0'
-const VOID_IN = '#f0d7a0'
-const VOID_GHOST = '#e0b15c'
+const VOID_OUT = '#8eb4c8'
+const VOID_IN = '#c5d9e4'
+const VOID_GHOST = '#9bb8c8'
 const LI_COLOR = '#6ecf7a'
 const MN_COLOR = '#8b5cad'
 const O_COLOR = '#c45a3a'
@@ -64,7 +64,7 @@ const LI_RAMAN = 4.2
 
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
-  voids: 'VdW empty space · ball-and-stick · Li removed',
+  voids: '8a→16c channels · ball-and-stick · Li path',
   hydrogen: 'H-exchange · A₁g broad, −20 cm⁻¹',
   lithium: 'Li in 8a · A₁g up and sharp',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
@@ -159,7 +159,7 @@ function VoidSurface({ pore }: { pore: boolean }) {
     return geo
   }, [])
 
-  // Continuous 8a→16c tubes. No cube-clip, no caps — those shredded the pipes.
+  // Continuous 8a→16c tubes from the channel-graph mesh.
   if (pore) {
     return (
       <group>
@@ -167,13 +167,13 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_OUT}
             transparent
-            opacity={0.42}
-            roughness={0.46}
-            metalness={0.05}
-            transmission={0.28}
-            thickness={0.65}
-            sheen={0.18}
-            sheenColor="#b8d4e0"
+            opacity={0.5}
+            roughness={0.38}
+            metalness={0.04}
+            transmission={0.22}
+            thickness={0.45}
+            sheen={0.12}
+            sheenColor="#d0e4ee"
             side={THREE.FrontSide}
             depthWrite={false}
           />
@@ -182,11 +182,11 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_IN}
             transparent
-            opacity={0.28}
-            roughness={0.55}
+            opacity={0.22}
+            roughness={0.5}
             metalness={0.02}
             emissive={VOID_IN}
-            emissiveIntensity={0.06}
+            emissiveIntensity={0.04}
             side={THREE.BackSide}
             depthWrite={false}
           />
@@ -821,8 +821,8 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
         ? [
             { color: MN_COLOR, label: 'Mn' },
             { color: O_COLOR, label: 'O' },
-            { color: VOID_OUT, label: 'void out' },
-            { color: VOID_IN, label: 'void in' },
+            { color: VOID_OUT, label: 'channel' },
+            { color: VOID_IN, label: 'interior' },
           ]
         : phase === 'hydrogen' || phase === 'lithium'
           ? [

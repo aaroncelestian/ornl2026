@@ -307,7 +307,7 @@ export function CubaneUnit({
   )
 }
 
-const CAM_OPEN = new THREE.Vector3(10.4, 5.4, 12.8)
+const CAM_OPEN = new THREE.Vector3(8.2, 4.2, 10.1)
 const CAM_CLOSED = new THREE.Vector3(6.4, 3.4, 7.8)
 
 function InsetScene({
