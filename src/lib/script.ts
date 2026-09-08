@@ -290,7 +290,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'lmo-spinel') {
         lines.push(
           beat?.id === 'voids'
-            ? 'Motif: LMO 8a→16c channel graph — interstitial Li path with ball-and-stick Mn/O'
+            ? 'Motif: LMO 8a→16c channel graph — interstitial Li path only (framework hidden)'
             : beat?.id === '8a'
               ? 'Motif: LMO — H in (A₁g broad, −20 cm⁻¹), then Li in 8a (A₁g up and sharp)'
               : beat?.id === 'cubane'
