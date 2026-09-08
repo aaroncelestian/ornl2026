@@ -1,6 +1,8 @@
 import { createContext, useContext } from 'react'
 
-export const NavContext = createContext<(index: number) => void>(() => {})
+export type GoToSlide = (index: number, behavior?: ScrollBehavior, force?: boolean) => void
+
+export const NavContext = createContext<GoToSlide>(() => {})
 
 export function useSlideNav() {
   return useContext(NavContext)
