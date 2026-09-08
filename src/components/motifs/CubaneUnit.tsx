@@ -163,11 +163,12 @@ export function CubaneUnit({
     if (!root) return
     const want = vibeRef.current
     const live = liveVibe.current
-    live.hz = THREE.MathUtils.damp(live.hz, want.hz, 2.4, dt)
-    live.amp = THREE.MathUtils.damp(live.amp, want.amp, 2.8, dt)
-    live.disorder = THREE.MathUtils.damp(live.disorder, want.disorder, 2.6, dt)
-    live.mute = THREE.MathUtils.damp(live.mute, want.mute, 2.8, dt)
-    live.split = THREE.MathUtils.damp(live.split ?? 0, want.split ?? 0, 2.6, dt)
+    // Slow morph between modes — fast λ makes O jump when split/disorder/hz flip.
+    live.hz = THREE.MathUtils.damp(live.hz, want.hz, 0.85, dt)
+    live.amp = THREE.MathUtils.damp(live.amp, want.amp, 1.15, dt)
+    live.disorder = THREE.MathUtils.damp(live.disorder, want.disorder, 0.7, dt)
+    live.mute = THREE.MathUtils.damp(live.mute, want.mute, 1.1, dt)
+    live.split = THREE.MathUtils.damp(live.split ?? 0, want.split ?? 0, 0.55, dt)
     const on = active && !reduced && vibeOn
     const strength = on ? live.amp * (1 - live.mute) : 0
     wave.current += dt * live.hz
@@ -332,10 +333,10 @@ function InsetScene({
   if (!cubane) return null
   return (
     <>
-      <ambientLight intensity={0.42} />
-      <directionalLight position={[4, 6, 3]} intensity={1.5} color="#fff3dc" />
-      <directionalLight position={[-3, 1, -4]} intensity={0.48} color="#9ec4d4" />
-      <directionalLight position={[1, -3, 4]} intensity={0.28} color="#f0c878" />
+      <ambientLight intensity={0.72} />
+      <directionalLight position={[4, 6, 3]} intensity={2.15} color="#fff8ea" />
+      <directionalLight position={[-3, 1, -4]} intensity={0.78} color="#b6dff0" />
+      <directionalLight position={[1, -3, 4]} intensity={0.48} color="#f5d28a" />
       <group ref={group}>
         <CubaneUnit cubane={cubane} active={active} reduced={reduced} vibeOn vibe={vibe} atOrigin />
       </group>

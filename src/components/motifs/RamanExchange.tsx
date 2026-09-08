@@ -27,6 +27,7 @@ const C_PEAK = '#e07040'
 const C_FWHM = '#7ec4d4'
 const C_XRD = '#d4a04a'
 const C_RAMAN = '#7ec4d4'
+const C_LIVE = '#c8f0f8'
 const C_F2G = '#e0b45a'
 const C_SPLIT = '#c4894a'
 const C_GONE = '#564f48'
@@ -167,8 +168,9 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   const liveRamW0 = 540
   const liveRamW1 = 700
+  const liveBaseY = 118
   const liveSx = (w: number) => 18 + ((w - liveRamW0) / (liveRamW1 - liveRamW0)) * 264
-  const liveSy = (h: number) => 78 - h * 64
+  const liveSy = (h: number) => liveBaseY - h * 92
   const livePath = spectrumPath(exchange.bands, liveSx, liveSy, liveRamW0, liveRamW1, 1)
   const liveMarks = exchange.bands.filter((b) => b.h > 0.12)
 
@@ -238,25 +240,32 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 <span>Li</span>
               </div>
             </div>
-            <svg viewBox="0 0 300 92" className={styles.liveRaman} aria-hidden>
-              <text x="18" y="14" className={styles.plotAnnotate} fontSize={13} fill="currentColor">
+            <svg viewBox="0 0 300 140" className={styles.liveRaman} aria-hidden>
+              <text x="18" y="16" className={styles.plotAnnotate} fontSize={13} fill="currentColor">
                 Raman · live
               </text>
-              <line x1="18" y1="78" x2="282" y2="78" stroke={C_AXIS} />
-              <path d={livePath} fill="none" stroke={C_RAMAN} strokeWidth="2.2" strokeLinecap="round" />
+              <line x1="18" y1={liveBaseY} x2="282" y2={liveBaseY} stroke={C_AXIS} />
+              <path
+                d={livePath}
+                fill="none"
+                stroke={C_LIVE}
+                strokeWidth="2.8"
+                strokeLinecap="round"
+                style={{ filter: 'drop-shadow(0 0 4px rgba(200,240,248,0.55))' }}
+              />
               {liveMarks.map((b) => (
                 <g key={b.kind}>
                   <line
                     x1={liveSx(b.w)}
-                    y1={18}
+                    y1={22}
                     x2={liveSx(b.w)}
-                    y2={78}
+                    y2={liveBaseY}
                     stroke={BAND_COLOR[b.kind]}
-                    strokeOpacity={0.35}
+                    strokeOpacity={0.55}
                   />
                   <text
                     x={liveSx(b.w)}
-                    y={28}
+                    y={34}
                     textAnchor="middle"
                     fill={BAND_COLOR[b.kind]}
                     fontSize={11}
@@ -265,10 +274,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                   </text>
                 </g>
               ))}
-              <text x="18" y="90" className={styles.plotTick} fontSize={10} fill="currentColor">
+              <text x="18" y="134" className={styles.plotTick} fontSize={10} fill="currentColor">
                 540
               </text>
-              <text x="268" y="90" className={styles.plotTick} fontSize={10} fill="currentColor">
+              <text x="268" y="134" className={styles.plotTick} fontSize={10} fill="currentColor">
                 700
               </text>
             </svg>
@@ -428,9 +437,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               <text x={aBox.ox + aBox.pad.l} y={aBox.oy + 16} className={styles.plotAnnotate}>
                 A₁g peak · {exchange.title}
               </text>
-              <text x={aBox.ox + aBox.pad.l} y={aBox.oy + 32} className={styles.plotTick}>
-                Fig 5B · smoothed licl2-1
-              </text>
               <line x1={aBox.ox + aBox.pad.l} y1={aBot} x2={aBox.ox + aBox.pad.l + aPlotW} y2={aBot} stroke={C_AXIS} />
               <line x1={aBox.ox + aBox.pad.l} y1={aTop} x2={aBox.ox + aBox.pad.l} y2={aBot} stroke={C_AXIS} />
               {[630, 645, 660].map((w) => (
@@ -500,9 +506,6 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
             <g>
               <text x={fBox.ox + fBox.pad.l} y={fBox.oy + 16} className={styles.plotAnnotate}>
                 A₁g FWHM
-              </text>
-              <text x={fBox.ox + fBox.pad.l} y={fBox.oy + 32} className={styles.plotTick}>
-                Fig 5A · smoothed
               </text>
               <line x1={fBox.ox + fBox.pad.l} y1={fBot} x2={fBox.ox + fBox.pad.l + fPlotW} y2={fBot} stroke={C_AXIS} />
               <line x1={fBox.ox + fBox.pad.l} y1={fTop} x2={fBox.ox + fBox.pad.l} y2={fBot} stroke={C_AXIS} />
