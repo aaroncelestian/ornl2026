@@ -292,9 +292,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
           beat?.id === 'voids'
             ? 'Motif: LMO van der Waals void — empty space with ball-and-stick Mn/O (Li removed)'
             : beat?.id === '8a'
-              ? 'Motif: LMO — H sits on O; A₁g broad and ~20 cm⁻¹ down, not blank'
-              : beat?.id === 'li-in'
-                ? 'Motif: LMO — Li lands in 8a; A₁g walks up and sharpens; H leaves the channel'
+              ? 'Motif: LMO — H in (A₁g broad, −20 cm⁻¹), then Li in 8a (A₁g up and sharp)'
               : beat?.id === 'cubane'
                 ? 'Motif: LMO CIF — A₁g Mn₄O₄ cubane breathing'
                 : 'Motif: LMO CIF — MnO₆ polyhedral framework',

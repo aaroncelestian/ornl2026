@@ -35,7 +35,7 @@ export function protonBind(t: number, i: number) {
   return u * u * (3 - 2 * u)
 }
 
-const LI_GATHER = 2.6
+export const LI_GATHER = 2.6
 const LI_STAGGER = 0.55
 const LI_TRAVEL = 2.9
 const H_EXIT_TRAVEL = 1.15

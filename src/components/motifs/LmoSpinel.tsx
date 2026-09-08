@@ -6,7 +6,18 @@ import data from '../../data/lmoSpinel.json'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
 import { isCaptureMode } from '../../lib/asset'
-import { buildExchangeSites, ExchangeIons, H_COLOR, OH_COLOR, protonBind, type RideState } from './LmoExchange'
+import {
+  buildExchangeSites,
+  ExchangeIons,
+  H_COLOR,
+  H_STAGGER,
+  H_START,
+  H_TRAVEL,
+  LI_GATHER,
+  OH_COLOR,
+  protonBind,
+  type RideState,
+} from './LmoExchange'
 import { CubaneUnit, type CubaneData } from './CubaneUnit'
 import styles from './Motifs.module.css'
 
@@ -42,10 +53,14 @@ function isCellPhase(phase: Phase | null): phase is Phase {
 function phaseForBeat(id?: string): Phase {
   if (id === 'voids') return 'voids'
   if (id === '8a') return 'hydrogen'
-  if (id === 'li-in') return 'lithium'
   if (id === 'cubane') return 'cubane'
   return 'framework'
 }
+
+const EXCHANGE_N = buildExchangeSites().length
+const H_TO_LI = H_START + Math.max(0, EXCHANGE_N - 1) * H_STAGGER + H_TRAVEL + 0.9
+const LI_RAMAN_AT = H_TO_LI + LI_GATHER
+const LI_RAMAN = 4.2
 
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
@@ -618,14 +633,22 @@ function lorentzPath(
   return pts.join(' ')
 }
 
-function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
+function RamanTrack({
+  phase,
+  active,
+  beatId,
+}: {
+  phase: Phase
+  active: boolean
+  beatId?: string
+}) {
   const [elapsed, setElapsed] = useState(0)
   const t0 = useRef(performance.now())
 
   useEffect(() => {
     t0.current = performance.now()
     setElapsed(0)
-  }, [phase])
+  }, [beatId])
 
   useEffect(() => {
     if (!active) return
@@ -640,24 +663,24 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
     }
     id = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(id)
-  }, [active, phase])
+  }, [active, beatId])
 
   const track = useMemo(() => {
     const kind = vibeKind(phase)
-    if (phase === 'hydrogen') {
-      const u = Math.min(1, elapsed / 4.8)
-      const ease = u * u * (3 - 2 * u)
-      return {
-        w: SYNTH_W + (H_W - SYNTH_W) * ease,
-        fwhm: SYNTH_FWHM + (H_FWHM - SYNTH_FWHM) * ease,
-        amp: 0.9,
-        label: ease < 0.4 ? 'H in · A₁g softening' : 'H-exchange · A₁g broad, −20 cm⁻¹',
-        mode: 'OH dominates · MnO disordered',
-        kind,
+    if (phase === 'hydrogen' || phase === 'lithium') {
+      if (elapsed < LI_RAMAN_AT) {
+        const u = Math.min(1, elapsed / 4.8)
+        const ease = u * u * (3 - 2 * u)
+        return {
+          w: SYNTH_W + (H_W - SYNTH_W) * ease,
+          fwhm: SYNTH_FWHM + (H_FWHM - SYNTH_FWHM) * ease,
+          amp: 0.9,
+          label: ease < 0.4 ? 'H in · A₁g softening' : 'H-exchange · A₁g broad, −20 cm⁻¹',
+          mode: 'OH dominates · MnO disordered',
+          kind: 'damped' as const,
+        }
       }
-    }
-    if (phase === 'lithium') {
-      const u = Math.min(1, elapsed / 4.2)
+      const u = Math.min(1, (elapsed - LI_RAMAN_AT) / LI_RAMAN)
       const ease = u * u * (3 - 2 * u)
       return {
         w: H_W + (LI_W - H_W) * ease,
@@ -665,7 +688,7 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
         amp: 0.9 + 0.1 * ease,
         label: ease < 0.45 ? 'Li → 8a · A₁g walking up' : 'Li in 8a · A₁g sharp',
         mode: 'MnO₆ A₁g · stiffer',
-        kind,
+        kind: 'stiff' as const,
       }
     }
     if (phase === 'cubane') {
@@ -738,7 +761,20 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
 export function LmoSpinel({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
-  const phase = phaseForBeat(scene.beat?.id)
+  const beatId = scene.beat?.id
+  const basePhase = phaseForBeat(beatId)
+  const [phase, setPhase] = useState(basePhase)
+
+  useEffect(() => {
+    if (beatId !== '8a') {
+      setPhase(basePhase)
+      return
+    }
+    setPhase('hydrogen')
+    if (!active) return
+    const id = window.setTimeout(() => setPhase('lithium'), H_TO_LI * 1000)
+    return () => window.clearTimeout(id)
+  }, [active, basePhase, beatId])
   const [vibeOn, setVibeOn] = useState(false)
   const [rideUi, setRideUi] = useState({ pullable: false, flashing: false })
   const [flashOn, setFlashOn] = useState(false)
@@ -781,24 +817,18 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
             { color: VOID_OUT, label: 'void out' },
             { color: VOID_IN, label: 'void in' },
           ]
-        : phase === 'hydrogen'
+        : phase === 'hydrogen' || phase === 'lithium'
           ? [
               { color: MN_COLOR, label: 'Mn' },
               { color: O_COLOR, label: 'O' },
               { color: H_COLOR, label: 'H' },
               { color: OH_COLOR, label: 'OH' },
+              { color: LI_COLOR, label: 'Li' },
             ]
-          : phase === 'lithium'
-            ? [
-                { color: MN_COLOR, label: 'Mn' },
-                { color: O_COLOR, label: 'O' },
-                { color: H_COLOR, label: 'H' },
-                { color: LI_COLOR, label: 'Li' },
-              ]
-            : [
-                { color: MN_COLOR, label: 'Mn' },
-                { color: O_COLOR, label: 'O' },
-              ]
+          : [
+              { color: MN_COLOR, label: 'Mn' },
+              { color: O_COLOR, label: 'O' },
+            ]
 
   return (
     <div
@@ -837,7 +867,7 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
           <Scene active={active} phase={phase} ride={ride} vibeOn={vibrations} />
         </Suspense>
       </Canvas>
-      <RamanTrack phase={phase} active={active} />
+      <RamanTrack phase={phase} active={active} beatId={beatId} />
       {phase === 'voids' && (
         <div className={styles.scaleBar} aria-hidden>
           <span className={styles.scaleTick} />
