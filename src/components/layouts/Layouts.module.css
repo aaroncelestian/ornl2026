@@ -275,16 +275,8 @@
   max-width: min(16ch, 38vw);
 }
 
-.scene[data-motif='raman-exchange'][data-beat='al-doped'] .stageCopy {
-  max-width: min(14ch, 32vw);
-}
-
 .scene[data-motif='raman-exchange'] .stageCopy h2 span {
   white-space: nowrap;
-}
-
-.scene[data-motif='raman-exchange'][data-beat='al-doped'] .stageCopy h2 span {
-  white-space: normal;
 }
 
 .scene[data-motif='pore-gate'] .stageScrim,

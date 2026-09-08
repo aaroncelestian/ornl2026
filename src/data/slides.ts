@@ -380,8 +380,6 @@ export const slides: Slide[] = [
       {
         id: 'al-doped',
         label: 'Al-doped',
-        kicker: 'Same clock · different lattice',
-        title: 'A₁g holds\nfor hours.',
         layers: ['raman'],
         notes:
           'Same experiment, Al in the spinel — 0.1 wt% Al. Scrub hours of ion exchange — A₁g barely moves. No split, no F₂g surge. Aluminum blocks the cubane over-exchange site that undoped LMO overloads, so Mn stays put and the lattice holds. Partial load and Al doping are two ways to the same durability: do not open the dissolve step.',

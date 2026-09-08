@@ -23,6 +23,8 @@ const OH_LEN = 0.97
 /** Crystallographic Li–O in tetrahedral 8a (~2.01 Å). */
 const LI_O_LEN = 2.015
 const LI_O_COUNT = 4
+/** Fade Li–O sticks in once Li is this far through its inbound hop. */
+const LI_O_BOND_AT = 0.55
 const CELL = data.cell.a
 const CELL_PAD = CELL * 0.5 + 0.2
 const HERO_AT = v3(CELL * 0.25, -CELL * 0.25, CELL * 0.25)
@@ -513,37 +515,47 @@ export function ExchangeIons({
 
       // Tetrahedral Li–O sticks once Li is near 8a (after H has cleared).
       const liLocal = (t - LI_GATHER - i * LI_STAGGER) / LI_TRAVEL
-      const bondOn =
-        phase === 'lithium' && (reduced || capturing || liLocal > 0.72)
-      const bondFade = reduced || capturing
-        ? bondOn
-          ? 1
-          : 0
-        : THREE.MathUtils.smoothstep(0.72, 0.96, liLocal)
-      const loRow = liOMesh.current[i] || []
-      const lomRow = liOMat.current[i] || []
+      const bondOn = phase === 'lithium' && (reduced || capturing || liLocal > LI_O_BOND_AT)
+      const bondFade =
+        phase !== 'lithium'
+          ? 0
+          : reduced || capturing
+            ? 1
+            : THREE.MathUtils.smoothstep(LI_O_BOND_AT, 0.88, liLocal)
+      const loRow = liOMesh.current[i]
+      const lomRow = liOMat.current[i]
       for (let j = 0; j < site.liOxygens.length; j++) {
-        const stick = loRow[j]
-        const sm = lomRow[j]
+        const stick = loRow?.[j]
+        const sm = lomRow?.[j]
         if (!stick) continue
-        if (!bondOn || bondFade < 0.04) {
+        if (!bondOn || bondFade < 0.03) {
           stick.visible = false
-          if (sm) sm.opacity = 0
+          if (sm) {
+            sm.opacity = 0
+            sm.transparent = true
+          }
           continue
         }
-        tmpA.set(lx, ly, lz)
+        // Anchor at the settled 8a site so sticks don't stretch across the hop.
+        tmpA.set(...site.site8a)
         tmpB.set(...site.liOxygens[j])
         tmpMid.copy(tmpB).add(tmpA).multiplyScalar(0.5)
         tmpDir.copy(tmpA).sub(tmpB)
         const L = tmpDir.length()
-        stick.visible = L > 0.35
-        if (stick.visible) {
-          stick.position.copy(tmpMid)
-          stick.scale.set(1, L / LI_O_LEN, 1)
-          tmpQ.setFromUnitVectors(yUp, tmpDir.normalize())
-          stick.quaternion.copy(tmpQ)
+        if (L < 0.4) {
+          stick.visible = false
+          continue
         }
-        if (sm) sm.opacity = 0.92 * bondFade
+        stick.visible = true
+        stick.position.copy(tmpMid)
+        stick.scale.set(1, L / LI_O_LEN, 1)
+        tmpQ.setFromUnitVectors(yUp, tmpDir.normalize())
+        stick.quaternion.copy(tmpQ)
+        if (sm) {
+          sm.transparent = bondFade < 0.98
+          sm.opacity = bondFade
+          sm.emissiveIntensity = 0.55 + 0.35 * bondFade
+        }
       }
 
       if (i === HERO) {
@@ -553,7 +565,7 @@ export function ExchangeIons({
           phase === 'lithium'
             ? reduced || capturing
               ? 1
-              : THREE.MathUtils.smoothstep(0.88, 1, liLocal)
+              : THREE.MathUtils.smoothstep(0.82, 1, liLocal)
             : 0
         for (const el of distLabelEls.current) {
           if (el) el.style.opacity = String(labelFade)
@@ -664,12 +676,40 @@ export function ExchangeIons({
               roughness={0.4}
             />
           </mesh>
+          {/* Li–O sticks stay mounted across H→Li so refs survive the phase flip. */}
+          {site.liOxygens.map((_, j) => (
+            <mesh
+              key={`lio-${i}-${j}`}
+              ref={(el) => {
+                if (!liOMesh.current[i]) liOMesh.current[i] = []
+                liOMesh.current[i][j] = el
+              }}
+              visible={false}
+              renderOrder={3}
+            >
+              <cylinderGeometry args={[0.085, 0.085, LI_O_LEN, 10]} />
+              <meshStandardMaterial
+                ref={(el) => {
+                  if (!liOMat.current[i]) liOMat.current[i] = []
+                  liOMat.current[i][j] = el
+                }}
+                color={LI_O_COLOR}
+                emissive={LI_O_COLOR}
+                emissiveIntensity={0.55}
+                transparent
+                opacity={0}
+                roughness={0.32}
+                metalness={0.08}
+              />
+            </mesh>
+          ))}
           {phase === 'lithium' && (
             <mesh
               ref={(el) => {
                 liMesh.current[i] = el
               }}
               position={site.liIn[0]}
+              renderOrder={4}
             >
               <sphereGeometry args={[0.4, 18, 18]} />
               <meshStandardMaterial
@@ -686,32 +726,6 @@ export function ExchangeIons({
               />
             </mesh>
           )}
-          {phase === 'lithium' &&
-            site.liOxygens.map((_, j) => (
-              <mesh
-                key={`lio-${i}-${j}`}
-                ref={(el) => {
-                  if (!liOMesh.current[i]) liOMesh.current[i] = []
-                  liOMesh.current[i][j] = el
-                }}
-                visible={false}
-              >
-                <cylinderGeometry args={[0.048, 0.048, LI_O_LEN, 8]} />
-                <meshStandardMaterial
-                  ref={(el) => {
-                    if (!liOMat.current[i]) liOMat.current[i] = []
-                    liOMat.current[i][j] = el
-                  }}
-                  color={LI_O_COLOR}
-                  emissive={LI_O_COLOR}
-                  emissiveIntensity={0.32}
-                  transparent
-                  opacity={0}
-                  roughness={0.38}
-                  depthWrite={false}
-                />
-              </mesh>
-            ))}
         </group>
       ))}
       {phase === 'lithium' &&

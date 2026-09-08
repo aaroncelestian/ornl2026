@@ -301,6 +301,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
         <div className={styles.cubaneStack}>
           <div className={styles.exchangeDock} data-compact="" data-al={alMode || undefined}>
             <div className={styles.exchangeHead}>
+              {alMode && <p className={styles.exchangeTitle}>A₁g holds for hours.</p>}
               <div className={styles.exchangeFill} aria-hidden>
                 <span>H</span>
                 <div className={styles.exchangeBar}>

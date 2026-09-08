@@ -168,7 +168,7 @@
 }
 
 .plot[data-al] .cubaneStack .exchangeDock[data-compact] {
-  width: min(70%, 240px);
+  width: min(78%, 280px);
 }
 
 .alBadge {
@@ -240,6 +240,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.exchangeTitle {
+  margin: 0 0 4px;
+  font-family: var(--font-heading);
+  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: color-mix(in srgb, var(--color-text) 92%, transparent);
+  white-space: nowrap;
 }
 
 .exchangeKicker {
@@ -768,10 +779,11 @@
 .bondDistLabel {
   display: inline-block;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: 0.04em;
-  color: color-mix(in srgb, #8fdfa0 88%, #fff);
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.88);
+  color: #b8f0c4;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.92), 0 1px 0 rgba(0, 0, 0, 0.7);
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
