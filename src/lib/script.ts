@@ -310,17 +310,15 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         lines.push(
           beat?.id === 'peri'
             ? 'Motif: constellation — perovskite close-up; ferroelectrics · solar'
-            : beat?.id === 'peers'
-              ? 'Motif: constellation — peer minerals with application rays'
-              : beat?.id === 'sky'
-                ? 'Motif: night-sky constellation — ~100 crystals; drag to orbit, click to zoom'
-                : beat?.id === 'cabinets'
-                  ? 'Motif: 3D collection hall — cabinets with open drawers of specimens'
-                  : beat?.id === 'instrument'
-                    ? 'Motif: collection hall — cabinets as materials instrument'
-                    : beat?.id === 'turn'
-                      ? 'Motif: collection hall — one glowing drawer; next sorbent waiting'
-                      : 'Motif: mineral night-sky constellation',
+            : beat?.id === 'sky'
+              ? 'Motif: night-sky constellation — ~100 crystals; drag to orbit, click to zoom'
+              : beat?.id === 'cabinets'
+                ? 'Motif: 3D collection hall — cabinets with open drawers of specimens'
+                : beat?.id === 'instrument'
+                  ? 'Motif: collection hall — cabinets as materials instrument'
+                  : beat?.id === 'turn'
+                    ? 'Motif: collection hall — one glowing drawer; next sorbent waiting'
+                    : 'Motif: mineral night-sky constellation',
         )
       }
     }

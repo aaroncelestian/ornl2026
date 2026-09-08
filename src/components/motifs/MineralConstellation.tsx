@@ -497,10 +497,12 @@ function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
     <group ref={group} position={[0, -1.2, 18]} scale={0.001} visible={false}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[40, 28]} />
-        <meshStandardMaterial color="#0a0908" roughness={0.92} metalness={0.05} />
+        <meshStandardMaterial color="#1a1712" roughness={0.88} metalness={0.06} />
       </mesh>
-      <pointLight position={[0, 4, 0]} intensity={0.35} color="#e8d4a8" distance={28} />
-      <pointLight position={[-6, 3, -4]} intensity={0.2} color="#7ec4a8" distance={16} />
+      <ambientLight intensity={0.28} />
+      <pointLight position={[0, 4.2, 1]} intensity={0.85} color="#f0dfb8" distance={32} />
+      <pointLight position={[-6, 3.2, -3]} intensity={0.45} color="#9ed4b8" distance={18} />
+      <pointLight position={[5, 2.8, -2]} intensity={0.35} color="#e8c48a" distance={16} />
 
       {cabinets.map((c, ci) => (
         <CabinetUnit
@@ -543,15 +545,13 @@ function CabinetUnit({
 
   return (
     <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
-      {/* carcass */}
       <mesh position={[0, 1.55, 0]}>
         <boxGeometry args={[2.4, 3.1, 1.1]} />
-        <meshStandardMaterial color="#161410" roughness={0.85} metalness={0.08} />
+        <meshStandardMaterial color="#2c261e" roughness={0.78} metalness={0.1} />
       </mesh>
-      {/* face frame */}
       <mesh position={[0, 1.55, 0.56]}>
         <boxGeometry args={[2.35, 3.05, 0.04]} />
-        <meshStandardMaterial color="#1c1914" roughness={0.7} metalness={0.12} />
+        <meshStandardMaterial color="#353028" roughness={0.62} metalness={0.14} />
       </mesh>
       {Array.from({ length: drawers }).map((_, di) => {
         const y = 0.35 + di * 0.48
@@ -613,19 +613,18 @@ function Drawer({
     <group ref={ref} position={[0, y, 0.55]}>
       <mesh>
         <boxGeometry args={[2.15, 0.4, 0.95]} />
-        <meshStandardMaterial color={highlight ? '#242018' : '#1a1712'} roughness={0.8} />
+        <meshStandardMaterial color={highlight ? '#3a3226' : '#2a241c'} roughness={0.75} />
       </mesh>
-      {/* handle */}
       <mesh position={[0, 0, 0.48]}>
         <boxGeometry args={[0.35, 0.04, 0.04]} />
-        <meshStandardMaterial color="#cfc3a4" metalness={0.5} roughness={0.35} />
+        <meshStandardMaterial color="#e2d4b0" metalness={0.55} roughness={0.32} />
       </mesh>
       {open &&
         specimens.map((s, i) => (
           <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
             <CrystalMesh habit={s.habit} color={s.color} emissive={highlight ? 1.1 : 0.65} />
             {highlight && i === 2 && (
-              <pointLight color={s.color} intensity={1.2} distance={2.4} />
+              <pointLight color={s.color} intensity={1.45} distance={2.8} />
             )}
           </group>
         ))}
@@ -633,65 +632,147 @@ function Drawer({
   )
 }
 
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+}
+
+const CAM_EASE_SEC = 2.45
+const SKY_R = 14.4
+const SKY_Y = 3.1
+
+function goalForPhase(phase: Phase, skyYaw: number): { pos: THREE.Vector3; look: THREE.Vector3 } {
+  if (phase === 'peri') {
+    return {
+      pos: new THREE.Vector3(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35),
+      look: HERO.pos.clone(),
+    }
+  }
+  if (phase === 'peers') {
+    const c = PEERS.reduce((acc, b) => acc.add(TMP.copy(b.pos)), new THREE.Vector3()).multiplyScalar(
+      1 / PEERS.length,
+    )
+    return {
+      pos: new THREE.Vector3(c.x + 0.4, c.y + 2.2, c.z + 6.2),
+      look: c,
+    }
+  }
+  if (phase === 'sky') {
+    return {
+      pos: new THREE.Vector3(Math.sin(skyYaw) * SKY_R, SKY_Y, Math.cos(skyYaw) * SKY_R),
+      look: new THREE.Vector3(0, 0.2, 0),
+    }
+  }
+  if (phase === 'cabinets') {
+    return {
+      pos: new THREE.Vector3(0.2, 2.4, 26.5),
+      look: new THREE.Vector3(0, 1.2, 18),
+    }
+  }
+  if (phase === 'instrument') {
+    return {
+      pos: new THREE.Vector3(-1.2, 2.1, 24.2),
+      look: new THREE.Vector3(0, 1.4, 16.5),
+    }
+  }
+  return {
+    pos: new THREE.Vector3(0.6, 1.55, 22.4),
+    look: new THREE.Vector3(-0.2, 1.25, 17.8),
+  }
+}
+
 function CameraRig({
   phase,
   focusId,
   reduced,
   scripted,
+  onSettle,
 }: {
   phase: Phase
   focusId: string | null
   reduced: boolean
   scripted: boolean
+  onSettle?: (settled: boolean) => void
 }) {
   const { camera } = useThree()
   const focus = BODIES.find((b) => b.id === focusId) ?? null
-  const goalPos = useRef(
-    new THREE.Vector3(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35),
-  )
-  const goalLook = useRef(new THREE.Vector3().copy(HERO.pos))
   const look = useRef(new THREE.Vector3().copy(HERO.pos))
+  const fromPos = useRef(new THREE.Vector3(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35))
+  const fromLook = useRef(new THREE.Vector3().copy(HERO.pos))
+  const toPos = useRef(new THREE.Vector3(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35))
+  const toLook = useRef(new THREE.Vector3().copy(HERO.pos))
+  const progress = useRef(1)
+  const prevPhase = useRef(phase)
+  const prevFocus = useRef(focusId)
   const skyYaw = useRef(Math.atan2(-9.6, 10.8))
+  const settled = useRef(true)
 
   useFrame((_, dt) => {
-    if (!scripted) return
-
-    if (focus) {
-      goalPos.current.set(focus.pos.x + 1.6, focus.pos.y + 0.9, focus.pos.z + 2.4)
-      goalLook.current.copy(focus.pos)
-    } else if (phase === 'peri') {
-      goalPos.current.set(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35)
-      goalLook.current.copy(HERO.pos)
-    } else if (phase === 'peers') {
-      const c = PEERS.reduce((acc, b) => acc.add(TMP.copy(b.pos)), new THREE.Vector3()).multiplyScalar(
-        1 / PEERS.length,
-      )
-      goalPos.current.set(c.x + 0.4, c.y + 2.2, c.z + 6.2)
-      goalLook.current.copy(c)
-    } else if (phase === 'sky') {
-      if (!reduced) skyYaw.current += dt * 0.055
-      const r = 14.4
-      goalPos.current.set(Math.sin(skyYaw.current) * r, 3.1, Math.cos(skyYaw.current) * r)
-      goalLook.current.set(0, 0.2, 0)
-    } else if (phase === 'cabinets') {
-      goalPos.current.set(0.2, 2.4, 26.5)
-      goalLook.current.set(0, 1.2, 18)
-    } else if (phase === 'instrument') {
-      goalPos.current.set(-1.2, 2.1, 24.2)
-      goalLook.current.set(0, 1.4, 16.5)
-    } else {
-      goalPos.current.set(0.6, 1.55, 22.4)
-      goalLook.current.set(-0.2, 1.25, 17.8)
+    if (!scripted) {
+      // OrbitControls owns the camera; keep look in sync for the next scripted ease
+      if (phase === 'sky') look.current.set(0, 0.2, 0)
+      else if (phase === 'peers') look.current.copy(HERO.pos)
+      if (!settled.current) {
+        settled.current = true
+        onSettle?.(true)
+      }
+      return
     }
 
-    const k = reduced ? 1 : 2.1
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, goalPos.current.x, k, dt)
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, goalPos.current.y, k, dt)
-    camera.position.z = THREE.MathUtils.damp(camera.position.z, goalPos.current.z, k, dt)
+    const phaseChanged = phase !== prevPhase.current
+    const focusChanged = focusId !== prevFocus.current
+
+    if (phaseChanged || focusChanged) {
+      fromPos.current.copy(camera.position)
+      fromLook.current.copy(look.current)
+      if (focus) {
+        toPos.current.set(focus.pos.x + 1.6, focus.pos.y + 0.9, focus.pos.z + 2.4)
+        toLook.current.copy(focus.pos)
+      } else {
+        if (phase === 'sky') {
+          // Continue from current azimuth so peri → sky does not whip sideways
+          skyYaw.current = Math.atan2(camera.position.x - 0, camera.position.z - 0)
+          if (!Number.isFinite(skyYaw.current)) skyYaw.current = Math.atan2(-9.6, 10.8)
+        }
+        const g = goalForPhase(phase, skyYaw.current)
+        toPos.current.copy(g.pos)
+        toLook.current.copy(g.look)
+      }
+      progress.current = reduced ? 1 : 0
+      prevPhase.current = phase
+      prevFocus.current = focusId
+      if (settled.current) {
+        settled.current = false
+        onSettle?.(false)
+      }
+    }
+
+    if (!focus && phase === 'sky' && progress.current >= 1) {
+      if (!reduced) skyYaw.current += dt * 0.055
+      const g = goalForPhase('sky', skyYaw.current)
+      toPos.current.copy(g.pos)
+      toLook.current.copy(g.look)
+      camera.position.lerp(toPos.current, 1 - Math.exp(-1.6 * dt))
+      look.current.lerp(toLook.current, 1 - Math.exp(-1.6 * dt))
+    } else if (progress.current < 1) {
+      const dur = focus ? CAM_EASE_SEC * 0.55 : CAM_EASE_SEC
+      progress.current = Math.min(1, progress.current + dt / dur)
+      const u = easeInOutCubic(progress.current)
+      camera.position.lerpVectors(fromPos.current, toPos.current, u)
+      look.current.lerpVectors(fromLook.current, toLook.current, u)
+      if (progress.current >= 1 && !settled.current) {
+        settled.current = true
+        onSettle?.(true)
+      }
+    } else {
+      camera.position.lerp(toPos.current, 1 - Math.exp(-2.2 * dt))
+      look.current.lerp(toLook.current, 1 - Math.exp(-2.2 * dt))
+      if (!settled.current) {
+        settled.current = true
+        onSettle?.(true)
+      }
+    }
+
     camera.up.copy(WORLD_UP)
-    look.current.x = THREE.MathUtils.damp(look.current.x, goalLook.current.x, k, dt)
-    look.current.y = THREE.MathUtils.damp(look.current.y, goalLook.current.y, k, dt)
-    look.current.z = THREE.MathUtils.damp(look.current.z, goalLook.current.z, k, dt)
     camera.lookAt(look.current)
   })
 
@@ -712,25 +793,22 @@ function Scene({
   reduced: boolean
 }) {
   const inHall = phase === 'cabinets' || phase === 'instrument' || phase === 'turn'
-  const [skySettled, setSkySettled] = useState(false)
+  const [camSettled, setCamSettled] = useState(true)
   const canOrbit = phase === 'sky' || phase === 'peers'
-  const orbit = active && canOrbit && !focusId && !reduced && skySettled
+  const orbit = active && canOrbit && !focusId && !reduced && camSettled
   const scripted = !orbit
 
   useEffect(() => {
-    setSkySettled(false)
-    if (!canOrbit || focusId) return
-    const id = window.setTimeout(() => setSkySettled(true), reduced ? 0 : 700)
-    return () => window.clearTimeout(id)
-  }, [phase, focusId, reduced, canOrbit])
+    setCamSettled(reduced)
+  }, [phase, focusId, reduced])
 
   return (
     <>
       <color attach="background" args={['#030303']} />
-      <fog attach="fog" args={['#030303', inHall ? 8 : 14, inHall ? 36 : 44]} />
-      <ambientLight intensity={0.18} />
-      <directionalLight position={[4, 8, 3]} intensity={0.55} color="#f2e6c8" />
-      <pointLight position={[0, 2, 2]} intensity={0.4} color="#e8b86a" distance={24} />
+      <fog attach="fog" args={['#030303', inHall ? 10 : 14, inHall ? 42 : 44]} />
+      <ambientLight intensity={0.22} />
+      <directionalLight position={[4, 8, 3]} intensity={0.62} color="#f2e6c8" />
+      <pointLight position={[0, 2, 2]} intensity={0.45} color="#e8b86a" distance={24} />
 
       <Stars
         radius={80}
@@ -742,7 +820,13 @@ function Scene({
         speed={reduced ? 0 : 0.35}
       />
 
-      <CameraRig phase={phase} focusId={focusId} reduced={reduced} scripted={scripted} />
+      <CameraRig
+        phase={phase}
+        focusId={focusId}
+        reduced={reduced}
+        scripted={scripted}
+        onSettle={setCamSettled}
+      />
 
       <group visible={!inHall}>
         {BODIES.map((body) => (
@@ -835,11 +919,6 @@ export function MineralConstellation({ active, label }: { active: boolean; label
       {phase === 'sky' && !focusId && (
         <div className={styles.constellationHint} data-idle="">
           Drag to orbit · click a crystal to zoom
-        </div>
-      )}
-      {phase === 'peers' && (
-        <div className={styles.constellationHint} data-idle="">
-          Drag to orbit the peer cluster
         </div>
       )}
       {focusName && (

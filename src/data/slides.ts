@@ -239,19 +239,12 @@ export const slides: Slide[] = [
           'Start here — every physicist in the room already speaks this name. Gustav Rose, 1839, Urals, named for Lev Perovski. BaTiO₃ ceramics in the 1940s; halide perovskite solar after 2009. The mineralogist named the architecture. Industry showed up speaking the name as if it were a materials term. Hold the close-up, then pull.',
       },
       {
-        id: 'peers',
-        label: 'Peers',
-        layers: ['sky'],
-        notes:
-          'Pull out. Same look, more names the room already uses: zeolite → molecular sieves (1756 → 1956); olivine → LiFePO₄ (1790 → 1997); fluorite → YSZ; garnet → YIG then LLZO; stibnite → thin-film PV. Species names that became process names after a long lag. Spinel is waiting for Act I — don’t name it yet.',
-      },
-      {
         id: 'sky',
         label: 'Constellation',
         title: 'Minerals are in\nnearly everything.',
         layers: ['sky'],
         notes:
-          'Keep pulling. A hundred minerals and their applications — energy, medicine, optics, sieves, electronics, structure. Tiny labels on purpose. Invite a click on anything curious; Esc or empty click pulls back. The awe is the point: nobody has really seen how complete the map is.',
+          'Pull out into the full constellation. Names the room already uses show up first — zeolite → molecular sieves; olivine → LiFePO₄; fluorite → YSZ; garnet → YIG then LLZO; stibnite → thin-film PV — then a hundred more across energy, medicine, optics, sieves, electronics, structure. Tiny labels on purpose. Invite a click; Esc or empty click pulls back. Spinel waits for Act I.',
       },
       {
         id: 'cabinets',
@@ -279,7 +272,7 @@ export const slides: Slide[] = [
       },
     ],
     notes:
-      'Cinematic open: perovskite → peer minerals → ~100-node constellation (clickable) → cabinets → collection as instrument → drawer turn into Act I.',
+      'Cinematic open: perovskite → ~100-node constellation (clickable) → cabinets → collection as instrument → drawer turn into Act I.',
   },
 
   // ── 01 Spinel → DLE ───────────────────────────────────
