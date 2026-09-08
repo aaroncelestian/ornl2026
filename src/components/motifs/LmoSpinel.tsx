@@ -39,7 +39,9 @@ const SYNTH_FWHM = 14.1
 const LI_W = 657
 const LI_FWHM = 8.5
 const H_W = LI_W - 20
-const H_FWHM = LI_FWHM * 2
+/** H-form vs as-synth: ~50% wider A₁g. */
+const H_FWHM = SYNTH_FWHM * 1.5
+const H_AMP = 0.5
 const _Y_UP = new THREE.Vector3(0, 1, 0)
 const _DIR = new THREE.Vector3()
 const _QUAT = new THREE.Quaternion()
@@ -67,7 +69,7 @@ const LI_RAMAN = 4.2
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
   voids: '8a→16c channels · ball-and-stick',
-  hydrogen: 'H-exchange · A₁g broad, −20 cm⁻¹',
+  hydrogen: 'H-exchange · A₁g −50% amp, +50% width',
   lithium: 'Li in 8a · A₁g up and sharp',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
@@ -709,8 +711,8 @@ function RamanTrack({
         return {
           w: SYNTH_W + (H_W - SYNTH_W) * ease,
           fwhm: SYNTH_FWHM + (H_FWHM - SYNTH_FWHM) * ease,
-          amp: 0.9,
-          label: ease < 0.4 ? 'H in · A₁g softening' : 'H-exchange · A₁g broad, −20 cm⁻¹',
+          amp: 1 - (1 - H_AMP) * ease,
+          label: ease < 0.4 ? 'H in · A₁g softening' : 'H-exchange · A₁g broad −50%, −20 cm⁻¹',
           mode: 'OH dominates · MnO disordered',
           kind: 'damped' as const,
         }
@@ -720,7 +722,7 @@ function RamanTrack({
       return {
         w: H_W + (LI_W - H_W) * ease,
         fwhm: H_FWHM + (LI_FWHM - H_FWHM) * ease,
-        amp: 0.9 + 0.1 * ease,
+        amp: H_AMP + (1 - H_AMP) * ease,
         label: ease < 0.45 ? 'Li → 8a · A₁g walking up' : 'Li in 8a · A₁g sharp',
         mode: 'MnO₆ A₁g · stiffer',
         kind: 'stiff' as const,
@@ -751,7 +753,8 @@ function RamanTrack({
   const w1 = tight ? 700 : 780
   const vbH = tight ? 108 : 64
   const baseY = tight ? 88 : 52
-  const peakScale = tight ? 40 * (1 + track.amp) : 40
+  // Fixed scale so track.amp is a true intensity multiplier (H-form = 50% of as-synth).
+  const peakScale = tight ? 80 : 40
   const path = lorentzPath(track.w, track.fwhm, track.amp, w0, w1, baseY, peakScale)
   const collapsed = track.amp < 0.2
   const peakX = 8 + ((track.w - w0) / (w1 - w0)) * 284

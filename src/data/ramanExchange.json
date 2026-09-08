@@ -723,7 +723,7 @@
   "footnotes": {
     "as-synth": "As-synthesized LMO: long-range order (XRD) and local Mn\u2013O cubane order (Raman) both present.",
     "h-ex": "H-exchange keeps the spinel XRD \u2014 but the Raman (local cubane stretch) is basically gone.",
-    "li-return": "H-form \u2192 Li in 8a (A\u2081g 645\u2192657). More Li splits A\u2081g and turns on F\u2082g: cubane local Oh breaks, not the lattice. Pattern stays weak then settles \u2014 cubane rewritten, not gone.",
-    "durability": "Full load costs Mn (24% / 100 cycles). Partial load keeps the lattice intact."
+    "li-return": "H-form \u2192 Li in 8a (A\u2081g 645\u2192657). More Li splits A\u2081g and turns on F\u2082g: cubane local Oh breaks as Li enters 8b \u2014 the strain that leaches Mn. Over full cycles LMO dissolves (IC Mn loss). Al substitution blocks the extra Li site and keeps the lattice.",
+    "durability": "Full load costs Mn (24% / 100 cycles). Partial load \u2014 or Al in the spinel \u2014 keeps the lattice intact."
   }
 }

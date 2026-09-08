@@ -103,8 +103,11 @@ export function CubaneUnit({
   if (!vibeRefProp) localVibeRef.current = vibe
   const vibeRef = vibeRefProp ?? localVibeRef
   const liveVibe = useRef({ ...vibe })
-  const wave = useRef(0)
+  /** Per-atom oscillator phase — integrate ω·dt so hzScale changes never jump sin(). */
+  const oscPhase = useRef<number[]>([])
+  const oscOffset = useRef<number[]>([])
   const radial = useRef(new THREE.Vector3())
+  const targetPos = useRef(new THREE.Vector3())
 
   const center = cubane.center as [number, number, number]
   const mnLocal = useMemo(
@@ -172,16 +175,20 @@ export function CubaneUnit({
     if (!root) return
     const want = vibeRef.current
     const live = liveVibe.current
-    // Slow morph between modes — fast λ makes O jump when split/disorder/hz flip.
-    live.hz = THREE.MathUtils.damp(live.hz, want.hz, 0.85, dt)
-    live.amp = THREE.MathUtils.damp(live.amp, want.amp, 1.15, dt)
-    live.disorder = THREE.MathUtils.damp(live.disorder, want.disorder, 0.7, dt)
-    live.mute = THREE.MathUtils.damp(live.mute, want.mute, 1.1, dt)
-    live.split = THREE.MathUtils.damp(live.split ?? 0, want.split ?? 0, 0.55, dt)
+    // Soft morph between modes — λ kept low so reshape never outruns the oscillator.
+    live.hz = THREE.MathUtils.damp(live.hz, want.hz, 0.45, dt)
+    live.amp = THREE.MathUtils.damp(live.amp, want.amp, 0.7, dt)
+    live.disorder = THREE.MathUtils.damp(live.disorder, want.disorder, 0.35, dt)
+    live.mute = THREE.MathUtils.damp(live.mute, want.mute, 0.65, dt)
+    live.split = THREE.MathUtils.damp(live.split ?? 0, want.split ?? 0, 0.3, dt)
     const on = active && !reduced && vibeOn
     const strength = on ? live.amp * (1 - live.mute) : 0
-    wave.current += dt * live.hz
-    const theta = wave.current * Math.PI * 2
+    const atomCount = mnLocal.length + coreLocal.length
+    if (oscPhase.current.length !== atomCount) {
+      oscPhase.current = Array.from({ length: atomCount }, () => 0)
+      oscOffset.current = Array.from({ length: atomCount }, () => 0)
+    }
+    const omega = live.hz * Math.PI * 2
     const displace = (
       local: [number, number, number],
       scale: number,
@@ -193,10 +200,14 @@ export function CubaneUnit({
       u.multiplyScalar(1 / len)
       const pair = i % 2
       const split = live.split ?? 0
-      const phase = (live.disorder > 0.02 ? i * 2.17 : 0) + split * pair * Math.PI
+      const offsetWant = (live.disorder > 0.02 ? i * 2.17 : 0) + split * pair * Math.PI
+      // Integrate frequency — never multiply a large elapsed θ by a changing hzScale.
       const hzScale =
         (1 + live.disorder * (((i * 3) % 5) - 2) * 0.11) * (1 + split * (pair === 0 ? 0.16 : -0.2))
-      const s = on ? Math.sin(theta * hzScale + phase) * strength : 0
+      oscPhase.current[i] += dt * omega * hzScale
+      oscOffset.current[i] = THREE.MathUtils.damp(oscOffset.current[i], offsetWant, 0.4, dt)
+      const theta = oscPhase.current[i] + oscOffset.current[i]
+      const s = on ? Math.sin(theta) * strength : 0
       let jx = 0
       let jy = 0
       let jz = 0
@@ -205,16 +216,20 @@ export function CubaneUnit({
         const py = u.z * 0.55 - u.x * 0.35
         const pz = u.x * 0.55 - u.y * 0.35
         const plen = Math.hypot(px, py, pz) || 1
-        const jitter = Math.sin(theta * hzScale + i * 1.7) * strength * live.disorder * 0.7
+        const jitter = Math.sin(theta + i * 1.7) * strength * live.disorder * 0.55
         jx = (px / plen) * jitter
         jy = (py / plen) * jitter
         jz = (pz / plen) * jitter
       }
-      out.set(
+      targetPos.current.set(
         local[0] + u.x * s * scale + jx,
         local[1] + u.y * s * scale + jy,
         local[2] + u.z * s * scale + jz,
       )
+      // Position damp absorbs residual amp/jitter morph so atoms never snap.
+      out.x = THREE.MathUtils.damp(out.x, targetPos.current.x, 14, dt)
+      out.y = THREE.MathUtils.damp(out.y, targetPos.current.y, 14, dt)
+      out.z = THREE.MathUtils.damp(out.z, targetPos.current.z, 14, dt)
     }
 
     mnLocal.forEach((m, i) => {
@@ -241,7 +256,10 @@ export function CubaneUnit({
       }
       const n = owners.length || 1
       const out = termLive.current[i]
-      out.set(o[0] + dx / n, o[1] + dy / n, o[2] + dz / n)
+      targetPos.current.set(o[0] + dx / n, o[1] + dy / n, o[2] + dz / n)
+      out.x = THREE.MathUtils.damp(out.x, targetPos.current.x, 14, dt)
+      out.y = THREE.MathUtils.damp(out.y, targetPos.current.y, 14, dt)
+      out.z = THREE.MathUtils.damp(out.z, targetPos.current.z, 14, dt)
       const child = root.children[mnLocal.length + coreLocal.length + i]
       if (child) child.position.copy(out)
     })

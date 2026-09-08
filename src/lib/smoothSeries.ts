@@ -126,11 +126,11 @@ const STAGE_COPY: Record<ExchangeStage, { title: string; cubane: string }> = {
   },
   split: {
     title: 'A₁g splits · F₂g on',
-    cubane: 'Local Oh breaks. Four Mn–O environments are no longer equivalent — not dissolving.',
+    cubane: 'Local Oh breaks as Li enters the cubane core — Mn–O no longer equivalent. Strain that ejects Mn.',
   },
   stable: {
-    title: 'Weak · stable',
-    cubane: 'Cubane reorders as a weaker Li-occupied oscillator. Rewritten, not gone.',
+    title: 'Weak · dissolving',
+    cubane: 'Weaker Li-occupied oscillator. Cycle this hard and Mn leaches — less LMO left. Al blocks the extra site.',
   },
 }
 

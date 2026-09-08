@@ -363,7 +363,7 @@ export const slides: Slide[] = [
         label: 'Li returns',
         layers: ['raman'],
         notes:
-          'Start H-form: cubane is there, A₁g is muted. First Li into 8a jumps A₁g 645→657 and narrows it — the cubane breathes again. More Li makes the big dip: A₁g splits and F₂g turns on. That is local Oh breaking — the four Mn–O environments are no longer equivalent — not the spinel dissolving. After the front passes the Raman is weak but settles: the cubane reordered as a weaker Li-occupied oscillator. Rewritten, not gone.',
+          'Start H-form: cubane is there, A₁g is muted. First Li into 8a jumps A₁g 645→657 and narrows it — the cubane breathes again; back-exchangeable, no Mn loss yet. More Li forces the next step: Li into the cubane interior (8b). Local Oh breaks — four Mn–O environments are no longer equivalent — A₁g splits and F₂g turns on. That spectral rewrite is the same strain that ejects Mn. IC shows Mn leaching; after many full cycles there is less and less LMO. XRD can still look ordered while the lattice is dissolving from the cubane out. Al-substituted spinel blocks that extra Li site — no over-exchange, structure stays stable.',
       },
       {
         id: 'cloud',
@@ -481,7 +481,7 @@ export const slides: Slide[] = [
         title: 'Full load costs Mn.\nPartial load keeps it.',
         layers: ['raman'],
         notes:
-          'After 100 full Li/H cycles, up to 24% Mn loss and a secondary MnOx phase. Partial loading — stop before maximum capacity — showed no measurable Mn loss at 100 cycles. Same selectivity logic does not stop at lithium.',
+          'After 100 full Li/H cycles, up to 24% Mn loss and a secondary MnOx phase — less LMO left. Partial loading — stop before maximum capacity — showed no measurable Mn loss at 100 cycles. Same idea chemically: Al in the spinel blocks the extra Li exchange into the cubane, so the lattice stays intact. Same selectivity logic does not stop at lithium.',
       },
     ],
   },
