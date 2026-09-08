@@ -497,12 +497,13 @@ function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
     <group ref={group} position={[0, -1.2, 18]} scale={0.001} visible={false}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[40, 28]} />
-        <meshStandardMaterial color="#1a1712" roughness={0.88} metalness={0.06} />
+        <meshStandardMaterial color="#2a241c" roughness={0.9} metalness={0.04} />
       </mesh>
-      <ambientLight intensity={0.28} />
-      <pointLight position={[0, 4.2, 1]} intensity={0.85} color="#f0dfb8" distance={32} />
-      <pointLight position={[-6, 3.2, -3]} intensity={0.45} color="#9ed4b8" distance={18} />
-      <pointLight position={[5, 2.8, -2]} intensity={0.35} color="#e8c48a" distance={16} />
+      <ambientLight intensity={0.55} />
+      <directionalLight position={[2, 8, 6]} intensity={1.15} color="#f5e6c8" />
+      <pointLight position={[0, 5, 4]} intensity={1.4} color="#f2e0b4" distance={36} />
+      <pointLight position={[-7, 3.5, 0]} intensity={0.7} color="#b8dfc8" distance={22} />
+      <pointLight position={[7, 3.5, 0]} intensity={0.65} color="#e8c898" distance={22} />
 
       {cabinets.map((c, ci) => (
         <CabinetUnit
@@ -547,11 +548,11 @@ function CabinetUnit({
     <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
       <mesh position={[0, 1.55, 0]}>
         <boxGeometry args={[2.4, 3.1, 1.1]} />
-        <meshStandardMaterial color="#2c261e" roughness={0.78} metalness={0.1} />
+        <meshStandardMaterial color="#4a3f32" roughness={0.72} metalness={0.08} />
       </mesh>
       <mesh position={[0, 1.55, 0.56]}>
         <boxGeometry args={[2.35, 3.05, 0.04]} />
-        <meshStandardMaterial color="#353028" roughness={0.62} metalness={0.14} />
+        <meshStandardMaterial color="#5a4c3c" roughness={0.55} metalness={0.12} />
       </mesh>
       {Array.from({ length: drawers }).map((_, di) => {
         const y = 0.35 + di * 0.48
@@ -613,11 +614,11 @@ function Drawer({
     <group ref={ref} position={[0, y, 0.55]}>
       <mesh>
         <boxGeometry args={[2.15, 0.4, 0.95]} />
-        <meshStandardMaterial color={highlight ? '#3a3226' : '#2a241c'} roughness={0.75} />
+        <meshStandardMaterial color={highlight ? '#6a5740' : '#524536'} roughness={0.68} />
       </mesh>
       <mesh position={[0, 0, 0.48]}>
         <boxGeometry args={[0.35, 0.04, 0.04]} />
-        <meshStandardMaterial color="#e2d4b0" metalness={0.55} roughness={0.32} />
+        <meshStandardMaterial color="#f0e2c0" metalness={0.55} roughness={0.28} />
       </mesh>
       {open &&
         specimens.map((s, i) => (
@@ -805,10 +806,10 @@ function Scene({
   return (
     <>
       <color attach="background" args={['#030303']} />
-      <fog attach="fog" args={['#030303', inHall ? 10 : 14, inHall ? 42 : 44]} />
-      <ambientLight intensity={0.22} />
-      <directionalLight position={[4, 8, 3]} intensity={0.62} color="#f2e6c8" />
-      <pointLight position={[0, 2, 2]} intensity={0.45} color="#e8b86a" distance={24} />
+      <fog attach="fog" args={[inHall ? '#0c0b09' : '#030303', inHall ? 22 : 14, inHall ? 55 : 44]} />
+      <ambientLight intensity={inHall ? 0.38 : 0.22} />
+      <directionalLight position={[4, 8, 3]} intensity={inHall ? 0.95 : 0.62} color="#f2e6c8" />
+      <pointLight position={[0, 2, 2]} intensity={inHall ? 0.7 : 0.45} color="#e8b86a" distance={24} />
 
       <Stars
         radius={80}
