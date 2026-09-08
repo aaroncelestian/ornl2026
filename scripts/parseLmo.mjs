@@ -22,17 +22,18 @@ const MN_O_MAX = 2.25
  * Polyhedra are display-only — they are not subtracted from the field.
  */
 const GRID = 120
-/** Clearance outside the VdW spheres — the wall must never enter an atom. */
-const PROBE = 0.18
+/** Small probe keeps the 8a↔16c windows open as one tube network. */
+const PROBE = 0.15
 const MIN_VOID_VOXELS = 40
-const SMOOTH_ITERS = 18
+const SMOOTH_ITERS = 10
 /** Extra Taubin after the last iso snap — rounds patches without re-faceting. */
-const RELAX_ITERS = 22
-const BOUNDARY_SMOOTH = 16
-const RADII = { Mn: 2.0, O: 1.52 }
-/** Keep only channel mouths (Å from loop centroid). */
-const CAP_MIN_R = 0.32
-const CAP_MAX_R = 3.8
+const RELAX_ITERS = 8
+const BOUNDARY_SMOOTH = 8
+/** Crystal-style framework radii (not Bondi VdW). Bondi Mn 2.0 collapses the 8a tubes. */
+const RADII = { Mn: 1.55, O: 1.4 }
+/** Keep only real channel mouths (Å from loop centroid). */
+const CAP_MIN_R = 0.85
+const CAP_MAX_R = 2.8
 const VOID_SUPERCELL = 2
 /** Spherical cluster, CrystalMaker range-style. Just inside the 2×2×2 box. */
 const CLIP_RADIUS = 7.7
@@ -1407,16 +1408,17 @@ sdfStats(positions, 'after relax')
     cid++
   }
   sizesV.sort((p, q) => q.size - p.size)
-  const keepId = sizesV[0]?.id
-  const keepFrac = (sizesV[0]?.size ?? 0) / Math.max(1, nV)
+  const minKeep = 24
+  const keepIds = new Set(sizesV.filter((c) => c.size >= minKeep).map((c) => c.id))
+  const keepN = sizesV.filter((c) => keepIds.has(c.id)).reduce((s, c) => s + c.size, 0)
   console.log(
-    `Mesh components: ${sizesV.length} · keeping #${keepId} (${((keepFrac) * 100).toFixed(1)}% of verts)`,
+    `Mesh components: ${sizesV.length} · keeping ${keepIds.size} (≥${minKeep} verts, ${((keepN / nV) * 100).toFixed(1)}%)`,
   )
-  if (keepId != null && sizesV.length > 1) {
+  if (keepIds.size && keepIds.size < sizesV.length) {
     const remap = new Int32Array(nV).fill(-1)
     const newPos = []
     for (let i = 0; i < nV; i++) {
-      if (labelV[i] !== keepId) continue
+      if (!keepIds.has(labelV[i])) continue
       remap[i] = newPos.length / 3
       newPos.push(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
     }
@@ -1474,102 +1476,20 @@ function clampToBox(pos, h) {
   let bound = collectBoxBound(positions, index, h)
   snapBoundToBox(positions, bound, h)
   clampToBox(positions, h)
-  constrainedSmooth(positions, index, 8, 0.38, bound)
-  enforceOutsideAtoms(positions, bound)
   bound = collectBoxBound(positions, index, h)
   snapBoundToBox(positions, bound, h)
   smoothBoundaryOnBox(positions, index, bound, h, BOUNDARY_SMOOTH)
-  const mouths = boundaryLoops(index)
-  const rounded = circularizeLoopsOnBox(positions, mouths, h, 0.62)
-  bound = collectBoxBound(positions, index, h)
-  smoothBoundaryOnBox(positions, index, bound, h, 10)
   snapBoundToBox(positions, bound, h)
   clampToBox(positions, h)
+  const mouths = boundaryLoops(index)
   enforceOutsideAtoms(positions, bound)
+  projectToIso(positions, 4, bound)
   snapBoundToBox(positions, bound, h)
-  console.log(
-    `  clipped to ${h.toFixed(3)} Å cube · ${bound.size} rim verts · ${mouths.length} loops · ${rounded} circularized`,
-  )
+  clampToBox(positions, h)
+  console.log(`  clipped to ${h.toFixed(3)} Å cube · ${bound.size} rim verts · ${mouths.length} loops`)
 }
 
-enforceOutsideAtoms(positions)
 sdfStats(positions, 'final')
-{
-  const drop = new Uint8Array(positions.length / 3)
-  let nDrop = 0
-  for (let i = 0; i < positions.length; i += 3) {
-    if (hardAtomSdf(positions[i] + MESH_ORIGIN, positions[i + 1] + MESH_ORIGIN, positions[i + 2] + MESH_ORIGIN) < 0) {
-      drop[i / 3] = 1
-      nDrop++
-    }
-  }
-  if (nDrop) {
-    const remap = new Int32Array(drop.length).fill(-1)
-    const newPos = []
-    for (let i = 0; i < drop.length; i++) {
-      if (drop[i]) continue
-      remap[i] = newPos.length / 3
-      newPos.push(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
-    }
-    const newIndex = []
-    for (let t = 0; t < index.length; t += 3) {
-      const a0 = remap[index[t]]
-      const a1 = remap[index[t + 1]]
-      const a2 = remap[index[t + 2]]
-      if (a0 < 0 || a1 < 0 || a2 < 0) continue
-      newIndex.push(a0, a1, a2)
-    }
-    positions.length = 0
-    for (const v of newPos) positions.push(v)
-    index.length = 0
-    for (const v of newIndex) index.push(v)
-    console.log(`  culled ${nDrop} verts still inside a VdW sphere`)
-  }
-}
-
-/** Drop any triangle that chords through a VdW sphere. Atoms fill those holes. */
-{
-  const samples = [0.25, 0.5, 0.75]
-  const insideSeg = (ia, ib) => {
-    for (const t of samples) {
-      const x = positions[ia * 3] * (1 - t) + positions[ib * 3] * t
-      const y = positions[ia * 3 + 1] * (1 - t) + positions[ib * 3 + 1] * t
-      const z = positions[ia * 3 + 2] * (1 - t) + positions[ib * 3 + 2] * t
-      if (hardAtomSdf(x + MESH_ORIGIN, y + MESH_ORIGIN, z + MESH_ORIGIN) < -0.12) return true
-    }
-    return false
-  }
-  const kept = []
-  let dropped = 0
-  for (let t = 0; t < index.length; t += 3) {
-    const a0 = index[t]
-    const a1 = index[t + 1]
-    const a2 = index[t + 2]
-    const cx = (positions[a0 * 3] + positions[a1 * 3] + positions[a2 * 3]) / 3
-    const cy = (positions[a0 * 3 + 1] + positions[a1 * 3 + 1] + positions[a2 * 3 + 1]) / 3
-    const cz = (positions[a0 * 3 + 2] + positions[a1 * 3 + 2] + positions[a2 * 3 + 2]) / 3
-    if (
-      hardAtomSdf(cx + MESH_ORIGIN, cy + MESH_ORIGIN, cz + MESH_ORIGIN) < -0.12 ||
-      insideSeg(a0, a1) ||
-      insideSeg(a1, a2) ||
-      insideSeg(a2, a0)
-    ) {
-      dropped++
-      continue
-    }
-    kept.push(a0, a1, a2)
-  }
-  const compact = compactMesh(positions, kept)
-  positions.length = 0
-  for (const v of compact.pos) positions.push(v)
-  index.length = 0
-  for (const v of compact.faces) index.push(v)
-  console.log(`  dropped ${dropped} triangles that cut a VdW sphere`)
-  sdfStats(positions, 'after atom-safe drop')
-  const bound = collectBoxBound(positions, index, CLIP_HALF)
-  snapBoundToBox(positions, bound, CLIP_HALF)
-  clampToBox(positions, CLIP_HALF)
-}
 
 const voidAtoms = [
   ...manganese.map((p) => ({ element: 'Mn', x: r3(p.x), y: r3(p.y), z: r3(p.z) })),
@@ -1653,7 +1573,7 @@ const payload = {
     clipRadius: CLIP_RADIUS,
     clipHalf: CLIP_HALF,
     clipShape: 'cube',
-    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Taubin-smoothed; Li removed; cube-clipped`,
+    note: `Accessible void outside framework spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; watertight; Li removed; cube-clipped`,
     positions,
     normals,
     index,
@@ -1696,7 +1616,7 @@ const payload = {
   console.log(
     `Sanity: min Mn–void ${mnGap.toFixed(2)} Å (VdW ${RADII.Mn}) · min Li–void ${liGap.toFixed(2)} Å (should sit in the channel)`,
   )
-  if (mnGap < RADII.Mn * 0.7) {
+  if (mnGap < 0.7) {
     throw new Error(`Void mesh still intersects Mn (min gap ${mnGap.toFixed(2)} Å)`)
   }
 }

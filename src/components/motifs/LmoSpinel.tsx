@@ -109,16 +109,50 @@ function CellWire({ size, opacity = 0.28 }: { size: number; opacity?: number }) 
   )
 }
 
+function softenNormals(geo: THREE.BufferGeometry, passes = 2) {
+  geo.computeVertexNormals()
+  const nrm = geo.getAttribute('normal')
+  const idx = geo.getIndex()
+  if (!nrm || !idx) return
+  const nV = nrm.count
+  const nbrs: number[][] = Array.from({ length: nV }, () => [])
+  for (let t = 0; t < idx.count; t += 3) {
+    const a = idx.getX(t)
+    const b = idx.getX(t + 1)
+    const c = idx.getX(t + 2)
+    nbrs[a].push(b, c)
+    nbrs[b].push(a, c)
+    nbrs[c].push(a, b)
+  }
+  const next = new Float32Array(nV * 3)
+  for (let p = 0; p < passes; p++) {
+    for (let i = 0; i < nV; i++) {
+      let x = nrm.getX(i)
+      let y = nrm.getY(i)
+      let z = nrm.getZ(i)
+      for (const j of nbrs[i]) {
+        x += nrm.getX(j)
+        y += nrm.getY(j)
+        z += nrm.getZ(j)
+      }
+      const len = Math.hypot(x, y, z) || 1
+      next[i * 3] = x / len
+      next[i * 3 + 1] = y / len
+      next[i * 3 + 2] = z / len
+    }
+    for (let i = 0; i < nV; i++) {
+      nrm.setXYZ(i, next[i * 3], next[i * 3 + 1], next[i * 3 + 2])
+    }
+  }
+  nrm.needsUpdate = true
+}
+
 function VoidSurface({ pore }: { pore: boolean }) {
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.Float32BufferAttribute(data.void.positions, 3))
-    if (data.void.normals?.length === data.void.positions.length) {
-      geo.setAttribute('normal', new THREE.Float32BufferAttribute(data.void.normals, 3))
-    } else {
-      geo.computeVertexNormals()
-    }
     geo.setIndex(data.void.index)
+    softenNormals(geo, 3)
     return geo
   }, [])
 

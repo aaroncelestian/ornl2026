@@ -6,7 +6,6 @@ import data from '../../data/ramanExchange.json'
 import {
   atTime,
   exchangeStatus,
-  EXCHANGE_STEPS,
   smoothSeries,
   VIBE_HEX,
   VIBE_SYNTH,
@@ -222,69 +221,61 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const reveal = showOperando ? Math.max(0.2, Math.min(1, playT / 8)) : 1
 
   return (
-    <div className={styles.plot} aria-label={label || 'LMO XRD stays good; Raman blanks then returns changed'}>
+    <div
+      className={styles.plot}
+      data-operando={showOperando || undefined}
+      aria-label={label || 'LMO XRD stays good; Raman blanks then returns changed'}
+    >
       {showOperando ? (
-        <div className={styles.exchangeDock}>
-          <div className={styles.exchangeHead}>
-            <div className={styles.exchangeKicker}>Ion exchange</div>
-            <div className={styles.exchangeFill} aria-hidden>
-              <span>H</span>
-              <div className={styles.exchangeBar}>
-                <i style={{ width: `${Math.round(exchange.li * 100)}%` }} />
+        <>
+          <div className={styles.exchangeDock} data-compact="">
+            <div className={styles.exchangeHead}>
+              <div className={styles.exchangeFill} aria-hidden>
+                <span>H</span>
+                <div className={styles.exchangeBar}>
+                  <i style={{ width: `${Math.round(exchange.li * 100)}%` }} />
+                </div>
+                <span>Li</span>
               </div>
-              <span>Li</span>
             </div>
+            <svg viewBox="0 0 300 92" className={styles.liveRaman} aria-hidden>
+              <text x="18" y="14" className={styles.plotAnnotate} fontSize={13} fill="currentColor">
+                Raman · live
+              </text>
+              <line x1="18" y1="78" x2="282" y2="78" stroke={C_AXIS} />
+              <path d={livePath} fill="none" stroke={C_RAMAN} strokeWidth="2.2" strokeLinecap="round" />
+              {liveMarks.map((b) => (
+                <g key={b.kind}>
+                  <line
+                    x1={liveSx(b.w)}
+                    y1={18}
+                    x2={liveSx(b.w)}
+                    y2={78}
+                    stroke={BAND_COLOR[b.kind]}
+                    strokeOpacity={0.35}
+                  />
+                  <text
+                    x={liveSx(b.w)}
+                    y={28}
+                    textAnchor="middle"
+                    fill={BAND_COLOR[b.kind]}
+                    fontSize={11}
+                  >
+                    {b.label}
+                  </text>
+                </g>
+              ))}
+              <text x="18" y="90" className={styles.plotTick} fontSize={10} fill="currentColor">
+                540
+              </text>
+              <text x="268" y="90" className={styles.plotTick} fontSize={10} fill="currentColor">
+                700
+              </text>
+            </svg>
           </div>
-          <ol className={styles.exchangeSteps}>
-            {EXCHANGE_STEPS.map((step) => {
-              const on = exchange.id === step.id
-              const done =
-                EXCHANGE_STEPS.findIndex((s) => s.id === exchange.id) >
-                EXCHANGE_STEPS.findIndex((s) => s.id === step.id)
-              return (
-                <li key={step.id} data-on={on || undefined} data-done={done || undefined}>
-                  {step.label}
-                </li>
-              )
-            })}
-          </ol>
-          <svg viewBox="0 0 300 92" className={styles.liveRaman} aria-hidden>
-            <text x="18" y="14" className={styles.plotAnnotate} fontSize={13} fill="currentColor">
-              Raman · live
-            </text>
-            <line x1="18" y1="78" x2="282" y2="78" stroke={C_AXIS} />
-            <path d={livePath} fill="none" stroke={C_RAMAN} strokeWidth="2.2" strokeLinecap="round" />
-            {liveMarks.map((b) => (
-              <g key={b.kind}>
-                <line
-                  x1={liveSx(b.w)}
-                  y1={18}
-                  x2={liveSx(b.w)}
-                  y2={78}
-                  stroke={BAND_COLOR[b.kind]}
-                  strokeOpacity={0.35}
-                />
-                <text
-                  x={liveSx(b.w)}
-                  y={28}
-                  textAnchor="middle"
-                  fill={BAND_COLOR[b.kind]}
-                  fontSize={11}
-                >
-                  {b.label}
-                </text>
-              </g>
-            ))}
-            <text x="18" y="90" className={styles.plotTick} fontSize={10} fill="currentColor">
-              540
-            </text>
-            <text x="268" y="90" className={styles.plotTick} fontSize={10} fill="currentColor">
-              700
-            </text>
-          </svg>
-          <CubaneInset active={active} vibe={vibe} embedded />
+          <CubaneInset active={active} vibe={vibe} open />
           <p className={styles.cubaneReadout}>{exchange.cubane}</p>
-        </div>
+        </>
       ) : (
         <CubaneInset active={active} vibe={vibe} caption={cubaneCaption} />
       )}

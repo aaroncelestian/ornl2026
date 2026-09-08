@@ -96,6 +96,9 @@ export function CubaneUnit({
   const termLive = useRef<THREE.Vector3[]>([])
   const vibeRef = useRef(vibe)
   vibeRef.current = vibe
+  const liveVibe = useRef({ ...vibe })
+  const wave = useRef(0)
+  const radial = useRef(new THREE.Vector3())
 
   const center = cubane.center as [number, number, number]
   const mnLocal = useMemo(
@@ -155,30 +158,35 @@ export function CubaneUnit({
     termLive.current = termLocal.map((o) => new THREE.Vector3(...o))
   }
 
-  useFrame(({ clock }) => {
+  useFrame((_, dt) => {
     const root = atomGroup.current
     if (!root) return
-    const live = vibeRef.current
+    const want = vibeRef.current
+    const live = liveVibe.current
+    live.hz = THREE.MathUtils.damp(live.hz, want.hz, 2.4, dt)
+    live.amp = THREE.MathUtils.damp(live.amp, want.amp, 2.8, dt)
+    live.disorder = THREE.MathUtils.damp(live.disorder, want.disorder, 2.6, dt)
+    live.mute = THREE.MathUtils.damp(live.mute, want.mute, 2.8, dt)
+    live.split = THREE.MathUtils.damp(live.split ?? 0, want.split ?? 0, 2.6, dt)
     const on = active && !reduced && vibeOn
     const strength = on ? live.amp * (1 - live.mute) : 0
-    const time = clock.getElapsedTime()
+    wave.current += dt * live.hz
+    const theta = wave.current * Math.PI * 2
     const displace = (
       local: [number, number, number],
-      radial: number,
+      scale: number,
       i: number,
       out: THREE.Vector3,
     ) => {
-      const u = new THREE.Vector3(...local)
+      const u = radial.current.set(local[0], local[1], local[2])
       const len = u.length() || 1
       u.multiplyScalar(1 / len)
       const pair = i % 2
       const split = live.split ?? 0
       const phase = (live.disorder > 0.02 ? i * 2.17 : 0) + split * pair * Math.PI
-      const hz =
-        live.hz *
-        (1 + live.disorder * (((i * 3) % 5) - 2) * 0.11) *
-        (1 + split * (pair === 0 ? 0.16 : -0.2))
-      const s = on ? Math.sin(time * Math.PI * 2 * hz + phase) * strength : 0
+      const hzScale =
+        (1 + live.disorder * (((i * 3) % 5) - 2) * 0.11) * (1 + split * (pair === 0 ? 0.16 : -0.2))
+      const s = on ? Math.sin(theta * hzScale + phase) * strength : 0
       let jx = 0
       let jy = 0
       let jz = 0
@@ -187,15 +195,15 @@ export function CubaneUnit({
         const py = u.z * 0.55 - u.x * 0.35
         const pz = u.x * 0.55 - u.y * 0.35
         const plen = Math.hypot(px, py, pz) || 1
-        const jitter = Math.sin(time * Math.PI * 2 * (hz + 0.37) + i * 1.7) * strength * live.disorder * 0.7
+        const jitter = Math.sin(theta * hzScale + i * 1.7) * strength * live.disorder * 0.7
         jx = (px / plen) * jitter
         jy = (py / plen) * jitter
         jz = (pz / plen) * jitter
       }
       out.set(
-        local[0] + u.x * s * radial + jx,
-        local[1] + u.y * s * radial + jy,
-        local[2] + u.z * s * radial + jz,
+        local[0] + u.x * s * scale + jx,
+        local[1] + u.y * s * scale + jy,
+        local[2] + u.z * s * scale + jz,
       )
     }
 
@@ -299,7 +307,7 @@ export function CubaneUnit({
   )
 }
 
-const CAM_OPEN = new THREE.Vector3(7.6, 4.0, 9.4)
+const CAM_OPEN = new THREE.Vector3(10.4, 5.4, 12.8)
 const CAM_CLOSED = new THREE.Vector3(6.4, 3.4, 7.8)
 
 function InsetScene({

@@ -94,12 +94,14 @@
 }
 
 .cubaneDock[data-open] {
-  left: 0.6vw;
-  top: 52%;
-  bottom: auto;
-  transform: translateY(-50%);
-  width: min(46vw, 560px);
-  height: min(70vh, 580px);
+  left: 0;
+  top: 26%;
+  right: auto;
+  bottom: 6.4rem;
+  transform: none;
+  width: min(44%, 520px);
+  height: auto;
+  overflow: visible;
 }
 
 .cubaneEmbed {
@@ -133,6 +135,12 @@
   gap: 8px;
   width: min(38%, 400px);
   pointer-events: none;
+}
+
+.exchangeDock[data-compact] {
+  top: 5.4rem;
+  bottom: auto;
+  width: min(28%, 280px);
 }
 
 .exchangeHead {
@@ -212,6 +220,11 @@
 }
 
 .cubaneReadout {
+  position: absolute;
+  left: 0;
+  bottom: 4.8rem;
+  z-index: 4;
+  max-width: 34ch;
   margin: 0;
   padding: 0 4px 4px;
   font-family: var(--font-body);
@@ -219,6 +232,7 @@
   line-height: 1.35;
   letter-spacing: 0.02em;
   color: color-mix(in srgb, var(--color-text) 78%, transparent);
+  pointer-events: none;
 }
 
 .plotTick {
