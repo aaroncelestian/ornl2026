@@ -157,6 +157,9 @@ function motifLine(slide: Slide): string | undefined {
   if (slide.motif === 'framework-density') {
     return 'Motif: porosity as luminous voids — rowleyite as the hero hole'
   }
+  if (slide.motif === 'mineral-constellation') {
+    return 'Motif: mineral constellation — perovskite zoom-out to cabinets'
+  }
   if (slide.motif === 'crystal-viewer') {
     return 'Motif: ZS-9 structure from CIF — 7MR windows and exchange'
   }
@@ -301,6 +304,23 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'framework-density') {
         lines.push(
           'Motif: porosity voids — rowleyite as the luminous hole · 12MR 9.7 Å / 4.1 Å',
+        )
+      }
+      if (layer?.kind === 'motif' && layer.motif === 'mineral-constellation') {
+        lines.push(
+          beat?.id === 'peri'
+            ? 'Motif: constellation — perovskite close-up; ferroelectrics · solar'
+            : beat?.id === 'peers'
+              ? 'Motif: constellation — peer minerals with application rays'
+              : beat?.id === 'sky'
+                ? 'Motif: constellation — ~100 minerals; click a node to zoom'
+                : beat?.id === 'cabinets'
+                  ? 'Motif: constellation — museum cabinets; drawers pulled open'
+                  : beat?.id === 'instrument'
+                    ? 'Motif: constellation — cabinets as materials instrument'
+                    : beat?.id === 'turn'
+                      ? 'Motif: constellation — one open drawer; next sorbent waiting'
+                      : 'Motif: mineral constellation zoom-out',
         )
       }
     }

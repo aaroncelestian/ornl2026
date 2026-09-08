@@ -1,0 +1,1351 @@
+{
+  "view": {
+    "w": 1000,
+    "h": 600
+  },
+  "domains": {
+    "energy": "#e8b86a",
+    "medicine": "#7ec4a8",
+    "optics": "#8eb4d8",
+    "sieves": "#9bc48a",
+    "electronics": "#d4a574",
+    "structural": "#a8a090",
+    "other": "#8a8a88"
+  },
+  "minerals": [
+    {
+      "id": "perovskite",
+      "name": "Perovskite",
+      "apps": [
+        "Ferroelectrics",
+        "Solar cells"
+      ],
+      "domain": "energy",
+      "tier": "hero",
+      "named": 1839,
+      "afterlife": "BaTiO₃ · halide solar",
+      "x": 420,
+      "y": 310
+    },
+    {
+      "id": "zeolite",
+      "name": "Zeolite",
+      "apps": [
+        "Molecular sieves",
+        "Catalytic cracking"
+      ],
+      "domain": "sieves",
+      "tier": "peer",
+      "named": 1756,
+      "afterlife": "Linde A · 1956",
+      "x": 573,
+      "y": 254.2
+    },
+    {
+      "id": "olivine",
+      "name": "Olivine",
+      "apps": [
+        "LiFePO₄ cathodes"
+      ],
+      "domain": "energy",
+      "tier": "peer",
+      "named": 1790,
+      "afterlife": "LiFePO₄ · 1997",
+      "x": 562.5,
+      "y": 397.4
+    },
+    {
+      "id": "fluorite",
+      "name": "Fluorite",
+      "apps": [
+        "YSZ electrolytes",
+        "Optical lenses"
+      ],
+      "domain": "energy",
+      "tier": "peer",
+      "named": 1797,
+      "afterlife": "YSZ · doped ceria",
+      "x": 453.2,
+      "y": 457.8
+    },
+    {
+      "id": "garnet",
+      "name": "Garnet",
+      "apps": [
+        "YIG microwave",
+        "LLZO solid electrolyte"
+      ],
+      "domain": "energy",
+      "tier": "peer",
+      "named": 1803,
+      "afterlife": "YIG · 1956 · LLZO · 2007",
+      "x": 324.6,
+      "y": 441.1
+    },
+    {
+      "id": "stibnite",
+      "name": "Stibnite",
+      "apps": [
+        "Thin-film PV"
+      ],
+      "domain": "energy",
+      "tier": "peer",
+      "named": 1832,
+      "afterlife": "Sb₂S₃ absorber · 2009",
+      "x": 281.4,
+      "y": 250
+    },
+    {
+      "id": "quartz",
+      "name": "Quartz",
+      "apps": [
+        "Oscillators",
+        "Optics",
+        "Abrasives"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 511.1,
+      "y": 492.7
+    },
+    {
+      "id": "calcite",
+      "name": "Calcite",
+      "apps": [
+        "Cement",
+        "Optical calcite"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 182.5,
+      "y": 218.6
+    },
+    {
+      "id": "hematite",
+      "name": "Hematite",
+      "apps": [
+        "Iron ore",
+        "Pigments"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 698.6,
+      "y": 246.7
+    },
+    {
+      "id": "magnetite",
+      "name": "Magnetite",
+      "apps": [
+        "Iron ore",
+        "Recording media"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 263.6,
+      "y": 510.9
+    },
+    {
+      "id": "corundum",
+      "name": "Corundum",
+      "apps": [
+        "Sapphire windows",
+        "Abrasives"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 363,
+      "y": 85.6
+    },
+    {
+      "id": "mica",
+      "name": "Muscovite",
+      "apps": [
+        "Insulators",
+        "Dielectrics"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 668.7,
+      "y": 452.5
+    },
+    {
+      "id": "kaolinite",
+      "name": "Kaolinite",
+      "apps": [
+        "Ceramics",
+        "Paper coating"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 92.7,
+      "y": 337.7
+    },
+    {
+      "id": "montmorillonite",
+      "name": "Montmorillonite",
+      "apps": [
+        "Drilling mud",
+        "Barriers"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 641.3,
+      "y": 113.6
+    },
+    {
+      "id": "spodumene",
+      "name": "Spodumene",
+      "apps": [
+        "Lithium feedstock"
+      ],
+      "domain": "energy",
+      "tier": "field",
+      "x": 426.8,
+      "y": 560
+    },
+    {
+      "id": "lepidolite",
+      "name": "Lepidolite",
+      "apps": [
+        "Lithium ore"
+      ],
+      "domain": "energy",
+      "tier": "field",
+      "x": 191.2,
+      "y": 123.1
+    },
+    {
+      "id": "pyrite",
+      "name": "Pyrite",
+      "apps": [
+        "Sulfuric acid"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 759.8,
+      "y": 327.8
+    },
+    {
+      "id": "galena",
+      "name": "Galena",
+      "apps": [
+        "Lead",
+        "IR detectors"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 151.3,
+      "y": 477.6
+    },
+    {
+      "id": "sphalerite",
+      "name": "Sphalerite",
+      "apps": [
+        "Zinc",
+        "Phosphors"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 474.1,
+      "y": 40
+    },
+    {
+      "id": "chalcopyrite",
+      "name": "Chalcopyrite",
+      "apps": [
+        "Copper ore"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 621.7,
+      "y": 546.4
+    },
+    {
+      "id": "bornite",
+      "name": "Bornite",
+      "apps": [
+        "Copper ore"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 60.2,
+      "y": 240.7
+    },
+    {
+      "id": "cinnabar",
+      "name": "Cinnabar",
+      "apps": [
+        "Mercury"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 743.8,
+      "y": 172.1
+    },
+    {
+      "id": "rutile",
+      "name": "Rutile",
+      "apps": [
+        "TiO₂ pigment",
+        "Photocatalysts"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 296,
+      "y": 560
+    },
+    {
+      "id": "anatase",
+      "name": "Anatase",
+      "apps": [
+        "Photocatalysts",
+        "Pigment"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 263,
+      "y": 40
+    },
+    {
+      "id": "ilmenite",
+      "name": "Ilmenite",
+      "apps": [
+        "Titanium ore"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 761.7,
+      "y": 428.1
+    },
+    {
+      "id": "cassiterite",
+      "name": "Cassiterite",
+      "apps": [
+        "Tin ore"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 40,
+      "y": 410.8
+    },
+    {
+      "id": "wolframite",
+      "name": "Wolframite",
+      "apps": [
+        "Tungsten"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 615.8,
+      "y": 40
+    },
+    {
+      "id": "scheelite",
+      "name": "Scheelite",
+      "apps": [
+        "Tungsten",
+        "Scintillators"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 510.7,
+      "y": 560
+    },
+    {
+      "id": "molybdenite",
+      "name": "Molybdenite",
+      "apps": [
+        "Mo catalysts",
+        "Lubricant"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 96.1,
+      "y": 140.1
+    },
+    {
+      "id": "graphite",
+      "name": "Graphite",
+      "apps": [
+        "Anodes",
+        "Lubricant",
+        "Refractories"
+      ],
+      "domain": "energy",
+      "tier": "field",
+      "x": 832.3,
+      "y": 261.5
+    },
+    {
+      "id": "diamond",
+      "name": "Diamond",
+      "apps": [
+        "Abrasives",
+        "Heat sinks"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 157.6,
+      "y": 560
+    },
+    {
+      "id": "barite",
+      "name": "Barite",
+      "apps": [
+        "Drilling mud",
+        "X-ray shields"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 393.9,
+      "y": 40
+    },
+    {
+      "id": "gypsum",
+      "name": "Gypsum",
+      "apps": [
+        "Plaster",
+        "Drywall"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 730.8,
+      "y": 543.7
+    },
+    {
+      "id": "halite",
+      "name": "Halite",
+      "apps": [
+        "Salt",
+        "Chem feedstock"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 40,
+      "y": 301.7
+    },
+    {
+      "id": "sylvite",
+      "name": "Sylvite",
+      "apps": [
+        "Potash fertilizer"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 742.1,
+      "y": 91.4
+    },
+    {
+      "id": "apatite",
+      "name": "Apatite",
+      "apps": [
+        "Phosphate",
+        "Bone mineral"
+      ],
+      "domain": "medicine",
+      "tier": "field",
+      "x": 371.9,
+      "y": 560
+    },
+    {
+      "id": "fluorapatite",
+      "name": "Fluorapatite",
+      "apps": [
+        "Dental enamel"
+      ],
+      "domain": "medicine",
+      "tier": "field",
+      "x": 172.9,
+      "y": 44.9
+    },
+    {
+      "id": "hydroxyapatite",
+      "name": "Hydroxyapatite",
+      "apps": [
+        "Bone grafts",
+        "Implants"
+      ],
+      "domain": "medicine",
+      "tier": "field",
+      "x": 857.1,
+      "y": 379.3
+    },
+    {
+      "id": "talc",
+      "name": "Talc",
+      "apps": [
+        "Filler",
+        "Ceramics"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 51.7,
+      "y": 482.6
+    },
+    {
+      "id": "serpentine",
+      "name": "Serpentine",
+      "apps": [
+        "Asbestos legacy",
+        "CO₂ mineral"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 546.8,
+      "y": 40
+    },
+    {
+      "id": "chrysotile",
+      "name": "Chrysotile",
+      "apps": [
+        "Legacy insulation"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 619.4,
+      "y": 560
+    },
+    {
+      "id": "wollastonite",
+      "name": "Wollastonite",
+      "apps": [
+        "Ceramics",
+        "Plastics"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 40,
+      "y": 181.3
+    },
+    {
+      "id": "andalusite",
+      "name": "Andalusite",
+      "apps": [
+        "Refractories"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 837.9,
+      "y": 185.1
+    },
+    {
+      "id": "kyanite",
+      "name": "Kyanite",
+      "apps": [
+        "Refractories"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 220.2,
+      "y": 560
+    },
+    {
+      "id": "sillimanite",
+      "name": "Sillimanite",
+      "apps": [
+        "Refractories"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 293.8,
+      "y": 40
+    },
+    {
+      "id": "zircon",
+      "name": "Zircon",
+      "apps": [
+        "Ceramics",
+        "Geochronology"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 810.2,
+      "y": 496.9
+    },
+    {
+      "id": "baddeleyite",
+      "name": "Baddeleyite",
+      "apps": [
+        "ZrO₂ ceramics"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 40,
+      "y": 380.6
+    },
+    {
+      "id": "spinel",
+      "name": "Spinel",
+      "apps": [
+        "Refractories",
+        "Gem optics"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 705.9,
+      "y": 40
+    },
+    {
+      "id": "chromite",
+      "name": "Chromite",
+      "apps": [
+        "Chromium",
+        "Refractories"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 468.9,
+      "y": 560
+    },
+    {
+      "id": "gibbsite",
+      "name": "Gibbsite",
+      "apps": [
+        "Aluminum ore"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 66.3,
+      "y": 65.2
+    },
+    {
+      "id": "boehmite",
+      "name": "Boehmite",
+      "apps": [
+        "Alumina precursor"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 908.6,
+      "y": 304
+    },
+    {
+      "id": "goethite",
+      "name": "Goethite",
+      "apps": [
+        "Iron ore",
+        "Pigments"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 76.1,
+      "y": 560
+    },
+    {
+      "id": "siderite",
+      "name": "Siderite",
+      "apps": [
+        "Iron carbonate"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 454.4,
+      "y": 40
+    },
+    {
+      "id": "dolomite",
+      "name": "Dolomite",
+      "apps": [
+        "Flux",
+        "Mg source"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 725.4,
+      "y": 560
+    },
+    {
+      "id": "magnesite",
+      "name": "Magnesite",
+      "apps": [
+        "Refractories",
+        "MgO"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 40,
+      "y": 249.6
+    },
+    {
+      "id": "periclase",
+      "name": "Periclase",
+      "apps": [
+        "Refractory MgO"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 833.6,
+      "y": 97.6
+    },
+    {
+      "id": "brucite",
+      "name": "Brucite",
+      "apps": [
+        "Flame retardant"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 301.6,
+      "y": 560
+    },
+    {
+      "id": "celestine",
+      "name": "Celestine",
+      "apps": [
+        "Strontium"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 179.8,
+      "y": 40
+    },
+    {
+      "id": "strontianite",
+      "name": "Strontianite",
+      "apps": [
+        "Strontium"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 895.7,
+      "y": 438.9
+    },
+    {
+      "id": "witherite",
+      "name": "Witherite",
+      "apps": [
+        "Barium chemicals"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 40,
+      "y": 468.5
+    },
+    {
+      "id": "aragonite",
+      "name": "Aragonite",
+      "apps": [
+        "Biomineral",
+        "Cement"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 626.9,
+      "y": 40
+    },
+    {
+      "id": "malachite",
+      "name": "Malachite",
+      "apps": [
+        "Copper ore",
+        "Pigment"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 578.9,
+      "y": 560
+    },
+    {
+      "id": "azurite",
+      "name": "Azurite",
+      "apps": [
+        "Copper ore",
+        "Pigment"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 40,
+      "y": 119.9
+    },
+    {
+      "id": "cuprite",
+      "name": "Cuprite",
+      "apps": [
+        "Copper ore"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 922.2,
+      "y": 217.4
+    },
+    {
+      "id": "native-copper",
+      "name": "Copper",
+      "apps": [
+        "Conductors"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 135.1,
+      "y": 560
+    },
+    {
+      "id": "native-gold",
+      "name": "Gold",
+      "apps": [
+        "Contacts",
+        "Catalysis"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 346.9,
+      "y": 40
+    },
+    {
+      "id": "native-silver",
+      "name": "Silver",
+      "apps": [
+        "Contacts",
+        "Antimicrobials"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 822.2,
+      "y": 560
+    },
+    {
+      "id": "native-sulfur",
+      "name": "Sulfur",
+      "apps": [
+        "Chemicals",
+        "Rubber"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 40,
+      "y": 333.1
+    },
+    {
+      "id": "orpiment",
+      "name": "Orpiment",
+      "apps": [
+        "As chemicals",
+        "Pigment legacy"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 781.8,
+      "y": 40
+    },
+    {
+      "id": "realgar",
+      "name": "Realgar",
+      "apps": [
+        "As chemicals"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 403.8,
+      "y": 560
+    },
+    {
+      "id": "staurolite",
+      "name": "Staurolite",
+      "apps": [
+        "Abrasives"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 73.2,
+      "y": 40
+    },
+    {
+      "id": "tourmaline",
+      "name": "Tourmaline",
+      "apps": [
+        "Piezoelectrics",
+        "Optics"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 942.3,
+      "y": 358.3
+    },
+    {
+      "id": "beryl",
+      "name": "Beryl",
+      "apps": [
+        "Be metal",
+        "Lasers"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 40,
+      "y": 549.5
+    },
+    {
+      "id": "chrysoberyl",
+      "name": "Chrysoberyl",
+      "apps": [
+        "Lasers",
+        "Abrasives"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 531,
+      "y": 40
+    },
+    {
+      "id": "topaz",
+      "name": "Topaz",
+      "apps": [
+        "Abrasives",
+        "Optics"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 699.3,
+      "y": 560
+    },
+    {
+      "id": "orthoclase",
+      "name": "Orthoclase",
+      "apps": [
+        "Ceramics",
+        "Glass"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 40,
+      "y": 186.6
+    },
+    {
+      "id": "albite",
+      "name": "Albite",
+      "apps": [
+        "Ceramics",
+        "Glass"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 904.6,
+      "y": 128.1
+    },
+    {
+      "id": "anorthite",
+      "name": "Anorthite",
+      "apps": [
+        "Ceramics",
+        "Refractories"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 214,
+      "y": 560
+    },
+    {
+      "id": "nepheline",
+      "name": "Nepheline",
+      "apps": [
+        "Glass",
+        "Ceramics"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 222.7,
+      "y": 40
+    },
+    {
+      "id": "leucite",
+      "name": "Leucite",
+      "apps": [
+        "Ceramics"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 919.4,
+      "y": 506.9
+    },
+    {
+      "id": "sodalite",
+      "name": "Sodalite",
+      "apps": [
+        "Pigments",
+        "Zeolite analog"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 40,
+      "y": 426.3
+    },
+    {
+      "id": "cancrinite",
+      "name": "Cancrinite",
+      "apps": [
+        "Ion exchange"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 718.2,
+      "y": 40
+    },
+    {
+      "id": "analcime",
+      "name": "Analcime",
+      "apps": [
+        "Molecular sieve"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 521.8,
+      "y": 560
+    },
+    {
+      "id": "chabazite",
+      "name": "Chabazite",
+      "apps": [
+        "Gas separation",
+        "Cs cleanup"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 40,
+      "y": 42.6
+    },
+    {
+      "id": "clinoptilolite",
+      "name": "Clinoptilolite",
+      "apps": [
+        "Water treatment",
+        "Agriculture"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 960,
+      "y": 267.8
+    },
+    {
+      "id": "mordenite",
+      "name": "Mordenite",
+      "apps": [
+        "Catalysis",
+        "Sieves"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 40,
+      "y": 560
+    },
+    {
+      "id": "faujasite",
+      "name": "Faujasite",
+      "apps": [
+        "FCC catalysts"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 413.9,
+      "y": 40
+    },
+    {
+      "id": "natrolite",
+      "name": "Natrolite",
+      "apps": [
+        "Ion exchange"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 812.3,
+      "y": 560
+    },
+    {
+      "id": "stilbite",
+      "name": "Stilbite",
+      "apps": [
+        "Ion exchange"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 40,
+      "y": 275.7
+    },
+    {
+      "id": "heulandite",
+      "name": "Heulandite",
+      "apps": [
+        "Ion exchange"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 864.9,
+      "y": 40
+    },
+    {
+      "id": "phillipsite",
+      "name": "Phillipsite",
+      "apps": [
+        "Cs/Sr uptake"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 324.3,
+      "y": 560
+    },
+    {
+      "id": "umbite",
+      "name": "Umbite",
+      "apps": [
+        "Zr silicate teacher"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 102.1,
+      "y": 40
+    },
+    {
+      "id": "sitinakite",
+      "name": "Sitinakite",
+      "apps": [
+        "CST · Cs cleanup"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 960,
+      "y": 422.4
+    },
+    {
+      "id": "zorite",
+      "name": "Zorite",
+      "apps": [
+        "ETS-4 precedent"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 40,
+      "y": 523.3
+    },
+    {
+      "id": "georgechaoite",
+      "name": "Georgechaoite",
+      "apps": [
+        "3MR Zr–Si teacher"
+      ],
+      "domain": "sieves",
+      "tier": "field",
+      "x": 610.8,
+      "y": 40
+    },
+    {
+      "id": "rowleyite",
+      "name": "Rowleyite",
+      "apps": [
+        "Cage scaffold idea"
+      ],
+      "domain": "medicine",
+      "tier": "field",
+      "x": 646.9,
+      "y": 560
+    },
+    {
+      "id": "vanadinite",
+      "name": "Vanadinite",
+      "apps": [
+        "Vanadium ore"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 40,
+      "y": 116.6
+    },
+    {
+      "id": "carnotite",
+      "name": "Carnotite",
+      "apps": [
+        "Uranium ore"
+      ],
+      "domain": "energy",
+      "tier": "field",
+      "x": 960,
+      "y": 167.2
+    },
+    {
+      "id": "uraninite",
+      "name": "Uraninite",
+      "apps": [
+        "Nuclear fuel"
+      ],
+      "domain": "energy",
+      "tier": "field",
+      "x": 132.6,
+      "y": 560
+    },
+    {
+      "id": "monazite",
+      "name": "Monazite",
+      "apps": [
+        "REE · Th"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 283.6,
+      "y": 40
+    },
+    {
+      "id": "bastnasite",
+      "name": "Bastnäsite",
+      "apps": [
+        "REE magnets"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 903.6,
+      "y": 560
+    },
+    {
+      "id": "xenotime",
+      "name": "Xenotime",
+      "apps": [
+        "REE · Y"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 40,
+      "y": 374.9
+    },
+    {
+      "id": "columbite",
+      "name": "Columbite",
+      "apps": [
+        "Nb ore"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 800.7,
+      "y": 40
+    },
+    {
+      "id": "tantalite",
+      "name": "Tantalite",
+      "apps": [
+        "Ta capacitors"
+      ],
+      "domain": "electronics",
+      "tier": "field",
+      "x": 451.8,
+      "y": 560
+    },
+    {
+      "id": "pyrolusite",
+      "name": "Pyrolusite",
+      "apps": [
+        "Mn ore",
+        "Batteries"
+      ],
+      "domain": "energy",
+      "tier": "field",
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "psilomelane",
+      "name": "Psilomelane",
+      "apps": [
+        "Mn ore"
+      ],
+      "domain": "energy",
+      "tier": "field",
+      "x": 960,
+      "y": 326.3
+    },
+    {
+      "id": "rhodochrosite",
+      "name": "Rhodochrosite",
+      "apps": [
+        "Mn carbonate"
+      ],
+      "domain": "energy",
+      "tier": "field",
+      "x": 40,
+      "y": 560
+    },
+    {
+      "id": "smithsonite",
+      "name": "Smithsonite",
+      "apps": [
+        "Zinc ore"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 493.8,
+      "y": 40
+    },
+    {
+      "id": "willemite",
+      "name": "Willemite",
+      "apps": [
+        "Zn silicate phosphor"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 769.8,
+      "y": 560
+    },
+    {
+      "id": "franklinite",
+      "name": "Franklinite",
+      "apps": [
+        "Zn–Mn–Fe ore"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 40,
+      "y": 210.8
+    },
+    {
+      "id": "cryolite",
+      "name": "Cryolite",
+      "apps": [
+        "Al smelting flux"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 952.2,
+      "y": 66.1
+    },
+    {
+      "id": "borax",
+      "name": "Borax",
+      "apps": [
+        "Glass",
+        "Flux"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 236.3,
+      "y": 560
+    },
+    {
+      "id": "kernite",
+      "name": "Kernite",
+      "apps": [
+        "Boron chemicals"
+      ],
+      "domain": "other",
+      "tier": "field",
+      "x": 159.9,
+      "y": 40
+    },
+    {
+      "id": "ulexite",
+      "name": "Ulexite",
+      "apps": [
+        "Fiber optics demo"
+      ],
+      "domain": "optics",
+      "tier": "field",
+      "x": 960,
+      "y": 494.8
+    },
+    {
+      "id": "colemanite",
+      "name": "Colemanite",
+      "apps": [
+        "Boron glass"
+      ],
+      "domain": "structural",
+      "tier": "field",
+      "x": 40,
+      "y": 479.4
+    }
+  ]
+}

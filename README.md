@@ -63,16 +63,17 @@ Outline: [`docs/ORNL_Talk_Outline.md`](docs/ORNL_Talk_Outline.md). Slides source
 | `PoreGate` | Hydrated diameters vs ~3 Å window |
 | `CrystalViewer` | ZS-9 structure + H exchange |
 | `VoidViewer` / `VoidFit` | Rowleyite voids + guest volume match |
+| `MineralConstellation` | Open zoom: perovskite → peers → ~100-node sky → cabinets |
 
 ## Timing guide (~45 min)
 
-- Open + history + thesis: ~8 min
+- Open (title + perovskite → constellation → cabinets): ~8 min
 - Spinel / DLE + plume + cycle: ~12–14 min
 - Lokelma lineage + pore + structure: ~12–14 min
 - Rowleyite: ~8–10 min
 - Pipeline + close: ~6–8 min
 
-Hold on the selectivity plume peak, the pore gate, the H-exchange lock, and the pipeline ask.
+Hold on the constellation click-zoom if the room leans in, the selectivity plume peak, the pore gate, the H-exchange lock, and the pipeline ask.
 
 ## Build for projector / USB
 

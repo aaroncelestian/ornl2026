@@ -151,7 +151,7 @@ export function Shell() {
 
   useEffect(() => {
     // Warm the first specimen plate.
-    const image = slides.find((s) => s.id === 'cold' || s.id === 'title')?.image
+    const image = slides.find((s) => s.id === 'title')?.image
     const hrefs = [image?.src].filter((href): href is string => Boolean(href))
     const links = hrefs.map((href) => {
       const link = document.createElement('link')

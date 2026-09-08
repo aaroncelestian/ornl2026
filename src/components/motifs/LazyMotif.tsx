@@ -27,6 +27,8 @@ const loaders: Partial<Record<MotifKind, () => Promise<{ default: ComponentType<
     import('../motifs/DoubleLever').then((m) => ({ default: m.DoubleLever })),
   'framework-density': () =>
     import('../motifs/FrameworkDensity').then((m) => ({ default: m.FrameworkDensity })),
+  'mineral-constellation': () =>
+    import('../motifs/MineralConstellation').then((m) => ({ default: m.MineralConstellation })),
 }
 
 const cache = new Map<MotifKind, ComponentType<MotifProps>>()

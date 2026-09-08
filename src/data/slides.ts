@@ -28,6 +28,7 @@ export type MotifKind =
   | 'double-lever'
   | 'framework-density'
   | 'lmo-spinel'
+  | 'mineral-constellation'
 
 export type ChapterId = 'open' | 'spinel' | 'lokelma' | 'rowleyite' | 'pipeline' | 'close'
 
@@ -193,24 +194,6 @@ export const CHAPTERS: { id: ChapterId; num: string; title: string }[] = [
 export const slides: Slide[] = [
   // ── Open ──────────────────────────────────────────────
   {
-    id: 'cold',
-    label: 'Cold open',
-    chapter: 'open',
-    layout: 'cover',
-    camera: 'rack',
-    brand: 'NHMLAC  ·  ORNL',
-    displayTitle: 'Museum Collections\nas Blueprints',
-    meta: 'Hold · then advance',
-    image: {
-      src: asset('images/zeolite.jpg'),
-      alt: 'Porous mineral specimen, uncaptioned',
-      fit: 'contain',
-    },
-    yaw: 1,
-    notes:
-      'Hold this. Don’t name it yet. What you’re looking at is empty space organized by atoms — a channel architecture Earth invented without a design brief. That emptiness is the argument of this talk.',
-  },
-  {
     id: 'title',
     label: 'Title',
     chapter: 'open',
@@ -230,116 +213,74 @@ export const slides: Slide[] = [
       'Museum collections as blueprints for engineered materials. Not display cases. Not nostalgia. A searchable library of framework topologies whose selectivity had to be rediscovered under synthetic control before it became deployable.',
   },
   {
-    id: 'history',
-    label: 'The names',
+    id: 'open-zoom',
+    label: 'Pull back',
     chapter: 'open',
     layout: 'stage',
     clearPlate: true,
     camera: 'hold',
+    layers: [
+      {
+        id: 'sky',
+        kind: 'motif',
+        motif: 'mineral-constellation',
+        alt: 'Zoom from perovskite through a mineral constellation into museum cabinets',
+      },
+    ],
     scene: [
       {
-        id: 'hist-zeolite',
-        label: 'Zeolite',
-        kicker: '1756',
-        title: 'Zeolite',
-        subtitle: 'Molecular sieves · 1956',
-        notes:
-          'Cronstedt names zeolites in 1756 — stones that boil. Two hundred years later Union Carbide ships Linde A. Selective channels first; industrial sieves and cracking after. Drop a specimen photo on this beat when you have one.',
-      },
-      {
-        id: 'hist-olivine',
-        label: 'Olivine',
-        kicker: '1790',
-        title: 'Olivine',
-        subtitle: 'LiFePO₄ · 1997',
-        notes:
-          'Werner names olivine in 1790. Padhi and Goodenough make LiFePO₄ an olivine cathode in 1997. Same preview as spinel: the structure waits; the battery arrives later.',
-      },
-      {
-        id: 'hist-fluorite',
-        label: 'Fluorite',
-        kicker: '1797',
-        title: 'Fluorite',
-        subtitle: 'YSZ · oxide electrolytes',
-        notes:
-          'Species name: 1797, Napione. Not Agricola’s 1530 fluorspar — that citation is already a smelting flux, which is industry. The date that belongs in this list is the mineral name, then the afterlife: the fluorite structure as YSZ, doped ceria, nuclear oxides. Optical fluorite is late nineteenth century; the electrolyte family is the line for this room.',
-      },
-      {
-        id: 'hist-garnet',
-        label: 'Garnet',
-        kicker: '1803',
-        title: 'Garnet',
-        subtitle: 'YIG · 1956   ·   LLZO · 2007',
-        notes:
-          'Not the gem. Pyrope is named in 1803 — Ludwig, Handbuch der Mineralogie nach A. G. Werner. First industrial use of the structure is yttrium iron garnet, Bertaut and Forrat 1956, microwave. Then LLZO solid electrolytes, 2007. Same architecture, two centuries apart.',
-      },
-      {
-        id: 'hist-stibnite',
-        label: 'Stibnite',
-        kicker: '1832',
-        title: 'Stibnite',
-        subtitle: 'Thin-film PV · 2009',
-        notes:
-          'Not kohl, not the antimony ore. Beudant names stibnite in 1832. The afterlife is the semiconductor: Sb₂S₃ ribbons, bandgap about 1.7 eV, earth-abundant thin-film absorber. Savadogo’s photoelectrochemical cell is 1992 if someone asks; the thin-film story the room will recognize starts with Itzhaik et al. 2009. Same sentence as perovskite solar — a mineral name that became a photovoltaic materials family.',
-      },
-      {
-        id: 'hist-perovskite',
+        id: 'peri',
         label: 'Perovskite',
         kicker: '1839',
         title: 'Perovskite',
         subtitle: 'Ferroelectrics · solar',
+        layers: ['sky'],
         notes:
-          'Gustav Rose, 1839, Urals, named for Lev Perovski. BaTiO₃ ceramics in the 1940s; halide perovskite solar after 2009. The mineralogist named the architecture. Industry showed up speaking the name as if it were a materials term.',
+          'Start here — every physicist in the room already speaks this name. Gustav Rose, 1839, Urals, named for Lev Perovski. BaTiO₃ ceramics in the 1940s; halide perovskite solar after 2009. The mineralogist named the architecture. Industry showed up speaking the name as if it were a materials term. Hold the close-up, then pull.',
       },
       {
-        id: 'hist-turn',
-        label: 'The names',
+        id: 'peers',
+        label: 'Peers',
         title: 'The lab already\nspeaks mineralogy.',
+        layers: ['sky'],
         notes:
-          'Zeolite, olivine, fluorite, garnet, stibnite, perovskite. Those are species names that became process names after a long lag. Spinel is next — hold it. The collection is where the names still have specimens attached.',
+          'Pull out. Same look, more names the room already uses: zeolite → molecular sieves (1756 → 1956); olivine → LiFePO₄ (1790 → 1997); fluorite → YSZ; garnet → YIG then LLZO; stibnite → thin-film PV. Species names that became process names after a long lag. Spinel is waiting for Act I — don’t name it yet.',
+      },
+      {
+        id: 'sky',
+        label: 'Constellation',
+        title: 'Minerals are in\nnearly everything.',
+        layers: ['sky'],
+        notes:
+          'Keep pulling. A hundred minerals and their applications — energy, medicine, optics, sieves, electronics, structure. Tiny labels on purpose. Invite a click on anything curious; Esc or empty click pulls back. The awe is the point: nobody has really seen how complete the map is.',
+      },
+      {
+        id: 'cabinets',
+        label: 'Cabinets',
+        title: 'Not a warehouse.',
+        layers: ['sky'],
+        notes:
+          'Zoom out again until the constellation becomes a place. Cabinets. Drawers. Specimens with provenance. This is where the names still have rocks attached — not a slide of jargon, a physical instrument.',
+      },
+      {
+        id: 'instrument',
+        label: 'Instrument',
+        title: '150,000 specimens.\nA materials instrument.',
+        layers: ['sky'],
+        notes:
+          'Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented, spanning framework chemistries you would not assemble from scratch in a materials lab without years and a small fortune. Comparative depth is the point: when a channel geometry shows up in one place, you can ask whether related topologies elsewhere in the collection already solved a neighboring problem. Nature solved selective ion transport first. Collections keep the answers.',
+      },
+      {
+        id: 'turn',
+        label: 'The turn',
+        title: 'The next sorbent\nis already in a drawer.',
+        layers: ['sky'],
+        notes:
+          'Hard cut into one open drawer. The collection is not a museum of finished answers — it is a drawer of geometries waiting for the right problem. We’re going deep on three of them, mechanism first: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017). Nature supplied the geometry; regulation and engineering demanded the synthesis.',
       },
     ],
     notes:
-      'Six minerals known as species before the materials afterlife. Pictures later — this scene is built so each beat can take a specimen layer.',
-  },
-  {
-    id: 'thesis',
-    label: 'Thesis',
-    chapter: 'open',
-    layout: 'void',
-    camera: 'drift',
-    title: 'Nature solved selective\nion transport first.\nCollections keep the answers.',
-    exitHold: 1.2,
-    enterBlack: true,
-    copySnap: true,
-    notes:
-      'Spinels. Zirconosilicates. Titanosilicates. Vanadium phosphates. They solved geometric problems of selective ion transport and molecular capture long before anyone needed an engineered solution. A systematically curated museum collection preserves that architectural diversity in a form few synthetic libraries can match.',
-  },
-  {
-    id: 'instrument',
-    label: 'Instrument',
-    chapter: 'open',
-    layout: 'void',
-    camera: 'drift',
-    title: '150,000 specimens.\nNot a warehouse.\nA materials instrument.',
-    exitHold: 1.5,
-    enterBlack: true,
-    copySnap: true,
-    notes:
-      'Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented, spanning framework chemistries you would not assemble from scratch in a materials lab without years and a small fortune. Comparative depth is the point: when a channel geometry shows up in one place, you can ask whether related topologies elsewhere in the collection already solved a neighboring problem.',
-  },
-  {
-    id: 'turn',
-    label: 'The turn',
-    chapter: 'open',
-    layout: 'void',
-    camera: 'drift',
-    title: 'The next sorbent\nis already in a drawer.',
-    exitHold: 1.2,
-    enterHit: true,
-    copySnap: true,
-    notes:
-      'Hard cut. No roadmap. The collection is not a museum of finished answers — it is a drawer of geometries waiting for the right problem. We’re going deep on three of them, mechanism first: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017). Nature supplied the geometry; regulation and engineering demanded the synthesis.',
+      'Cinematic open: perovskite → peer minerals → ~100-node constellation (clickable) → cabinets → collection as instrument → drawer turn into Act I.',
   },
 
   // ── 01 Spinel → DLE ───────────────────────────────────

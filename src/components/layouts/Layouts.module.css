@@ -253,7 +253,8 @@
 .scene[data-motif='framework-density'] .stageCopy,
 .scene[data-motif='crystal-viewer'] .stageCopy,
 .scene[data-motif='void-viewer'] .stageCopy,
-.scene[data-motif='lmo-spinel'] .stageCopy {
+.scene[data-motif='lmo-spinel'] .stageCopy,
+.scene[data-motif='mineral-constellation'] .stageCopy {
   position: absolute;
   max-width: min(24ch, 30vw);
   top: var(--pad-y);
@@ -281,13 +282,19 @@
 .scene[data-motif='framework-density'] .stageScrim,
 .scene[data-motif='crystal-viewer'] .stageScrim,
 .scene[data-motif='void-viewer'] .stageScrim,
-.scene[data-motif='lmo-spinel'] .stageScrim {
+.scene[data-motif='lmo-spinel'] .stageScrim,
+.scene[data-motif='mineral-constellation'] .stageScrim {
   background: linear-gradient(
     105deg,
     color-mix(in srgb, var(--color-bg) 78%, transparent) 0%,
     color-mix(in srgb, var(--color-bg) 32%, transparent) 38%,
     transparent 64%
   );
+}
+
+.scene[data-motif='mineral-constellation'] .stageCopy {
+  max-width: min(22ch, 28vw);
+  pointer-events: none;
 }
 
 .scene[data-motif='crystal-viewer'] .stageCopy,
