@@ -363,7 +363,16 @@ export const slides: Slide[] = [
         label: 'Li returns',
         layers: ['raman'],
         notes:
-          'Start H-form: cubane is there, A₁g is muted. First Li into 8a jumps A₁g 645→657 and narrows it — the cubane breathes again; back-exchangeable, no Mn loss yet. More Li forces the next step: Li into the cubane interior (8b). Local Oh breaks — four Mn–O environments are no longer equivalent — A₁g splits and F₂g turns on. That spectral rewrite is the same strain that ejects Mn. IC shows Mn leaching; after many full cycles there is less and less LMO. XRD can still look ordered while the lattice is dissolving from the cubane out. Al-substituted spinel blocks that extra Li site — no over-exchange, structure stays stable.',
+          'Start H-form: cubane is there, A₁g is muted. First Li into 8a jumps A₁g 645→657 and narrows it — the cubane breathes again; back-exchangeable, no Mn loss yet. More Li forces the next step: Li into the cubane interior (8b). Local Oh breaks — four Mn–O environments are no longer equivalent — A₁g splits and F₂g turns on. That spectral rewrite is the same strain that ejects Mn. IC shows Mn leaching; after many full cycles there is less and less LMO. XRD can still look ordered while the lattice is dissolving from the cubane out.',
+      },
+      {
+        id: 'al-doped',
+        label: 'Al-doped',
+        kicker: 'Same clock · different lattice',
+        title: 'Al-doped: A₁g\nholds for hours.',
+        layers: ['raman'],
+        notes:
+          'Same experiment, Al in the spinel. Scrub hours of ion exchange — A₁g barely moves. No split, no F₂g surge. Aluminum blocks the cubane over-exchange site that undoped LMO overloads, so Mn stays put and the lattice holds. Partial load and Al doping are two ways to the same durability: do not open the dissolve step.',
       },
       {
         id: 'cloud',

@@ -96,7 +96,7 @@ function smoothstep(a: number, b: number, x: number) {
   return u * u * (3 - 2 * u)
 }
 
-export type ExchangeStage = 'h-form' | 'li-8a' | 'split' | 'stable'
+export type ExchangeStage = 'h-form' | 'li-8a' | 'split' | 'stable' | 'al-hold'
 
 export type RamanBand = {
   w: number
@@ -130,7 +130,11 @@ const STAGE_COPY: Record<ExchangeStage, { title: string; cubane: string }> = {
   },
   stable: {
     title: 'Weak · dissolving',
-    cubane: 'Weaker Li-occupied oscillator. Cycle this hard and Mn leaches — less LMO left. Al blocks the extra site.',
+    cubane: 'Weaker Li-occupied oscillator. Cycle this hard and Mn leaches — less LMO left.',
+  },
+  'al-hold': {
+    title: 'Al-doped · A₁g holds',
+    cubane: 'Al blocks the cubane Li site. Hours of exchange — cubane still breathes as one.',
   },
 }
 
@@ -172,9 +176,33 @@ export function exchangeStatus(t: number, w: number, fwhm: number): ExchangeStat
   return { id, li, vibe, bands, ...STAGE_COPY[id] }
 }
 
+/**
+ * Al-doped operando: Li can still sit in 8a, but Al blocks cubane over-exchange.
+ * A₁g stays coherent for hours — no split, no F₂g surge.
+ */
+export function alExchangeStatus(t: number, w: number, fwhm: number): ExchangeStatus {
+  const toLi = smoothstep(0.5, 8, t)
+  const hold = smoothstep(20, 60, t)
+  const li = clamp01(0.08 + 0.55 * toLi + 0.12 * hold)
+  const wide = Math.max(6.5, fwhm * 0.55)
+  const vibe: CubaneVibe = {
+    hz: Math.max(0.85, Math.min(1.2, 0.72 + ((w - 632) / 34) * 0.7)),
+    amp: clamp01(0.72 + 0.28 * toLi),
+    disorder: clamp01(0.06 * (1 - toLi)),
+    mute: clamp01(0.08 * (1 - toLi)),
+    split: 0,
+  }
+  const bands: RamanBand[] = [
+    { w: 578, h: 0.06 + 0.04 * toLi, sig: 7, label: 'F₂g', kind: 'f2g' },
+    { w, h: 0.82 + 0.18 * toLi, sig: wide, label: 'A₁g', kind: 'a1g' },
+  ]
+  return { id: 'al-hold', li, vibe, bands, ...STAGE_COPY['al-hold'] }
+}
+
 export const EXCHANGE_STEPS: { id: ExchangeStage; label: string }[] = [
   { id: 'h-form', label: 'H-form' },
   { id: 'li-8a', label: 'Li → 8a' },
   { id: 'split', label: 'A₁g split · F₂g' },
-  { id: 'stable', label: 'Weak · stable' },
+  { id: 'stable', label: 'Weak · dissolving' },
+  { id: 'al-hold', label: 'Al-doped · holds' },
 ]

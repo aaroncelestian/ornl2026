@@ -1,7 +1,7 @@
 {
-  "source": "Celestian et al., J. Raman Spectrosc. 2026 \u00b7 licl2-1 Fit Series Summary",
+  "source": "Celestian et al., J. Raman Spectrosc. 2026 · licl2-1 Fit Series Summary",
   "story": {
-    "note": "As-synthesized: good XRD + good Raman. H-exchange: XRD stays, Raman blanks. Li in: XRD stays, Raman returns \u2014 changed.",
+    "note": "As-synthesized: good XRD + good Raman. H-exchange: XRD stays, Raman blanks. Li in: XRD stays, Raman returns — changed.",
     "states": [
       {
         "id": "as-synth",
@@ -9,7 +9,7 @@
         "xrd": "sharp",
         "raman": "strong",
         "xrdNote": "Spinel peaks sharp",
-        "ramanNote": "A\u2081g cubane stretch on"
+        "ramanNote": "A₁g cubane stretch on"
       },
       {
         "id": "h-ex",
@@ -25,7 +25,7 @@
         "xrd": "sharp",
         "raman": "changed",
         "xrdNote": "XRD still good",
-        "ramanNote": "Raman returns \u2014 shifted"
+        "ramanNote": "Raman returns — shifted"
       }
     ]
   },
@@ -55,7 +55,7 @@
       "h": 0.35
     },
     {
-      "t": 64.0,
+      "t": 64,
       "h": 0.18
     }
   ],
@@ -113,7 +113,7 @@
   ],
   "a1g": {
     "xLabel": "Time (min)",
-    "yLabel": "A\u2081g peak (cm\u207b\u00b9)",
+    "yLabel": "A₁g peak (cm⁻¹)",
     "yMin": 628,
     "yMax": 668,
     "xMax": 60,
@@ -128,7 +128,7 @@
       },
       {
         "t": 2,
-        "w": 650.0
+        "w": 650
       },
       {
         "t": 3,
@@ -188,7 +188,7 @@
       },
       {
         "t": 17,
-        "w": 657.0
+        "w": 657
       },
       {
         "t": 18,
@@ -362,18 +362,18 @@
     "markers": [
       {
         "t": 3,
-        "label": "Li \u2192 8a"
+        "label": "Li → 8a"
       },
       {
         "t": 26,
-        "label": "A\u2081g split \u00b7 F\u2082g"
+        "label": "A₁g split · F₂g"
       }
     ],
     "note": "licl2-1 A1g peak column. t=32–35 omitted: spectrum too weak to fit (blank/unstable peak picks)."
   },
   "fwhm": {
     "xLabel": "Time (min)",
-    "yLabel": "A\u2081g FWHM (cm\u207b\u00b9)",
+    "yLabel": "A₁g FWHM (cm⁻¹)",
     "yMin": 0,
     "yMax": 58,
     "xMax": 60,
@@ -520,7 +520,7 @@
       },
       {
         "t": 35,
-        "w": 20.0
+        "w": 20
       },
       {
         "t": 36,
@@ -622,12 +622,12 @@
     "note": "licl2-1 A1g FWHM column (Curve 2.dx fill where blank)"
   },
   "models": {
-    "source": "Fig 8 \u00b7 calculated vs measured A\u2081g",
+    "source": "Fig 8 · calculated vs measured A₁g",
     "items": [
       {
         "id": 1,
         "label": "H-LMO",
-        "formula": "H\u2084Li\u2080Mn\u2085O\u2081\u2082",
+        "formula": "H₄Li₀Mn₅O₁₂",
         "calc": [
           674
         ],
@@ -639,7 +639,7 @@
       {
         "id": 2,
         "label": "Li-LMO",
-        "formula": "H\u2080Li\u2084Mn\u2085O\u2081\u2082",
+        "formula": "H₀Li₄Mn₅O₁₂",
         "calc": [
           686
         ],
@@ -651,7 +651,7 @@
       {
         "id": 3,
         "label": "Li in cubane + Mn loss",
-        "formula": "H\u2080Li\u2085Mn\u2083.\u2087\u2085O\u2081\u2080\u208a\u25a1",
+        "formula": "H₀Li₅Mn₃.₇₅O₁₀₊□",
         "calc": [
           655,
           696,
@@ -721,9 +721,336 @@
     ]
   },
   "footnotes": {
-    "as-synth": "As-synthesized LMO: long-range order (XRD) and local Mn\u2013O cubane order (Raman) both present.",
-    "h-ex": "H-exchange keeps the spinel XRD \u2014 but the Raman (local cubane stretch) is basically gone.",
-    "li-return": "H-form \u2192 Li in 8a (A\u2081g 645\u2192657). More Li splits A\u2081g and turns on F\u2082g: cubane local Oh breaks as Li enters 8b \u2014 the strain that leaches Mn. Over full cycles LMO dissolves (IC Mn loss). Al substitution blocks the extra Li site and keeps the lattice.",
-    "durability": "Full load costs Mn (24% / 100 cycles). Partial load \u2014 or Al in the spinel \u2014 keeps the lattice intact."
+    "as-synth": "As-synthesized LMO: long-range order (XRD) and local Mn–O cubane order (Raman) both present.",
+    "h-ex": "H-exchange keeps the spinel XRD — but the Raman (local cubane stretch) is basically gone.",
+    "li-return": "H-form → Li in 8a (A₁g 645→657). More Li splits A₁g and turns on F₂g: cubane local Oh breaks as Li enters 8b — the strain that leaches Mn. Over full cycles LMO dissolves (IC Mn loss). Next: Al doping blocks that path.",
+    "durability": "Full load costs Mn (24% / 100 cycles). Partial load — or Al in the spinel — keeps the lattice intact.",
+    "al-doped": "Al-doped spinel: same Li exchange clock, but A₁g stays put for hours. Al blocks the cubane site that undoped LMO overloads — no split, no F₂g surge, lattice holds."
+  },
+  "a1gAl": {
+    "xLabel": "Time (min)",
+    "yLabel": "A₁g (cm⁻¹)",
+    "yMin": 620,
+    "yMax": 680,
+    "xMax": 180,
+    "points": [
+      {
+        "t": 0,
+        "w": 656.51
+      },
+      {
+        "t": 5,
+        "w": 656.79
+      },
+      {
+        "t": 10,
+        "w": 656.04
+      },
+      {
+        "t": 15,
+        "w": 656.15
+      },
+      {
+        "t": 20,
+        "w": 656.8
+      },
+      {
+        "t": 25,
+        "w": 656.12
+      },
+      {
+        "t": 30,
+        "w": 656.67
+      },
+      {
+        "t": 35,
+        "w": 656.07
+      },
+      {
+        "t": 40,
+        "w": 656.61
+      },
+      {
+        "t": 45,
+        "w": 655.85
+      },
+      {
+        "t": 50,
+        "w": 656.77
+      },
+      {
+        "t": 55,
+        "w": 656.5
+      },
+      {
+        "t": 60,
+        "w": 656.14
+      },
+      {
+        "t": 65,
+        "w": 656.05
+      },
+      {
+        "t": 70,
+        "w": 656.43
+      },
+      {
+        "t": 75,
+        "w": 656.04
+      },
+      {
+        "t": 80,
+        "w": 656.39
+      },
+      {
+        "t": 85,
+        "w": 656.2
+      },
+      {
+        "t": 90,
+        "w": 655.89
+      },
+      {
+        "t": 95,
+        "w": 656.46
+      },
+      {
+        "t": 100,
+        "w": 656.12
+      },
+      {
+        "t": 105,
+        "w": 656.08
+      },
+      {
+        "t": 110,
+        "w": 656.66
+      },
+      {
+        "t": 115,
+        "w": 656.41
+      },
+      {
+        "t": 120,
+        "w": 656.16
+      },
+      {
+        "t": 125,
+        "w": 655.93
+      },
+      {
+        "t": 130,
+        "w": 656.6
+      },
+      {
+        "t": 135,
+        "w": 656.87
+      },
+      {
+        "t": 140,
+        "w": 656.89
+      },
+      {
+        "t": 145,
+        "w": 656.89
+      },
+      {
+        "t": 150,
+        "w": 655.97
+      },
+      {
+        "t": 155,
+        "w": 656.25
+      },
+      {
+        "t": 160,
+        "w": 656.52
+      },
+      {
+        "t": 165,
+        "w": 655.94
+      },
+      {
+        "t": 170,
+        "w": 656.88
+      },
+      {
+        "t": 175,
+        "w": 656.63
+      },
+      {
+        "t": 180,
+        "w": 656.42
+      }
+    ],
+    "markers": [
+      {
+        "t": 60,
+        "label": "1 h · still A₁g"
+      },
+      {
+        "t": 180,
+        "label": "3 h · no split"
+      }
+    ],
+    "note": "Al-doped LMO operando model: A1g peak position and width stay flat through hours of Li exchange — Al blocks the cubane over-exchange site."
+  },
+  "fwhmAl": {
+    "xLabel": "Time (min)",
+    "yLabel": "A₁g FWHM (cm⁻¹)",
+    "yMin": 0,
+    "yMax": 58,
+    "xMax": 180,
+    "points": [
+      {
+        "t": 0,
+        "w": 8.67
+      },
+      {
+        "t": 5,
+        "w": 8.8
+      },
+      {
+        "t": 10,
+        "w": 8.72
+      },
+      {
+        "t": 15,
+        "w": 8.77
+      },
+      {
+        "t": 20,
+        "w": 8.68
+      },
+      {
+        "t": 25,
+        "w": 8.93
+      },
+      {
+        "t": 30,
+        "w": 8.58
+      },
+      {
+        "t": 35,
+        "w": 8.7
+      },
+      {
+        "t": 40,
+        "w": 8.77
+      },
+      {
+        "t": 45,
+        "w": 8.68
+      },
+      {
+        "t": 50,
+        "w": 8.43
+      },
+      {
+        "t": 55,
+        "w": 8.42
+      },
+      {
+        "t": 60,
+        "w": 8.44
+      },
+      {
+        "t": 65,
+        "w": 8.87
+      },
+      {
+        "t": 70,
+        "w": 8.42
+      },
+      {
+        "t": 75,
+        "w": 8.91
+      },
+      {
+        "t": 80,
+        "w": 8.89
+      },
+      {
+        "t": 85,
+        "w": 8.67
+      },
+      {
+        "t": 90,
+        "w": 8.43
+      },
+      {
+        "t": 95,
+        "w": 8.76
+      },
+      {
+        "t": 100,
+        "w": 8.79
+      },
+      {
+        "t": 105,
+        "w": 8.58
+      },
+      {
+        "t": 110,
+        "w": 8.92
+      },
+      {
+        "t": 115,
+        "w": 8.52
+      },
+      {
+        "t": 120,
+        "w": 8.58
+      },
+      {
+        "t": 125,
+        "w": 8.8
+      },
+      {
+        "t": 130,
+        "w": 8.82
+      },
+      {
+        "t": 135,
+        "w": 8.45
+      },
+      {
+        "t": 140,
+        "w": 8.66
+      },
+      {
+        "t": 145,
+        "w": 8.48
+      },
+      {
+        "t": 150,
+        "w": 8.41
+      },
+      {
+        "t": 155,
+        "w": 8.69
+      },
+      {
+        "t": 160,
+        "w": 8.94
+      },
+      {
+        "t": 165,
+        "w": 8.83
+      },
+      {
+        "t": 170,
+        "w": 8.57
+      },
+      {
+        "t": 175,
+        "w": 8.51
+      },
+      {
+        "t": 180,
+        "w": 8.89
+      }
+    ],
+    "note": "Al-doped: FWHM stays narrow; no mid-run broadening from Oh break / Mn leach."
   }
 }

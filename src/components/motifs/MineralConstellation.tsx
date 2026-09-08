@@ -543,17 +543,41 @@ function CabinetUnit({
         ? new Set([1, 3, 4])
         : new Set([2, 4])
   const isFeature = index === 3 || index === 1 || index === 8
+  const wood = '#4a3f32'
+  const face = '#5a4c3c'
 
   return (
     <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
-      <mesh position={[0, 1.55, 0]}>
-        <boxGeometry args={[2.4, 3.1, 1.1]} />
-        <meshStandardMaterial color="#4a3f32" roughness={0.72} metalness={0.08} />
+      {/* carcass shell — open at the front */}
+      <mesh position={[0, 1.55, -0.08]}>
+        <boxGeometry args={[2.4, 3.1, 0.95]} />
+        <meshStandardMaterial color={wood} roughness={0.72} metalness={0.08} />
       </mesh>
-      <mesh position={[0, 1.55, 0.56]}>
-        <boxGeometry args={[2.35, 3.05, 0.04]} />
-        <meshStandardMaterial color="#5a4c3c" roughness={0.55} metalness={0.12} />
+      {/* side walls */}
+      <mesh position={[-1.18, 1.55, 0.35]}>
+        <boxGeometry args={[0.06, 3.1, 0.85]} />
+        <meshStandardMaterial color={wood} roughness={0.7} />
       </mesh>
+      <mesh position={[1.18, 1.55, 0.35]}>
+        <boxGeometry args={[0.06, 3.1, 0.85]} />
+        <meshStandardMaterial color={wood} roughness={0.7} />
+      </mesh>
+      {/* top / bottom lips */}
+      <mesh position={[0, 3.07, 0.35]}>
+        <boxGeometry args={[2.4, 0.08, 0.85]} />
+        <meshStandardMaterial color={face} roughness={0.55} metalness={0.1} />
+      </mesh>
+      <mesh position={[0, 0.04, 0.35]}>
+        <boxGeometry args={[2.4, 0.08, 0.85]} />
+        <meshStandardMaterial color={face} roughness={0.55} metalness={0.1} />
+      </mesh>
+      {/* face rails between drawer slots */}
+      {Array.from({ length: drawers + 1 }).map((_, ri) => (
+        <mesh key={`rail-${ri}`} position={[0, 0.14 + ri * 0.48, 0.56]}>
+          <boxGeometry args={[2.28, 0.04, 0.05]} />
+          <meshStandardMaterial color={face} roughness={0.55} metalness={0.12} />
+        </mesh>
+      ))}
       {Array.from({ length: drawers }).map((_, di) => {
         const y = 0.35 + di * 0.48
         const wantOpen = isFeature && openSet.has(di)
@@ -590,9 +614,9 @@ function Drawer({
 
   useFrame((_, dt) => {
     if (!ref.current) return
-    const target = open ? (highlight ? 1.15 : 0.78) : 0
+    const target = open ? (highlight ? 1.05 : 0.72) : 0
     pull.current = reduced ? target : THREE.MathUtils.damp(pull.current, target, 2.6, dt)
-    ref.current.position.z = 0.55 + pull.current
+    ref.current.position.z = 0.08 + pull.current
   })
 
   const specimens = useMemo(() => {
@@ -600,35 +624,113 @@ function Drawer({
       const u = hash01(`d${seed}-${i}`)
       const colors = ['#e8b86a', '#7ec4a8', '#8eb4d8', '#d4a574', '#9bc48a']
       return {
-        x: -0.75 + i * 0.38 + (u - 0.5) * 0.08,
-        y: 0.06,
-        z: 0.05,
+        x: -0.72 + i * 0.36 + (u - 0.5) * 0.06,
+        y: 0.05,
+        z: -0.12,
         color: colors[i % colors.length],
         habit: (['octa', 'cube', 'hexprism', 'dodeca', 'needle'] as Habit[])[i % 5],
-        s: 0.09 + u * 0.05,
+        s: 0.08 + u * 0.045,
       }
     })
   }, [seed])
 
+  const tray = highlight ? '#7a6548' : open ? '#5c4c3a' : '#524536'
+  const front = highlight ? '#8a7354' : '#5f5140'
+  const W = 2.12
+  const D = 0.88
+  const H = 0.36
+  const T = 0.045
+
   return (
-    <group ref={ref} position={[0, y, 0.55]}>
-      <mesh>
-        <boxGeometry args={[2.15, 0.4, 0.95]} />
-        <meshStandardMaterial color={highlight ? '#6a5740' : '#524536'} roughness={0.68} />
+    <group ref={ref} position={[0, y, 0.08]}>
+      {/* tray bottom */}
+      <mesh position={[0, -H / 2 + T / 2, 0]}>
+        <boxGeometry args={[W, T, D]} />
+        <meshStandardMaterial
+          color={tray}
+          roughness={0.7}
+          emissive={highlight ? '#e8b86a' : open ? '#c4a06a' : '#000000'}
+          emissiveIntensity={highlight ? 0.28 : open ? 0.1 : 0}
+        />
       </mesh>
-      <mesh position={[0, 0, 0.48]}>
-        <boxGeometry args={[0.35, 0.04, 0.04]} />
+      {/* left / right sides */}
+      <mesh position={[-(W / 2 - T / 2), 0, 0]}>
+        <boxGeometry args={[T, H, D]} />
+        <meshStandardMaterial color={tray} roughness={0.68} />
+      </mesh>
+      <mesh position={[W / 2 - T / 2, 0, 0]}>
+        <boxGeometry args={[T, H, D]} />
+        <meshStandardMaterial color={tray} roughness={0.68} />
+      </mesh>
+      {/* back wall */}
+      <mesh position={[0, 0, -(D / 2 - T / 2)]}>
+        <boxGeometry args={[W - T * 2, H, T]} />
+        <meshStandardMaterial color={tray} roughness={0.68} />
+      </mesh>
+      {/* front face — taller lip like a real drawer front */}
+      <mesh position={[0, 0.02, D / 2 - T / 2]}>
+        <boxGeometry args={[W + 0.04, H + 0.06, T * 1.2]} />
+        <meshStandardMaterial
+          color={front}
+          roughness={0.55}
+          metalness={0.08}
+          emissive={highlight ? '#e8b86a' : open ? '#c4a06a' : '#000000'}
+          emissiveIntensity={highlight ? 0.2 : open ? 0.06 : 0}
+        />
+      </mesh>
+      {/* handle */}
+      <mesh position={[0, 0.02, D / 2 + 0.03]}>
+        <boxGeometry args={[0.38, 0.035, 0.035]} />
         <meshStandardMaterial color="#f0e2c0" metalness={0.55} roughness={0.28} />
       </mesh>
-      {open &&
-        specimens.map((s, i) => (
-          <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
-            <CrystalMesh habit={s.habit} color={s.color} emissive={highlight ? 1.1 : 0.65} />
-            {highlight && i === 2 && (
-              <pointLight color={s.color} intensity={1.45} distance={2.8} />
-            )}
-          </group>
-        ))}
+
+      {open && (
+        <>
+          <mesh position={[0, H / 2 - 0.02, 0.1]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[W * 0.88, D * 0.7]} />
+            <meshBasicMaterial
+              color={highlight ? '#f0c878' : '#e8b86a'}
+              transparent
+              opacity={highlight ? 0.4 : 0.16}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          <mesh position={[0, 0.08, D / 2 + 0.12]}>
+            <sphereGeometry args={[highlight ? 0.48 : 0.28, 12, 12]} />
+            <meshBasicMaterial
+              color={highlight ? '#f2d08a' : '#e0b87a'}
+              transparent
+              opacity={highlight ? 0.26 : 0.1}
+              depthWrite={false}
+            />
+          </mesh>
+          <pointLight
+            position={[0, 0.12, 0.15]}
+            color="#f0c878"
+            intensity={highlight ? 3.2 : 0.9}
+            distance={highlight ? 6.5 : 3.2}
+            decay={1.4}
+          />
+          {highlight && (
+            <pointLight
+              position={[0, 0.35, 0.55]}
+              color="#ffe6a8"
+              intensity={2.4}
+              distance={8}
+              decay={1.2}
+            />
+          )}
+          {specimens.map((s, i) => (
+            <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
+              <CrystalMesh habit={s.habit} color={s.color} emissive={highlight ? 1.55 : 0.85} />
+              {highlight && i === 2 && (
+                <pointLight color={s.color} intensity={2.8} distance={4.5} decay={1.3} />
+              )}
+            </group>
+          ))}
+        </>
+      )}
     </group>
   )
 }

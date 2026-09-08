@@ -4,6 +4,7 @@ import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
 import data from '../../data/ramanExchange.json'
 import {
+  alExchangeStatus,
   atTime,
   exchangeStatus,
   smoothSeries,
@@ -36,12 +37,13 @@ const C_GRID = 'rgba(243,238,228,0.08)'
 
 const BAND_COLOR = { a1g: C_PEAK, split: C_SPLIT, f2g: C_F2G } as const
 
-type Phase = 'as-synth' | 'h-ex' | 'li-return' | 'durability'
+type Phase = 'as-synth' | 'h-ex' | 'li-return' | 'al-doped' | 'durability'
 type Pt = { x: number; y: number }
 
 function phaseForBeat(id?: string): Phase {
   if (id === 'durability' || id === 'mn-loss') return 'durability'
   if (id === 'h-ex' || id === 'h-blank') return 'h-ex'
+  if (id === 'al-doped' || id === 'al') return 'al-doped'
   if (id === 'li-return' || id === 'raman' || id === 'operando') return 'li-return'
   return 'as-synth'
 }
@@ -99,8 +101,9 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const usable = W - COPY_GUTTER
   const half = (usable - GAP) / 2
   const storyMode = phase === 'as-synth' || phase === 'h-ex'
-  const showOperando = phase === 'li-return'
+  const showOperando = phase === 'li-return' || phase === 'al-doped'
   const showMn = phase === 'durability'
+  const alMode = phase === 'al-doped'
 
   const leftW = storyMode ? half : 0
   const rightW = showMn ? usable : storyMode ? half : 0
@@ -127,18 +130,33 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const fTop = fBox.oy + fBox.pad.t
   const fBot = fTop + fPlotH
 
+  const aSeries = alMode ? data.a1gAl : data.a1g
+  const fSeries = alMode ? data.fwhmAl : data.fwhm
   const aSmooth = useMemo(
-    () => smoothSeries(data.a1g.points, { sigma: 1.0, range: 2.2, breakupT: 30, breakupSigma: 2.3 }),
-    [],
+    () =>
+      smoothSeries(aSeries.points, {
+        sigma: alMode ? 2.4 : 1.0,
+        range: alMode ? 4 : 2.2,
+        breakupT: alMode ? 999 : 30,
+        breakupSigma: alMode ? 2.4 : 2.3,
+      }),
+    [aSeries.points, alMode],
   )
   const fSmooth = useMemo(
-    () => smoothSeries(data.fwhm.points, { sigma: 0.9, range: 3.2, breakupT: 32, breakupSigma: 1.8 }),
-    [],
+    () =>
+      smoothSeries(fSeries.points, {
+        sigma: alMode ? 2.2 : 0.9,
+        range: alMode ? 5 : 3.2,
+        breakupT: alMode ? 999 : 32,
+        breakupSigma: alMode ? 2.2 : 1.8,
+      }),
+    [fSeries.points, alMode],
   )
-  const a = data.a1g
-  const f = data.fwhm
+  const a = aSeries
+  const f = fSeries
   const tMax = aSmooth[aSmooth.length - 1]?.t ?? a.xMax
   const t0 = aSmooth[0]?.t ?? 0
+  const timeTicks = alMode ? [0, 60, 120, 180] : [0, 20, 40, 60]
 
   const sxA = (t: number) => aBox.ox + aBox.pad.l + (t / a.xMax) * aPlotW
   const syA = (w: number) => aBot - ((w - a.yMin) / (a.yMax - a.yMin)) * aPlotH
@@ -179,8 +197,8 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const liveW = atTime(aSmooth, playT)
   const liveFwhm = atTime(fSmooth, playT)
   const exchange = useMemo(
-    () => exchangeStatus(playT, liveW, liveFwhm),
-    [playT, liveW, liveFwhm],
+    () => (alMode ? alExchangeStatus(playT, liveW, liveFwhm) : exchangeStatus(playT, liveW, liveFwhm)),
+    [playT, liveW, liveFwhm, alMode],
   )
   const cursor = { x: sxA(playT), y: syA(liveW) }
   const cursorF = { x: sxF(playT), y: syF(liveFwhm) }
@@ -250,7 +268,9 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
       ? 'OH mutes Mn–O · disordered'
       : phase === 'durability'
         ? 'Partial load keeps the cubane'
-        : 'A₁g · Mn₄O₄ breathe'
+        : phase === 'al-doped'
+          ? 'Al blocks cubane over-exchange'
+          : 'A₁g · Mn₄O₄ breathe'
 
   const stateLabel =
     phase === 'as-synth'
@@ -259,15 +279,22 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
         ? 'H-exchanged'
         : phase === 'li-return'
           ? 'Li back in'
-          : 'Durability'
+          : phase === 'al-doped'
+            ? 'Al-doped LMO'
+            : 'Durability'
 
-  const reveal = showOperando ? Math.max(0.2, Math.min(1, playT / 8)) : 1
+  const reveal = showOperando ? Math.max(0.2, Math.min(1, playT / (alMode ? 24 : 8))) : 1
 
   return (
     <div
       className={styles.plot}
       data-operando={showOperando || undefined}
-      aria-label={label || 'LMO XRD stays good; Raman blanks then returns changed'}
+      aria-label={
+        label ||
+        (alMode
+          ? 'Al-doped LMO — A1g holds flat through hours of Li exchange'
+          : 'LMO XRD stays good; Raman blanks then returns changed')
+      }
     >
       {showOperando ? (
         <div className={styles.cubaneStack}>
@@ -469,7 +496,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
           <>
             <g>
               <text x={aBox.ox + aBox.pad.l} y={aBox.oy + 16} className={styles.plotAnnotate}>
-                A₁g peak · {exchange.title}
+                {alMode ? 'A₁g peak · Al-doped' : `A₁g peak · ${exchange.title}`}
               </text>
               <line x1={aBox.ox + aBox.pad.l} y1={aBot} x2={aBox.ox + aBox.pad.l + aPlotW} y2={aBot} stroke={C_AXIS} />
               <line x1={aBox.ox + aBox.pad.l} y1={aTop} x2={aBox.ox + aBox.pad.l} y2={aBot} stroke={C_AXIS} />
@@ -495,7 +522,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               {a.markers.map((mk) => {
                 const revealed = playT >= mk.t - 0.5
                 const onCurve = atTime(aSmooth, mk.t)
-                const nearEnd = mk.t >= 25
+                const nearEnd = mk.t >= a.xMax * 0.55
                 return (
                   <g key={mk.t} opacity={active && revealed ? 1 : 0}>
                     <line
@@ -530,9 +557,9 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                   </text>
                 </g>
               )}
-              {[0, 20, 40, 60].map((t) => (
+              {timeTicks.map((t) => (
                 <text key={t} x={sxA(t)} y={aBot + 14} textAnchor="middle" className={styles.plotTick}>
-                  {t}
+                  {alMode && t >= 60 ? `${t / 60} h` : t}
                 </text>
               ))}
             </g>
@@ -691,7 +718,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
             width: `${((W - STACK_LEFT) / W) * 100}%`,
           }}
         >
-          <div className={styles.timeScrubLabel}>Time (min)</div>
+          <div className={styles.timeScrubLabel}>{alMode ? 'Time (hours of exchange)' : 'Time (min)'}</div>
           <input
             className={styles.timeScrubRange}
             type="range"
@@ -700,22 +727,26 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
             step={0.1}
             value={playT}
             data-playhead=""
-            aria-label="Time in minutes"
+            aria-label={alMode ? 'Time in minutes of Al-doped exchange' : 'Time in minutes'}
             aria-valuemin={t0}
             aria-valuemax={tMax}
             aria-valuenow={Math.round(playT)}
-            aria-valuetext={`${playT.toFixed(0)} minutes`}
+            aria-valuetext={
+              alMode
+                ? `${(playT / 60).toFixed(1)} hours (${playT.toFixed(0)} minutes)`
+                : `${playT.toFixed(0)} minutes`
+            }
             onChange={(e) => setPlayT(Number(e.target.value))}
           />
           <div className={styles.timeScrubTicks} aria-hidden>
-            {[0, 20, 40, 60].map((t) => (
+            {timeTicks.map((t) => (
               <span key={t} style={{ left: `${(t / a.xMax) * 100}%` }}>
-                {t}
+                {alMode && t >= 60 ? `${t / 60}h` : t}
               </span>
             ))}
           </div>
           <div className={styles.timeScrubNow}>
-            {playT.toFixed(0)} min
+            {alMode ? `${(playT / 60).toFixed(1)} h` : `${playT.toFixed(0)} min`}
           </div>
         </div>
       )}

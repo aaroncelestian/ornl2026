@@ -285,9 +285,11 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
             ? 'Motif: Raman — Mn loss vs cycle protocol (full load 24% vs partial ~0%)'
             : beat?.id === 'h-ex'
               ? 'Motif: XRD still good · Raman basically gone (H-exchange)'
-              : beat?.id === 'li-return'
-                ? 'Motif: Li returns — smoothed Fig 5 operando + cubane; drag the marker'
-                : 'Motif: As-synthesized LMO — good XRD + good Raman · cubane inset',
+              : beat?.id === 'al-doped'
+                ? 'Motif: Al-doped LMO — A₁g flat for hours; drag the marker'
+                : beat?.id === 'li-return'
+                  ? 'Motif: Li returns — smoothed Fig 5 operando + cubane; drag the marker'
+                  : 'Motif: As-synthesized LMO — good XRD + good Raman · cubane inset',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'lmo-spinel') {
