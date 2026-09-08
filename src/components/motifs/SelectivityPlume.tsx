@@ -7,7 +7,8 @@ import styles from './Motifs.module.css'
 
 const W = 920
 const H = 520
-const PAD = { t: 56, r: 40, b: 56, l: 200 }
+const PAD = { t: 40, r: 36, b: 56, l: 64 }
+const Y_LABEL_X = 18
 
 function catmullRom(points: [number, number][]) {
   if (points.length < 2) return ''
@@ -101,7 +102,10 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
   const showIons = phase === 'ions'
 
   return (
-    <div className={styles.plot} aria-label={label || 'Lithium selectivity plume versus ionic radius'}>
+    <div
+      className={`${styles.plot} ${styles.plotFlushLeft}`}
+      aria-label={label || 'Lithium selectivity plume versus ionic radius'}
+    >
       <svg viewBox={`0 0 ${W} ${H}`} className={styles.plotSvg} role="img">
         <defs>
           <linearGradient id="plumeFade" x1="0" y1="0" x2="0" y2="1">
@@ -144,11 +148,11 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
           {data.xLabel}
         </text>
         <text
-          x={16}
+          x={Y_LABEL_X}
           y={PAD.t + plotH / 2}
           textAnchor="middle"
           className={styles.plotAxis}
-          transform={`rotate(-90 16 ${PAD.t + plotH / 2})`}
+          transform={`rotate(-90 ${Y_LABEL_X} ${PAD.t + plotH / 2})`}
         >
           {data.yLabel}
         </text>

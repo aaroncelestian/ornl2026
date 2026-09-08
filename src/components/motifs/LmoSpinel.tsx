@@ -14,6 +14,7 @@ import {
   H_START,
   H_TRAVEL,
   LI_GATHER,
+  LI_O_COLOR,
   OH_COLOR,
   protonBind,
   type RideState,
@@ -70,7 +71,7 @@ const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
   voids: '8a→16c channels · ball-and-stick',
   hydrogen: 'H-exchange · A₁g −50% amp, +50% width',
-  lithium: 'Li in 8a · A₁g up and sharp',
+  lithium: 'Li in 8a · Li–O ~2.01 Å · A₁g sharp',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
 
@@ -856,18 +857,24 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
             { color: VOID_OUT, label: 'outer' },
             { color: VOID_IN, label: 'inner' },
           ]
-        : phase === 'hydrogen' || phase === 'lithium'
+        : phase === 'hydrogen'
           ? [
               { color: MN_COLOR, label: 'Mn' },
               { color: O_COLOR, label: 'O' },
               { color: H_COLOR, label: 'H' },
               { color: OH_COLOR, label: 'OH' },
-              { color: LI_COLOR, label: 'Li' },
             ]
-          : [
-              { color: MN_COLOR, label: 'Mn' },
-              { color: O_COLOR, label: 'O' },
-            ]
+          : phase === 'lithium'
+            ? [
+                { color: MN_COLOR, label: 'Mn' },
+                { color: O_COLOR, label: 'O' },
+                { color: LI_COLOR, label: 'Li' },
+                { color: LI_O_COLOR, label: 'Li–O' },
+              ]
+            : [
+                { color: MN_COLOR, label: 'Mn' },
+                { color: O_COLOR, label: 'O' },
+              ]
 
   return (
     <div

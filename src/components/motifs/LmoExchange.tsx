@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
+import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import data from '../../data/lmoSpinel.json'
 import { isCaptureMode } from '../../lib/asset'
+import styles from './Motifs.module.css'
 
 export const H_COLOR = '#eef2f6'
 export const OH_COLOR = '#d8c49a'
 export const LI_COLOR = '#6ecf7a'
 export const LI_EXTRA = '#4a9a58'
+export const LI_O_COLOR = '#8fdfa0'
 
 type Vec3 = [number, number, number]
 type XYZ = readonly [number, number, number]
@@ -17,6 +20,9 @@ function v3(x: number, y: number, z: number): Vec3 {
 }
 
 const OH_LEN = 0.97
+/** Crystallographic Li–O in tetrahedral 8a (~2.01 Å). */
+const LI_O_LEN = 2.015
+const LI_O_COUNT = 4
 const CELL = data.cell.a
 const CELL_PAD = CELL * 0.5 + 0.2
 const HERO_AT = v3(CELL * 0.25, -CELL * 0.25, CELL * 0.25)
@@ -61,6 +67,9 @@ export type RideState = {
 export type ExchangeSite = {
   site8a: Vec3
   oxygen: Vec3
+  /** Four tetrahedral oxygens around 8a, PBC-unwrapped toward Li. */
+  liOxygens: Vec3[]
+  liODists: number[]
   hHome: Vec3
   c16: Vec3
   outward: Vec3
@@ -170,6 +179,16 @@ function nearest(origin: XYZ, pts: readonly XYZ[]) {
   return { point: add(origin, bestDelta), raw: best, dist: bestD }
 }
 
+function nearestN(origin: XYZ, pts: readonly XYZ[], n: number) {
+  return pts
+    .map((p) => {
+      const dlt = v3(minImage(p[0] - origin[0]), minImage(p[1] - origin[1]), minImage(p[2] - origin[2]))
+      return { point: add(origin, dlt), dist: len(dlt) }
+    })
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, n)
+}
+
 export function buildExchangeSites(): ExchangeSite[] {
   const c16 = sites16c()
   const oxy = data.oxygen.map((o) => v3(o.x, o.y, o.z))
@@ -177,6 +196,9 @@ export function buildExchangeSites(): ExchangeSite[] {
     const site8a = v3(li.x, li.y, li.z)
     const oHit = nearest(site8a, oxy)
     const oxygen = oHit.point
+    const tet = nearestN(site8a, oxy, LI_O_COUNT)
+    const liOxygens = tet.map((t) => t.point)
+    const liODists = tet.map((t) => t.dist)
     const toward8a = norm(sub(site8a, oxygen))
     const hHome = add(oxygen, scale(toward8a, OH_LEN))
     const gate = nearest(site8a, c16).point
@@ -191,7 +213,7 @@ export function buildExchangeSites(): ExchangeSite[] {
     // Outside cell → approach → mouth → 8a (arc-length sampled below).
     const liIn: Vec3[] = [liStart, approach, mouth, site8a]
     const hOut: Vec3[] = [hHome, mouth, hExit]
-    return { site8a, oxygen, hHome, c16: gate, outward, hIn, liIn, hOut }
+    return { site8a, oxygen, liOxygens, liODists, hHome, c16: gate, outward, hIn, liIn, hOut }
   }).filter((site) => inCell(site.oxygen) && inCell(site.hHome))
 }
 
@@ -265,6 +287,24 @@ export function ExchangeIons({
     () => sites.map((site) => ohBasis(norm(sub(site.hHome, site.oxygen)))),
     [sites],
   )
+  /** Hero-site Li–O midpoints used for distance callouts (two opposing bonds). */
+  const heroDistLabels = useMemo(() => {
+    const site = sites[HERO]
+    if (!site) return [] as { pos: Vec3; text: string }[]
+    const idxs = [0, 2].filter((j) => j < site.liOxygens.length)
+    return idxs.map((j, k) => {
+      const o = site.liOxygens[j]
+      const mid = scale(add(site.site8a, o), 0.5)
+      const outward = norm(sub(o, site.site8a))
+      const side = ohBasis(outward).u
+      const lift = add(mid, scale(side, k === 0 ? 0.42 : -0.38))
+      const d = site.liODists[j] ?? LI_O_LEN
+      return {
+        pos: lift,
+        text: k === 0 ? `Li–O ${d.toFixed(2)} Å` : `${d.toFixed(2)} Å`,
+      }
+    })
+  }, [sites, HERO])
   const clock = useRef(0)
   const capturing = isCaptureMode()
   const hMesh = useRef<(THREE.Mesh | null)[]>([])
@@ -273,6 +313,9 @@ export function ExchangeIons({
   const ohMat = useRef<(THREE.MeshStandardMaterial | null)[]>([])
   const liMesh = useRef<(THREE.Mesh | null)[]>([])
   const liMat = useRef<(THREE.MeshStandardMaterial | null)[]>([])
+  const liOMesh = useRef<(THREE.Mesh | null)[][]>([])
+  const liOMat = useRef<(THREE.MeshStandardMaterial | null)[][]>([])
+  const distLabelEls = useRef<(HTMLSpanElement | null)[]>([])
   const extraMesh = useRef<(THREE.Mesh | null)[]>([])
   const flashLight = useRef<THREE.PointLight>(null)
   const heroH = useMemo(() => new THREE.Vector3(), [])
@@ -467,9 +510,54 @@ export function ExchangeIons({
           li.visible = on
         }
       }
+
+      // Tetrahedral Li–O sticks once Li is near 8a (after H has cleared).
+      const liLocal = (t - LI_GATHER - i * LI_STAGGER) / LI_TRAVEL
+      const bondOn =
+        phase === 'lithium' && (reduced || capturing || liLocal > 0.72)
+      const bondFade = reduced || capturing
+        ? bondOn
+          ? 1
+          : 0
+        : THREE.MathUtils.smoothstep(0.72, 0.96, liLocal)
+      const loRow = liOMesh.current[i] || []
+      const lomRow = liOMat.current[i] || []
+      for (let j = 0; j < site.liOxygens.length; j++) {
+        const stick = loRow[j]
+        const sm = lomRow[j]
+        if (!stick) continue
+        if (!bondOn || bondFade < 0.04) {
+          stick.visible = false
+          if (sm) sm.opacity = 0
+          continue
+        }
+        tmpA.set(lx, ly, lz)
+        tmpB.set(...site.liOxygens[j])
+        tmpMid.copy(tmpB).add(tmpA).multiplyScalar(0.5)
+        tmpDir.copy(tmpA).sub(tmpB)
+        const L = tmpDir.length()
+        stick.visible = L > 0.35
+        if (stick.visible) {
+          stick.position.copy(tmpMid)
+          stick.scale.set(1, L / LI_O_LEN, 1)
+          tmpQ.setFromUnitVectors(yUp, tmpDir.normalize())
+          stick.quaternion.copy(tmpQ)
+        }
+        if (sm) sm.opacity = 0.92 * bondFade
+      }
+
       if (i === HERO) {
         heroWorld.set(lx, ly, lz)
         heroH.set(hx, hy, hz)
+        const labelFade =
+          phase === 'lithium'
+            ? reduced || capturing
+              ? 1
+              : THREE.MathUtils.smoothstep(0.88, 1, liLocal)
+            : 0
+        for (const el of distLabelEls.current) {
+          if (el) el.style.opacity = String(labelFade)
+        }
       }
     }
 
@@ -598,8 +686,56 @@ export function ExchangeIons({
               />
             </mesh>
           )}
+          {phase === 'lithium' &&
+            site.liOxygens.map((_, j) => (
+              <mesh
+                key={`lio-${i}-${j}`}
+                ref={(el) => {
+                  if (!liOMesh.current[i]) liOMesh.current[i] = []
+                  liOMesh.current[i][j] = el
+                }}
+                visible={false}
+              >
+                <cylinderGeometry args={[0.048, 0.048, LI_O_LEN, 8]} />
+                <meshStandardMaterial
+                  ref={(el) => {
+                    if (!liOMat.current[i]) liOMat.current[i] = []
+                    liOMat.current[i][j] = el
+                  }}
+                  color={LI_O_COLOR}
+                  emissive={LI_O_COLOR}
+                  emissiveIntensity={0.32}
+                  transparent
+                  opacity={0}
+                  roughness={0.38}
+                  depthWrite={false}
+                />
+              </mesh>
+            ))}
         </group>
       ))}
+      {phase === 'lithium' &&
+        heroDistLabels.map((lab, k) => (
+          <Html
+            key={`li-dist-${k}`}
+            position={lab.pos}
+            center
+            transform={false}
+            occlude={false}
+            style={{ pointerEvents: 'none' }}
+            zIndexRange={[20, 0]}
+          >
+            <span
+              ref={(el) => {
+                distLabelEls.current[k] = el
+              }}
+              className={styles.bondDistLabel}
+              style={{ opacity: 0 }}
+            >
+              {lab.text}
+            </span>
+          </Html>
+        ))}
       {phase === 'lithium' &&
         extras.map((e, i) => (
           <mesh

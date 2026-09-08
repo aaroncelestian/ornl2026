@@ -289,6 +289,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
     <div
       className={styles.plot}
       data-operando={showOperando || undefined}
+      data-al={alMode || undefined}
       aria-label={
         label ||
         (alMode
@@ -298,7 +299,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
     >
       {showOperando ? (
         <div className={styles.cubaneStack}>
-          <div className={styles.exchangeDock} data-compact="">
+          <div className={styles.exchangeDock} data-compact="" data-al={alMode || undefined}>
             <div className={styles.exchangeHead}>
               <div className={styles.exchangeFill} aria-hidden>
                 <span>H</span>
@@ -308,42 +309,50 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 <span>Li</span>
               </div>
             </div>
-            <svg viewBox="0 0 300 140" className={styles.liveRaman} aria-hidden>
-              <text x="18" y="16" className={styles.plotAnnotate} fontSize={13} fill="currentColor">
-                Raman · live
-              </text>
-              <line x1="18" y1={liveBaseY} x2="282" y2={liveBaseY} stroke={C_AXIS} />
-              <path d={livePath} fill="none" stroke={C_LIVE} strokeWidth="2.8" strokeLinecap="round" />
-              {liveMarks.map((b) => (
-                <g key={b.kind}>
-                  <line
-                    x1={liveSx(b.w)}
-                    y1={22}
-                    x2={liveSx(b.w)}
-                    y2={liveBaseY}
-                    stroke={BAND_COLOR[b.kind]}
-                    strokeOpacity={0.55}
-                  />
-                  <text
-                    x={liveSx(b.w)}
-                    y={34}
-                    textAnchor="middle"
-                    fill={BAND_COLOR[b.kind]}
-                    fontSize={11}
-                  >
-                    {b.label}
-                  </text>
-                </g>
-              ))}
-              <text x="18" y="134" className={styles.plotTick} fontSize={10} fill="currentColor">
-                540
-              </text>
-              <text x="268" y="134" className={styles.plotTick} fontSize={10} fill="currentColor">
-                700
-              </text>
-            </svg>
+            {!alMode && (
+              <svg viewBox="0 0 300 140" className={styles.liveRaman} aria-hidden>
+                <text x="18" y="16" className={styles.plotAnnotate} fontSize={13} fill="currentColor">
+                  Raman · live
+                </text>
+                <line x1="18" y1={liveBaseY} x2="282" y2={liveBaseY} stroke={C_AXIS} />
+                <path d={livePath} fill="none" stroke={C_LIVE} strokeWidth="2.8" strokeLinecap="round" />
+                {liveMarks.map((b) => (
+                  <g key={b.kind}>
+                    <line
+                      x1={liveSx(b.w)}
+                      y1={22}
+                      x2={liveSx(b.w)}
+                      y2={liveBaseY}
+                      stroke={BAND_COLOR[b.kind]}
+                      strokeOpacity={0.55}
+                    />
+                    <text
+                      x={liveSx(b.w)}
+                      y={34}
+                      textAnchor="middle"
+                      fill={BAND_COLOR[b.kind]}
+                      fontSize={11}
+                    >
+                      {b.label}
+                    </text>
+                  </g>
+                ))}
+                <text x="18" y="134" className={styles.plotTick} fontSize={10} fill="currentColor">
+                  540
+                </text>
+                <text x="268" y="134" className={styles.plotTick} fontSize={10} fill="currentColor">
+                  700
+                </text>
+              </svg>
+            )}
           </div>
-          <CubaneInset active={active} vibe={vibe} vibeRef={vibeRef} open />
+          <CubaneInset active={active} vibe={vibe} vibeRef={vibeRef} open alSite={alMode ? 0 : -1} />
+          {alMode && (
+            <div className={styles.alBadge} aria-hidden>
+              <span className={styles.alBadgeDot} />
+              0.1 wt% Al Doped
+            </div>
+          )}
           <p className={styles.cubaneReadout}>{exchange.cubane}</p>
         </div>
       ) : (

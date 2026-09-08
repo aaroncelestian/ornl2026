@@ -207,6 +207,7 @@ export function SceneView({ slide, active }: { slide: Slide; active: boolean }) 
       data-empty={!hasPlate || undefined}
       data-camera={camera}
       data-motif={layers[0]?.motif}
+      data-beat={beat?.id}
       data-callouts={callouts.length || videoHolds ? '' : undefined}
     >
       <div className={styles.sceneStage}>

@@ -154,8 +154,10 @@ export function exchangeStatus(t: number, w: number, fwhm: number): ExchangeStat
     recover > 0.55 ? 'stable' : midDip > 0.38 ? 'split' : toLi > 0.5 ? 'li-8a' : 'h-form'
 
   const hzLive = Math.max(0.55, Math.min(1.5, 0.72 + ((w - 632) / 34) * 0.7))
+  // During the settled Li→8a window, pin hz so fit noise does not keep retuning the breathe.
+  const hzPinned = toLi > 0.85 && midDip < 0.15 ? 1.05 : hzLive
   const vibe: CubaneVibe = {
-    hz: hzLive,
+    hz: hzPinned,
     amp: clamp01(0.18 + 0.82 * toLi * (1 - 0.72 * midDip) + 0.36 * recover),
     disorder: clamp01((1 - toLi) * 0.95 + midDip * 0.88 * (1 - recover) + recover * 0.28),
     mute: clamp01((1 - toLi) * 0.74 + midDip * 0.42 * (1 - recover) + recover * 0.16),

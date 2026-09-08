@@ -9,6 +9,8 @@ import styles from './Motifs.module.css'
 
 export const MN_COLOR = '#8b5cad'
 export const O_COLOR = '#c45a3a'
+/** Soft blue Mn stand-in for a lattice Al dopant site. */
+export const AL_SITE_COLOR = '#4f8ec8'
 
 export type CubaneData = {
   center: number[]
@@ -83,6 +85,7 @@ export function CubaneUnit({
   vibeRef: vibeRefProp,
   atOrigin = false,
   lite = false,
+  alSite = -1,
 }: {
   cubane: CubaneData
   active: boolean
@@ -92,6 +95,8 @@ export function CubaneUnit({
   vibeRef?: MutableRefObject<CubaneVibe>
   atOrigin?: boolean
   lite?: boolean
+  /** Mn index to tint as an Al dopant site (−1 = none). */
+  alSite?: number
 }) {
   const atomGroup = useRef<THREE.Group>(null)
   const bondA = useRef<(THREE.Mesh | null)[]>([])
@@ -103,11 +108,12 @@ export function CubaneUnit({
   if (!vibeRefProp) localVibeRef.current = vibe
   const vibeRef = vibeRefProp ?? localVibeRef
   const liveVibe = useRef({ ...vibe })
-  /** Per-atom oscillator phase — integrate ω·dt so hzScale changes never jump sin(). */
-  const oscPhase = useRef<number[]>([])
+  /** Shared A₁g clock — atoms re-lock to this when disorder/split fall. */
+  const sharedPhase = useRef(0)
+  /** Per-atom detune residual; always pulled toward 0 so modes can settle. */
+  const detunePhase = useRef<number[]>([])
   const oscOffset = useRef<number[]>([])
   const radial = useRef(new THREE.Vector3())
-  const targetPos = useRef(new THREE.Vector3())
 
   const center = cubane.center as [number, number, number]
   const mnLocal = useMemo(
@@ -176,19 +182,22 @@ export function CubaneUnit({
     const want = vibeRef.current
     const live = liveVibe.current
     // Soft morph between modes — λ kept low so reshape never outruns the oscillator.
-    live.hz = THREE.MathUtils.damp(live.hz, want.hz, 0.45, dt)
-    live.amp = THREE.MathUtils.damp(live.amp, want.amp, 0.7, dt)
-    live.disorder = THREE.MathUtils.damp(live.disorder, want.disorder, 0.35, dt)
-    live.mute = THREE.MathUtils.damp(live.mute, want.mute, 0.65, dt)
-    live.split = THREE.MathUtils.damp(live.split ?? 0, want.split ?? 0, 0.3, dt)
+    live.hz = THREE.MathUtils.damp(live.hz, want.hz, 0.55, dt)
+    live.amp = THREE.MathUtils.damp(live.amp, want.amp, 0.85, dt)
+    live.disorder = THREE.MathUtils.damp(live.disorder, want.disorder, 0.55, dt)
+    live.mute = THREE.MathUtils.damp(live.mute, want.mute, 0.75, dt)
+    live.split = THREE.MathUtils.damp(live.split ?? 0, want.split ?? 0, 0.45, dt)
     const on = active && !reduced && vibeOn
     const strength = on ? live.amp * (1 - live.mute) : 0
     const atomCount = mnLocal.length + coreLocal.length
-    if (oscPhase.current.length !== atomCount) {
-      oscPhase.current = Array.from({ length: atomCount }, () => 0)
+    if (detunePhase.current.length !== atomCount) {
+      detunePhase.current = Array.from({ length: atomCount }, () => 0)
       oscOffset.current = Array.from({ length: atomCount }, () => 0)
     }
     const omega = live.hz * Math.PI * 2
+    sharedPhase.current += dt * omega
+    // Once past the disordered regime, yank residuals home so A₁g re-locks.
+    const sync = live.disorder < 0.12 && (live.split ?? 0) < 0.08 ? 3.2 : 0.55
     const displace = (
       local: [number, number, number],
       scale: number,
@@ -200,13 +209,15 @@ export function CubaneUnit({
       u.multiplyScalar(1 / len)
       const pair = i % 2
       const split = live.split ?? 0
-      const offsetWant = (live.disorder > 0.02 ? i * 2.17 : 0) + split * pair * Math.PI
-      // Integrate frequency — never multiply a large elapsed θ by a changing hzScale.
-      const hzScale =
-        (1 + live.disorder * (((i * 3) % 5) - 2) * 0.11) * (1 + split * (pair === 0 ? 0.16 : -0.2))
-      oscPhase.current[i] += dt * omega * hzScale
-      oscOffset.current[i] = THREE.MathUtils.damp(oscOffset.current[i], offsetWant, 0.4, dt)
-      const theta = oscPhase.current[i] + oscOffset.current[i]
+      // Continuous targets — no hard disorder threshold that flips phase mid-morph.
+      const offsetWant = live.disorder * i * 2.17 + split * pair * Math.PI
+      const detuneWant =
+        live.disorder * (((i * 3) % 5) - 2) * 0.35 + split * (pair === 0 ? 0.45 : -0.55)
+      // Integrate detune only while disordered; always damp toward the soft target (→ 0 when coherent).
+      detunePhase.current[i] += dt * omega * detuneWant * 0.15
+      detunePhase.current[i] = THREE.MathUtils.damp(detunePhase.current[i], 0, sync, dt)
+      oscOffset.current[i] = THREE.MathUtils.damp(oscOffset.current[i], offsetWant, sync, dt)
+      const theta = sharedPhase.current + oscOffset.current[i] + detunePhase.current[i]
       const s = on ? Math.sin(theta) * strength : 0
       let jx = 0
       let jy = 0
@@ -216,20 +227,17 @@ export function CubaneUnit({
         const py = u.z * 0.55 - u.x * 0.35
         const pz = u.x * 0.55 - u.y * 0.35
         const plen = Math.hypot(px, py, pz) || 1
-        const jitter = Math.sin(theta + i * 1.7) * strength * live.disorder * 0.55
+        const jitter = Math.sin(theta + i * 1.7) * strength * live.disorder * 0.45
         jx = (px / plen) * jitter
         jy = (py / plen) * jitter
         jz = (pz / plen) * jitter
       }
-      targetPos.current.set(
+      // Direct set — coherent A₁g must land on the shared sine, not lag through a position damp.
+      out.set(
         local[0] + u.x * s * scale + jx,
         local[1] + u.y * s * scale + jy,
         local[2] + u.z * s * scale + jz,
       )
-      // Position damp absorbs residual amp/jitter morph so atoms never snap.
-      out.x = THREE.MathUtils.damp(out.x, targetPos.current.x, 14, dt)
-      out.y = THREE.MathUtils.damp(out.y, targetPos.current.y, 14, dt)
-      out.z = THREE.MathUtils.damp(out.z, targetPos.current.z, 14, dt)
     }
 
     mnLocal.forEach((m, i) => {
@@ -256,10 +264,7 @@ export function CubaneUnit({
       }
       const n = owners.length || 1
       const out = termLive.current[i]
-      targetPos.current.set(o[0] + dx / n, o[1] + dy / n, o[2] + dz / n)
-      out.x = THREE.MathUtils.damp(out.x, targetPos.current.x, 14, dt)
-      out.y = THREE.MathUtils.damp(out.y, targetPos.current.y, 14, dt)
-      out.z = THREE.MathUtils.damp(out.z, targetPos.current.z, 14, dt)
+      out.set(o[0] + dx / n, o[1] + dy / n, o[2] + dz / n)
       const child = root.children[mnLocal.length + coreLocal.length + i]
       if (child) child.position.copy(out)
     })
@@ -278,40 +283,51 @@ export function CubaneUnit({
 
   return (
     <group position={atOrigin ? [0, 0, 0] : center}>
-      {liveBonds.map((bond, i) => (
-        <group key={`b-${i}`}>
-          <mesh
-            ref={(el) => {
-              bondA.current[i] = el
-            }}
-          >
-            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, cylSegs]} />
-            <meshStandardMaterial color={MN_COLOR} roughness={0.4} metalness={0.2} />
-          </mesh>
-          <mesh
-            ref={(el) => {
-              bondB.current[i] = el
-            }}
-          >
-            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, cylSegs]} />
-            <meshStandardMaterial color={O_COLOR} roughness={0.4} metalness={0.15} />
-          </mesh>
-        </group>
-      ))}
+      {liveBonds.map((bond, i) => {
+        const alBond = bond.mn === alSite
+        return (
+          <group key={`b-${i}`}>
+            <mesh
+              ref={(el) => {
+                bondA.current[i] = el
+              }}
+            >
+              <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, cylSegs]} />
+              <meshStandardMaterial
+                color={alBond ? AL_SITE_COLOR : MN_COLOR}
+                roughness={0.4}
+                metalness={0.2}
+              />
+            </mesh>
+            <mesh
+              ref={(el) => {
+                bondB.current[i] = el
+              }}
+            >
+              <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, cylSegs]} />
+              <meshStandardMaterial color={O_COLOR} roughness={0.4} metalness={0.15} />
+            </mesh>
+          </group>
+        )
+      })}
 
       <group ref={atomGroup}>
-        {mnLocal.map((m, i) => (
-          <mesh key={`mn-${i}`} position={m}>
-            <sphereGeometry args={[0.38, segs, segs]} />
-            <meshStandardMaterial
-              color={MN_COLOR}
-              roughness={0.28}
-              metalness={0.35}
-              emissive={MN_COLOR}
-              emissiveIntensity={0.12}
-            />
-          </mesh>
-        ))}
+        {mnLocal.map((m, i) => {
+          const al = i === alSite
+          const color = al ? AL_SITE_COLOR : MN_COLOR
+          return (
+            <mesh key={`mn-${i}`} position={m}>
+              <sphereGeometry args={[al ? 0.4 : 0.38, segs, segs]} />
+              <meshStandardMaterial
+                color={color}
+                roughness={0.28}
+                metalness={al ? 0.45 : 0.35}
+                emissive={color}
+                emissiveIntensity={al ? 0.22 : 0.12}
+              />
+            </mesh>
+          )
+        })}
         {coreLocal.map((o, i) => (
           <mesh key={`co-${i}`} position={o}>
             <sphereGeometry args={[0.26, segs, segs]} />
@@ -344,11 +360,13 @@ function InsetScene({
   reduced,
   vibeRef,
   open,
+  alSite = -1,
 }: {
   active: boolean
   reduced: boolean
   vibeRef: MutableRefObject<CubaneVibe>
   open?: boolean
+  alSite?: number
 }) {
   const group = useRef<THREE.Group>(null)
   const camReady = useRef(false)
@@ -378,6 +396,7 @@ function InsetScene({
           vibeRef={vibeRef}
           atOrigin
           lite
+          alSite={alSite}
         />
       </group>
     </>
@@ -391,6 +410,7 @@ export function CubaneInset({
   caption,
   open,
   embedded,
+  alSite = -1,
 }: {
   active: boolean
   vibe: CubaneVibe
@@ -398,6 +418,7 @@ export function CubaneInset({
   caption?: string
   open?: boolean
   embedded?: boolean
+  alSite?: number
 }) {
   const reduced = usePrefersReducedMotion()
   const localVibeRef = useRef(vibe)
@@ -416,7 +437,7 @@ export function CubaneInset({
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       >
         <Suspense fallback={null}>
-          <InsetScene active={active} reduced={reduced} vibeRef={vibeRef} open={open} />
+          <InsetScene active={active} reduced={reduced} vibeRef={vibeRef} open={open} alSite={alSite} />
         </Suspense>
       </Canvas>
       {caption && <div className={styles.cubaneCap}>{caption}</div>}

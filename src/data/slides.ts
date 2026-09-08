@@ -379,46 +379,46 @@ export const slides: Slide[] = [
         id: 'al-doped',
         label: 'Al-doped',
         kicker: 'Same clock · different lattice',
-        title: 'Al-doped: A₁g\nholds for hours.',
+        title: 'A₁g holds\nfor hours.',
         layers: ['raman'],
         notes:
-          'Same experiment, Al in the spinel. Scrub hours of ion exchange — A₁g barely moves. No split, no F₂g surge. Aluminum blocks the cubane over-exchange site that undoped LMO overloads, so Mn stays put and the lattice holds. Partial load and Al doping are two ways to the same durability: do not open the dissolve step.',
+          'Same experiment, Al in the spinel — 0.1 wt% Al. Scrub hours of ion exchange — A₁g barely moves. No split, no F₂g surge. Aluminum blocks the cubane over-exchange site that undoped LMO overloads, so Mn stays put and the lattice holds. Partial load and Al doping are two ways to the same durability: do not open the dissolve step.',
       },
       {
         id: 'cloud',
         label: 'Selectivity cloud',
         kicker: 'Why geometry wins',
-        title: 'Most candidate sorbents\nare a soft mess.',
+        title: 'Why spinel wins.\nWhy LiMn specifically?',
         layers: ['plume'],
         notes:
-          'This plot is the Materials Genome intuition made visible. Each translucent path is a hypothetical or real sorbent’s relative Li⁺ selectivity across ionic radius. The cloud is noisy. Soft peaks. Weak discrimination. That is what you get when you search composition space without a geometric prior.',
+          'The question this plot answers. Spinel is not a brand preference — it is a geometry. Among candidate sorbents, only a lattice with the right interstitial size pulls Li⁺ out of brine. Lithium manganese oxide — Li₄Mn₅O₁₂ / λ-MnO₂ — is the engineered answer because its tetrahedral 8a sites sit in that window.',
       },
       {
         id: 'gate',
         label: 'Li gate',
         kicker: 'Why geometry wins',
-        title: 'Li⁺ sits at 0.76 Å.\nThe gate is physical.',
+        title: 'Most pores are\ntoo big for Li.',
         layers: ['plume'],
         notes:
-          'Shannon crystal radius for Li⁺ is about 0.76 Å. Na⁺ is 1.02. K⁺ is 1.38. In a spinel interstitial, that is not a soft preference — it is a hard steric filter. Watch the dashed gate appear. Everything useful in this story has to peak at that radius.',
+          'Most porous materials — zeolites, MOFs, soft ion exchangers — open channels wider than Li⁺ needs. Selectivity collapses. The cloud is noisy: soft peaks, weak discrimination. That is what you get when pores admit Na⁺, Ca²⁺, Mg²⁺ as easily as lithium. Watch the dashed gate at 0.76 Å — everything useful has to peak there.',
       },
       {
         id: 'spinel-peak',
         label: 'λ-MnO₂',
         kicker: 'ORNL · Element3 · NHMLAC',
-        title: 'λ-MnO₂ finds\nthe only sharp peak.',
+        title: 'A narrow pore\nselects for Li.',
         layers: ['plume'],
         notes:
-          'Highlighted: the engineered lithium manganese spinel. Sharp Li⁺ selectivity. Na⁺, Ca²⁺, Mg²⁺ rejected. R&D 100, 2024 — High Lithium Capacity Sorbents for Direct Lithium Extraction — ORNL + Element3 Mineral Selective Technologies + museum mineralogy. DOE AMO Award DE-EE0009442. Loading tests: 10–15 mg Li per gram LMO, ~20% of stoichiometric Li₄Mn₅O₁₂ sites; elution recovers >95% of loaded Li in under two minutes. Mechanism: Celestian, Bourcier, Camiré, Kumar, Paranthaman — J. Raman Spectrosc. 2026, 57:131–139.',
+          'There is a very narrow pore-size window that fits Li⁺ and rejects the rest — and λ-MnO₂ sits in it. Sharp Li⁺ selectivity. Na⁺, Ca²⁺, Mg²⁺ rejected. R&D 100, 2024 — High Lithium Capacity Sorbents for Direct Lithium Extraction — ORNL + Element3 Mineral Selective Technologies + museum mineralogy. DOE AMO Award DE-EE0009442. Loading tests: 10–15 mg Li per gram LMO, ~20% of stoichiometric Li₄Mn₅O₁₂ sites; elution recovers >95% of loaded Li in under two minutes. Mechanism: Celestian, Bourcier, Camiré, Kumar, Paranthaman — J. Raman Spectrosc. 2026, 57:131–139.',
       },
       {
         id: 'ions',
         label: 'Competitors',
         kicker: 'Brine reality',
-        title: 'Reject brine is not\na clean LiCl solution.',
+        title: 'That window leaves\nLi⁺ almost alone.',
         layers: ['plume'],
         notes:
-          'Desalination reject and geothermal brine are chemically hostile: Na and Mg dominate; Ca, K, Sr compete; organics and silica foul surfaces. Size-selective interstitial chemistry is why a spinel can still pull Li out of that soup. We are not evaporating a new Atacama pond. We are reading a geometry that already knew which cation fits.',
+          'Same narrow gate against real brine competitors. Shannon radii: Li⁺ ~0.76 Å, Mg²⁺ 0.72, Na⁺ 1.02, Ca²⁺ 1.0, K⁺ 1.38. Size-selective interstitial chemistry is why a spinel can still pull Li out of desalination reject and geothermal brine — Na and Mg dominate the soup; the pore does not care.',
       },
       {
         id: 'brine',
@@ -473,34 +473,7 @@ export const slides: Slide[] = [
         title: 'The spinel comes back.',
         layers: ['cycle'],
         notes:
-          'Recyclable sorbent — empty spinel back to brine. Next: the XRD/Raman punchline — long-range order can look fine while the local cubane reporter goes dark.',
-      },
-      {
-        id: 'as-synth',
-        label: 'As-synth',
-        kicker: 'J. Raman Spectrosc. 2026',
-        title: 'As-synthesized:\ngood XRD, good Raman.',
-        layers: ['raman'],
-        notes:
-          'Start state. Spinel XRD is sharp. Raman shows a strong A₁g — the Mn₄O₄ cubane stretch is alive. Long-range order and local Mn–O order agree.',
-      },
-      {
-        id: 'h-ex',
-        label: 'H-exchange',
-        kicker: 'The trap',
-        title: 'H-exchange blanks\nthe Raman.',
-        layers: ['raman'],
-        notes:
-          'Acid prime / H-exchange: XRD stays good — the spinel framework is still there. But the Raman is basically gone. Diffraction would say “fine.” Local cubane symmetry says otherwise. That is why Raman is the reporter.',
-      },
-      {
-        id: 'durability',
-        label: 'Durability',
-        kicker: 'J. Raman Spectrosc. 2026',
-        title: 'Full load costs Mn.\nPartial load keeps it.',
-        layers: ['raman'],
-        notes:
-          'After 100 full Li/H cycles, up to 24% Mn loss and a secondary MnOx phase — less LMO left. Partial loading — stop before maximum capacity — showed no measurable Mn loss at 100 cycles. Same idea chemically: Al in the spinel blocks the extra Li exchange into the cubane, so the lattice stays intact. Same selectivity logic does not stop at lithium.',
+          'Recyclable sorbent — empty spinel back to brine. Act I closes on the loop: geometry in, Li₂CO₃ out, lattice reusable. Same selectivity logic does not stop at lithium.',
       },
     ],
   },
