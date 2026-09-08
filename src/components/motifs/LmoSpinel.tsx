@@ -24,8 +24,8 @@ import styles from './Motifs.module.css'
 const SCALE = 0.42
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
 const CELL_A = data.cell.a
-const VOID_OUT = '#8eb4c8'
-const VOID_IN = '#c5d9e4'
+const VOID_OUT = '#7eafc4'
+const VOID_IN = '#d4a574'
 const VOID_GHOST = '#9bb8c8'
 const LI_COLOR = '#6ecf7a'
 const MN_COLOR = '#8b5cad'
@@ -159,7 +159,7 @@ function VoidSurface({ pore }: { pore: boolean }) {
     return geo
   }, [])
 
-  // Channels with atoms visible — slightly lighter so balls read through.
+  // Outer = cool blue (FrontSide), inner = warm amber (BackSide). Geometry unchanged.
   if (pore) {
     return (
       <group>
@@ -167,12 +167,12 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_OUT}
             transparent
-            opacity={0.48}
+            opacity={0.72}
             roughness={0.34}
             metalness={0.04}
-            transmission={0.2}
-            thickness={0.4}
-            sheen={0.12}
+            transmission={0.08}
+            thickness={0.35}
+            sheen={0.1}
             sheenColor="#d0e4ee"
             side={THREE.FrontSide}
             depthWrite={false}
@@ -182,11 +182,11 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_IN}
             transparent
-            opacity={0.2}
-            roughness={0.5}
+            opacity={0.55}
+            roughness={0.48}
             metalness={0.02}
             emissive={VOID_IN}
-            emissiveIntensity={0.04}
+            emissiveIntensity={0.08}
             side={THREE.BackSide}
             depthWrite={false}
           />
@@ -734,6 +734,7 @@ function RamanTrack({
       className={styles.ramanHud}
       data-dock={tight ? 'left' : undefined}
       data-tight={tight || undefined}
+      data-bare={phase === 'hydrogen' || phase === 'lithium' ? '' : undefined}
       aria-hidden
     >
       <div className={styles.ramanHudTitle}>Raman · A₁g</div>
@@ -822,8 +823,8 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
         ? [
             { color: MN_COLOR, label: 'Mn' },
             { color: O_COLOR, label: 'O' },
-            { color: VOID_OUT, label: 'channel' },
-            { color: VOID_IN, label: 'interior' },
+            { color: VOID_OUT, label: 'outer' },
+            { color: VOID_IN, label: 'inner' },
           ]
         : phase === 'hydrogen' || phase === 'lithium'
           ? [
@@ -875,7 +876,9 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
           <Scene active={active} phase={phase} ride={ride} vibeOn={vibrations} />
         </Suspense>
       </Canvas>
-      <RamanTrack phase={phase} active={active} beatId={beatId} />
+      {(phase === 'hydrogen' || phase === 'lithium' || phase === 'cubane') && (
+        <RamanTrack phase={phase} active={active} beatId={beatId} />
+      )}
       {phase === 'voids' && (
         <div className={styles.scaleBar} aria-hidden>
           <span className={styles.scaleTick} />

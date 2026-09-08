@@ -857,6 +857,11 @@
   width: min(380px, 40vw);
 }
 
+.ramanHud[data-bare] {
+  background: transparent;
+  padding: 0;
+}
+
 .ramanHudSvg {
   display: block;
   width: 100%;

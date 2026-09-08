@@ -35,11 +35,13 @@ export function protonBind(t: number, i: number) {
   return u * u * (3 - 2 * u)
 }
 
-export const LI_GATHER = 2.6
+export const LI_GATHER = 1.4
 const LI_STAGGER = 0.55
-const LI_TRAVEL = 2.9
+const LI_TRAVEL = 3.4
 const H_EXIT_TRAVEL = 1.15
 const BOLT_AFTER = 0.55
+/** Crystal-Å past the 8a site — must clear the camera frustum before the fly-in. */
+const LI_OFFSTAGE = 28
 
 export type RideStage = 'idle' | 'approach' | 'chase' | 'orbit' | 'flash' | 'escape' | 'hold' | 'pullback'
 
@@ -181,9 +183,13 @@ export function buildExchangeSites(): ExchangeSite[] {
     const outward = outwardDir(site8a, gate)
     const mouth = add(site8a, scale(outward, 1.35))
     const hStart = add(site8a, scale(outward, 5.8))
-    const liStart = add(site8a, scale(outward, 8.4))
+    // Far along the pore exit + a little radial so Li enters from true off-stage.
+    const radial = len(site8a) > 0.35 ? norm(site8a) : outward
+    const leave = norm(add(outward, scale(radial, 0.35)))
+    const liStart = add(site8a, scale(leave, LI_OFFSTAGE))
     const hExit = add(site8a, scale(outward, 7.4))
     const hIn: Vec3[] = [hStart, mouth, hHome]
+    // Approach: far off-stage → pore mouth → 8a (not a mid-screen pop-in).
     const liIn: Vec3[] = [liStart, mouth, site8a]
     const hOut: Vec3[] = [hHome, mouth, hExit]
     return { site8a, oxygen, hHome, c16: gate, outward, hIn, liIn, hOut }
@@ -279,8 +285,8 @@ export function ExchangeIons({
     return [0, 1, 2].map((i) => {
       const ang = (i / 3) * Math.PI * 2 + 0.4
       return {
-        base: v3(Math.cos(ang) * 10.4, -1.2 + i * 1.1, Math.sin(ang) * 10.4),
-        spin: 0.22 + i * 0.05,
+        base: v3(Math.cos(ang) * 22, -2.2 + i * 1.4, Math.sin(ang) * 22),
+        spin: 0.18 + i * 0.04,
       }
     })
   }, [])
@@ -419,7 +425,22 @@ export function ExchangeIons({
         }
         if (om) om.opacity = oop
       }
-      if (li) li.position.set(lx, ly, lz)
+      if (li) {
+        li.position.set(lx, ly, lz)
+        const lm = liMat.current[i]
+        if (lm) {
+          // Invisible while parked off-stage; fade up as the fly-in begins.
+          const fade =
+            phase === 'lithium'
+              ? reduced || capturing
+                ? 1
+                : THREE.MathUtils.smoothstep(-0.02, 0.18, (t - LI_GATHER - i * LI_STAGGER) / LI_TRAVEL)
+              : 0
+          lm.opacity = fade
+          lm.transparent = true
+          li.visible = fade > 0.02
+        }
+      }
       if (i === HERO) {
         heroWorld.set(lx, ly, lz)
         heroH.set(hx, hy, hz)
@@ -429,12 +450,20 @@ export function ExchangeIons({
     extras.forEach((e, i) => {
       const mesh = extraMesh.current[i]
       if (!mesh) return
+      const mat = mesh.material as THREE.MeshStandardMaterial
+      // Drift in from farther out after the hero Li is already moving.
+      const u = THREE.MathUtils.smoothstep(0, 1, (t - LI_GATHER - 0.4) / 2.2)
       const ang = Math.max(0, t) * e.spin
+      const r = THREE.MathUtils.lerp(1.35, 1, u)
       mesh.position.set(
-        e.base[0] * Math.cos(ang) - e.base[2] * Math.sin(ang),
+        e.base[0] * r * Math.cos(ang) - e.base[2] * r * Math.sin(ang),
         e.base[1] + Math.sin(Math.max(0, t) * 0.7 + i) * 0.25,
-        e.base[0] * Math.sin(ang) + e.base[2] * Math.cos(ang),
+        e.base[0] * r * Math.sin(ang) + e.base[2] * r * Math.cos(ang),
       )
+      if (mat) {
+        mat.opacity = 0.72 * u
+        mesh.visible = u > 0.02
+      }
     })
 
     if (phase === 'lithium' && !reduced) {
@@ -538,6 +567,8 @@ export function ExchangeIons({
                 emissiveIntensity={0.42}
                 roughness={0.28}
                 metalness={0.12}
+                transparent
+                opacity={0}
               />
             </mesh>
           )}
@@ -558,7 +589,7 @@ export function ExchangeIons({
               emissive={LI_EXTRA}
               emissiveIntensity={0.18}
               transparent
-              opacity={0.72}
+              opacity={0}
               roughness={0.35}
             />
           </mesh>
