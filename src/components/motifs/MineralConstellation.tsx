@@ -257,6 +257,15 @@ function CrystalMesh({
   )
 }
 
+function labelDistanceFactor(phase: Phase, focused: boolean) {
+  // Keep CSS scale near 1 so labels rasterize at their font size instead of
+  // being blown up from 11px (drei Html uses transform: scale).
+  if (focused) return 2.8
+  if (phase === 'peri') return 1.9
+  if (phase === 'peers') return 5.4
+  return 9
+}
+
 function MoonSystem({
   apps,
   color,
@@ -264,6 +273,7 @@ function MoonSystem({
   showLabels,
   reduced,
   count,
+  distanceFactor,
 }: {
   apps: string[]
   color: string
@@ -271,6 +281,7 @@ function MoonSystem({
   showLabels: boolean
   reduced: boolean
   count: number
+  distanceFactor: number
 }) {
   const group = useRef<THREE.Group>(null)
   const moons = useMemo(() => {
@@ -317,7 +328,7 @@ function MoonSystem({
             {showLabels && m.label && (
               <Html
                 center
-                distanceFactor={8}
+                distanceFactor={distanceFactor}
                 style={{ pointerEvents: 'none' }}
                 wrapperClass={styles.constellationMoonLabel}
               >
@@ -439,13 +450,14 @@ function MineralBody({
           showLabels={Boolean(showMoons && (isHero || isPeer || focused))}
           reduced={reduced}
           count={moonCount}
+          distanceFactor={labelDistanceFactor(phase, focused)}
         />
       )}
       {showLabel && (
         <Html
           position={[0, 1.55, 0]}
           center
-          distanceFactor={10}
+          distanceFactor={labelDistanceFactor(phase, focused)}
           style={{ pointerEvents: 'none' }}
           wrapperClass={styles.constellationNameLabel}
         >
@@ -634,9 +646,12 @@ function CameraRig({
 }) {
   const { camera } = useThree()
   const focus = BODIES.find((b) => b.id === focusId) ?? null
-  const goalPos = useRef(new THREE.Vector3(0.2, 0.5, 2.2))
+  const goalPos = useRef(
+    new THREE.Vector3(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35),
+  )
   const goalLook = useRef(new THREE.Vector3().copy(HERO.pos))
   const look = useRef(new THREE.Vector3().copy(HERO.pos))
+  const skyYaw = useRef(Math.atan2(-9.6, 10.8))
 
   useFrame((_, dt) => {
     if (!scripted) return
@@ -645,7 +660,7 @@ function CameraRig({
       goalPos.current.set(focus.pos.x + 1.6, focus.pos.y + 0.9, focus.pos.z + 2.4)
       goalLook.current.copy(focus.pos)
     } else if (phase === 'peri') {
-      goalPos.current.set(HERO.pos.x + 0.15, HERO.pos.y + 0.35, HERO.pos.z + 1.55)
+      goalPos.current.set(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35)
       goalLook.current.copy(HERO.pos)
     } else if (phase === 'peers') {
       const c = PEERS.reduce((acc, b) => acc.add(TMP.copy(b.pos)), new THREE.Vector3()).multiplyScalar(
@@ -654,7 +669,9 @@ function CameraRig({
       goalPos.current.set(c.x + 0.4, c.y + 2.2, c.z + 6.2)
       goalLook.current.copy(c)
     } else if (phase === 'sky') {
-      goalPos.current.set(0.8, 4.8, 14.5)
+      if (!reduced) skyYaw.current += dt * 0.055
+      const r = 14.4
+      goalPos.current.set(Math.sin(skyYaw.current) * r, 3.1, Math.cos(skyYaw.current) * r)
       goalLook.current.set(0, 0.2, 0)
     } else if (phase === 'cabinets') {
       goalPos.current.set(0.2, 2.4, 26.5)
@@ -703,7 +720,7 @@ function Scene({
   useEffect(() => {
     setSkySettled(false)
     if (!canOrbit || focusId) return
-    const id = window.setTimeout(() => setSkySettled(true), reduced ? 0 : 1100)
+    const id = window.setTimeout(() => setSkySettled(true), reduced ? 0 : 700)
     return () => window.clearTimeout(id)
   }, [phase, focusId, reduced, canOrbit])
 
@@ -746,6 +763,8 @@ function Scene({
         enabled={orbit}
         enablePan={false}
         enableZoom
+        autoRotate={orbit && phase === 'sky'}
+        autoRotateSpeed={0.42}
         minDistance={phase === 'peers' ? 3.5 : 6}
         maxDistance={phase === 'peers' ? 14 : 28}
         maxPolarAngle={Math.PI * 0.48}
@@ -790,7 +809,12 @@ export function MineralConstellation({ active, label }: { active: boolean; label
     >
       <Canvas
         dpr={STRUCTURE_DPR}
-        camera={{ position: [0.2, 0.5, 2.2], fov: 42, near: 0.05, far: 120 }}
+        camera={{
+          position: [HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35],
+          fov: 42,
+          near: 0.05,
+          far: 120,
+        }}
         gl={STRUCTURE_GL_OPAQUE}
         style={{ width: '100%', height: '100%' }}
         onPointerMissed={() => {

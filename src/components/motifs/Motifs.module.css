@@ -1036,20 +1036,20 @@
   gap: 2px;
   color: rgba(245, 238, 220, 0.9);
   font-family: var(--font-display, var(--font-body)), Georgia, serif;
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: 0.01em;
   text-shadow: 0 0 18px rgba(0, 0, 0, 0.85);
 }
 
 .constellationNameLabel div[data-hero] {
-  font-size: 20px;
+  font-size: 32px;
 }
 
 .constellationNameLabel em {
   font-style: normal;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1068,7 +1068,7 @@
 .constellationMoonLabel span {
   display: inline-block;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 15px;
   letter-spacing: 0.02em;
   color: rgba(236, 228, 210, 0.72);
   text-shadow: 0 0 12px rgba(0, 0, 0, 0.9);

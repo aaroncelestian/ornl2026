@@ -241,7 +241,6 @@ export const slides: Slide[] = [
       {
         id: 'peers',
         label: 'Peers',
-        title: 'The lab already\nspeaks mineralogy.',
         layers: ['sky'],
         notes:
           'Pull out. Same look, more names the room already uses: zeolite → molecular sieves (1756 → 1956); olivine → LiFePO₄ (1790 → 1997); fluorite → YSZ; garnet → YIG then LLZO; stibnite → thin-film PV. Species names that became process names after a long lag. Spinel is waiting for Act I — don’t name it yet.',
