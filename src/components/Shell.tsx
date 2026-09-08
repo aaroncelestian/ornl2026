@@ -139,8 +139,9 @@ export function Shell() {
       copyActive = true
     } else if (holdsCopy(slide)) {
       setCopyOn(false)
-      setBlackout(Boolean(slide.enterBlack))
-      setBlackoutCut(false)
+      setBlackout(Boolean(slide.enterBlack || slide.enterLight))
+      // Light handoff snaps on so the drawer wash continues unbroken
+      setBlackoutCut(Boolean(slide.enterLight))
       copyActive = false
     } else {
       setCopyOn(true)
@@ -179,7 +180,7 @@ export function Shell() {
     }
     if (!holdsCopy(slide)) {
       setCopyOn(true)
-      if (slide?.enterBlack) {
+      if (slide?.enterBlack || slide?.enterLight) {
         setBlackoutCut(true)
         let cancelled = false
         let cutTimer = 0
@@ -199,13 +200,14 @@ export function Shell() {
       }
       return
     }
-    if (slide.enterBlack) setBlackout(true)
+    if (slide.enterBlack || slide.enterLight) setBlackout(true)
     const timer = window.setTimeout(() => {
+      setBlackoutCut(false)
       setBlackout(false)
       setCopyOn(true)
     }, (slide.enterDelay ?? 0) * 1000)
     return () => window.clearTimeout(timer)
-  }, [slide?.id, slide?.enterDelay, slide?.enterBlack, slide?.enterHit, reduced])
+  }, [slide?.id, slide?.enterDelay, slide?.enterBlack, slide?.enterLight, slide?.enterHit, reduced])
 
   useEffect(() => {
     interceptRef.current = (from, to) => {
@@ -502,6 +504,7 @@ export function Shell() {
           className={styles.blackout}
           data-on={blackout || undefined}
           data-cut={blackoutCut || undefined}
+          data-light={slide?.enterLight || undefined}
           aria-hidden
         />
       </div>

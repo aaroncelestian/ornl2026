@@ -1054,9 +1054,7 @@
   z-index: 4;
   pointer-events: none;
   opacity: 0;
-  background:
-    radial-gradient(circle at 50% 58%, #fff6d8 0%, #f0c878 28%, #1a1208 72%, #030303 100%);
-  mix-blend-mode: screen;
+  background: #fff6d8;
 }
 
 .constellationSvg {

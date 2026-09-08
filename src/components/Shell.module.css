@@ -63,6 +63,11 @@
   transition: opacity 0.8s ease;
 }
 
+.blackout[data-light] {
+  background: #fff6d8;
+  transition: opacity 1.15s ease;
+}
+
 .blackout[data-on] {
   opacity: 1;
 }

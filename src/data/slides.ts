@@ -166,6 +166,8 @@ export interface Slide {
   enterDelay?: number
   exitHold?: number
   enterBlack?: boolean
+  /** Soft warm light wash on enter (drawer dive → Act I). */
+  enterLight?: boolean
   enterHit?: boolean
   copySnap?: boolean
   promoAfter?: number
@@ -291,8 +293,8 @@ export const slides: Slide[] = [
     layout: 'divider',
     ghostNum: '01',
     title: 'Interstitial sites\nas a design brief.',
-    enterBlack: true,
-    enterDelay: 0.55,
+    enterLight: true,
+    enterDelay: 1.15,
     notes:
       'Case one: natural spinel taught interstitial-site chemistry. The engineered answer is lithium manganese oxide — Li₄Mn₅O₁₂ / λ-MnO₂ — for direct lithium extraction from geothermal and reject brine. Partners: ORNL (Kumar, Paranthaman), Mineral Selective Technologies / Element3 (Bourcier, Camiré), NHMLAC. DOE AMO DE-EE0009442. Mechanism paper: Celestian et al., J. Raman Spectrosc. 2026.',
   },

@@ -756,15 +756,18 @@ function easeInOutCubic(t: number) {
 }
 
 const CAM_EASE_SEC = 2.45
-const DIVE_SEC = 3.35
+/** Pan-up to overlook the glowing drawer (2× the original pan duration). */
+const DIVE_PAN_SEC = 2.7
+/** Plunge into the drawer light — left at the previous zoom pace. */
+const DIVE_PLUNGE_SEC = 2.0
 const SKY_R = 14.4
 const SKY_Y = 3.1
 
 /** Highlight drawer mouth in hall space (cabinet index 3, drawer 2). */
 const DRAWER_MOUTH = new THREE.Vector3(0, 0.12, 13.05)
 const DIVE_PAN = {
-  pos: new THREE.Vector3(0.15, 4.1, 19.2),
-  look: new THREE.Vector3(0, 0.35, 13.2),
+  pos: new THREE.Vector3(0.1, 6.4, 18.6),
+  look: new THREE.Vector3(0, 0.2, 13.1),
 }
 const DIVE_PLUNGE = {
   pos: new THREE.Vector3(0, 0.18, 12.55),
@@ -827,7 +830,8 @@ function CameraRig({
   reduced: boolean
   scripted: boolean
   onSettle?: (settled: boolean) => void
-  onDiveProgress?: (t: number) => void
+  /** 0–1 wash coverage during the plunge (0 while panning). */
+  onDiveProgress?: (wash: number, done: boolean) => void
 }) {
   const { camera } = useThree()
   const focus = BODIES.find((b) => b.id === focusId) ?? null
@@ -839,6 +843,7 @@ function CameraRig({
   const toPos = useRef(new THREE.Vector3(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35))
   const toLook = useRef(new THREE.Vector3().copy(HERO.pos))
   const progress = useRef(1)
+  const diveClock = useRef(0)
   const prevPhase = useRef(phase)
   const prevFocus = useRef(focusId)
   const skyYaw = useRef(Math.atan2(-9.6, 10.8))
@@ -865,6 +870,7 @@ function CameraRig({
       fromPos.current.copy(camera.position)
       fromLook.current.copy(look.current)
       baseFov.current = persp.fov
+      diveClock.current = 0
       if (focus) {
         toPos.current.set(focus.pos.x + 1.6, focus.pos.y + 0.9, focus.pos.z + 2.4)
         toLook.current.copy(focus.pos)
@@ -889,29 +895,45 @@ function CameraRig({
         settled.current = false
         onSettle?.(false)
       }
-      if (phase !== 'dive') onDiveProgress?.(0)
+      if (phase !== 'dive') onDiveProgress?.(0, false)
     }
 
     if (!focus && phase === 'dive') {
-      const dur = reduced ? 0.01 : DIVE_SEC
-      progress.current = Math.min(1, progress.current + dt / dur)
-      const u = easeInOutCubic(progress.current)
-      if (u < 0.4) {
-        const v = easeInOutCubic(u / 0.4)
-        camera.position.lerpVectors(fromPos.current, midPos.current, v)
-        look.current.lerpVectors(fromLook.current, midLook.current, v)
-        persp.fov = THREE.MathUtils.lerp(baseFov.current, 38, v)
+      if (reduced) {
+        camera.position.copy(toPos.current)
+        look.current.copy(toLook.current)
+        persp.fov = 72
+        persp.updateProjectionMatrix()
+        onDiveProgress?.(1, true)
+        if (!settled.current) {
+          settled.current = true
+          onSettle?.(true)
+        }
       } else {
-        const v = easeInOutCubic((u - 0.4) / 0.6)
-        camera.position.lerpVectors(midPos.current, toPos.current, v)
-        look.current.lerpVectors(midLook.current, toLook.current, v)
-        persp.fov = THREE.MathUtils.lerp(38, 72, v)
-      }
-      persp.updateProjectionMatrix()
-      onDiveProgress?.(progress.current)
-      if (progress.current >= 1 && !settled.current) {
-        settled.current = true
-        onSettle?.(true)
+        diveClock.current += dt
+        const panDur = DIVE_PAN_SEC
+        const plungeDur = DIVE_PLUNGE_SEC
+        if (diveClock.current <= panDur) {
+          const v = easeInOutCubic(diveClock.current / panDur)
+          camera.position.lerpVectors(fromPos.current, midPos.current, v)
+          look.current.lerpVectors(fromLook.current, midLook.current, v)
+          persp.fov = THREE.MathUtils.lerp(baseFov.current, 38, v)
+          onDiveProgress?.(0, false)
+        } else {
+          const raw = Math.min(1, (diveClock.current - panDur) / plungeDur)
+          const v = easeInOutCubic(raw)
+          camera.position.lerpVectors(midPos.current, toPos.current, v)
+          look.current.lerpVectors(midLook.current, toLook.current, v)
+          persp.fov = THREE.MathUtils.lerp(38, 72, v)
+          // Full-frame light by the end of the plunge
+          const wash = Math.min(1, easeInOutCubic(Math.max(0, (raw - 0.15) / 0.55)))
+          onDiveProgress?.(wash, raw >= 1)
+          if (raw >= 1 && !settled.current) {
+            settled.current = true
+            onSettle?.(true)
+          }
+        }
+        persp.updateProjectionMatrix()
       }
     } else if (!focus && phase === 'sky' && progress.current >= 1) {
       if (!reduced) skyYaw.current += dt * 0.055
@@ -967,7 +989,7 @@ function Scene({
   focusId: string | null
   setFocusId: (id: string | null) => void
   reduced: boolean
-  onDiveProgress?: (t: number) => void
+  onDiveProgress?: (wash: number, done: boolean) => void
 }) {
   const inHall = phase === 'cabinets' || phase === 'instrument' || phase === 'turn' || phase === 'dive'
   const [camSettled, setCamSettled] = useState(true)
@@ -1092,17 +1114,17 @@ export function MineralConstellation({ active, label }: { active: boolean; label
   }, [focusId])
 
   const onDiveProgress = useCallback(
-    (t: number) => {
-      const bloom = t < 0.42 ? 0 : easeInOutCubic((t - 0.42) / 0.58)
-      if (washRef.current) washRef.current.style.opacity = String(bloom)
-      if (t < 0.98 || advanced.current || !active) return
+    (wash: number, done: boolean) => {
+      if (washRef.current) washRef.current.style.opacity = String(wash)
+      if (!done || advanced.current || !active) return
       advanced.current = true
       const i = slides.findIndex((s) => s.id === 'open-zoom')
+      // Hold full light briefly so Act I can pick up the same wash
       window.setTimeout(
         () => {
           if (i >= 0) goTo(i + 1, 'auto', true)
         },
-        reduced ? 120 : 420,
+        reduced ? 80 : 380,
       )
     },
     [active, goTo, reduced],
