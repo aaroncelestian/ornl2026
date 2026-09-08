@@ -151,73 +151,46 @@ function VoidSurface({ pore }: { pore: boolean }) {
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.Float32BufferAttribute(data.void.positions, 3))
-    geo.setIndex(data.void.index)
-    softenNormals(geo, 3)
-    return geo
-  }, [])
-
-  const capGeo = useMemo(() => {
-    const caps = data.void.caps
-    if (!caps?.positions?.length || !caps.index?.length) return null
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(caps.positions, 3))
-    if (caps.normals?.length === caps.positions.length) {
-      geo.setAttribute('normal', new THREE.Float32BufferAttribute(caps.normals, 3))
-    } else {
-      geo.computeVertexNormals()
+    if (data.void.normals?.length === data.void.positions.length) {
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(data.void.normals, 3))
     }
-    geo.setIndex(caps.index)
+    geo.setIndex(data.void.index)
+    softenNormals(geo, 2)
     return geo
   }, [])
 
-  // Normals point out of the void (toward the atoms). Front = teal skin,
-  // back = cream channel. Caps seal the cell-face mouths — no GPU clip.
+  // Continuous 8a→16c tubes. No cube-clip, no caps — those shredded the pipes.
   if (pore) {
     return (
       <group>
         <mesh geometry={geometry} renderOrder={1}>
           <meshPhysicalMaterial
             color={VOID_OUT}
-            roughness={0.42}
-            metalness={0.06}
-            clearcoat={0.18}
-            clearcoatRoughness={0.45}
-            sheen={0.22}
+            transparent
+            opacity={0.42}
+            roughness={0.46}
+            metalness={0.05}
+            transmission={0.28}
+            thickness={0.65}
+            sheen={0.18}
             sheenColor="#b8d4e0"
-            flatShading={false}
             side={THREE.FrontSide}
+            depthWrite={false}
           />
         </mesh>
         <mesh geometry={geometry} renderOrder={1}>
           <meshPhysicalMaterial
             color={VOID_IN}
-            emissive={VOID_IN}
-            emissiveIntensity={0.08}
+            transparent
+            opacity={0.28}
             roughness={0.55}
             metalness={0.02}
-            sheen={0.16}
-            sheenColor="#f0d7a0"
-            flatShading={false}
+            emissive={VOID_IN}
+            emissiveIntensity={0.06}
             side={THREE.BackSide}
+            depthWrite={false}
           />
         </mesh>
-        {capGeo && (
-          <mesh geometry={capGeo} renderOrder={2}>
-            <meshPhysicalMaterial
-              color={VOID_IN}
-              emissive={VOID_IN}
-              emissiveIntensity={0.14}
-              roughness={0.48}
-              metalness={0.04}
-              sheen={0.2}
-              sheenColor="#f0d7a0"
-              side={THREE.DoubleSide}
-              polygonOffset
-              polygonOffsetFactor={-1}
-              polygonOffsetUnits={-1}
-            />
-          </mesh>
-        )}
       </group>
     )
   }
