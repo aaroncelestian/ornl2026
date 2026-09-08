@@ -64,7 +64,7 @@ const LI_RAMAN = 4.2
 
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
-  voids: '8a→16c channels · Li path only',
+  voids: '8a→16c channels · ball-and-stick',
   hydrogen: 'H-exchange · A₁g broad, −20 cm⁻¹',
   lithium: 'Li in 8a · A₁g up and sharp',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
@@ -159,7 +159,7 @@ function VoidSurface({ pore }: { pore: boolean }) {
     return geo
   }, [])
 
-  // Isolated 8a→16c tubes — denser when atoms are off.
+  // Channels with atoms visible — slightly lighter so balls read through.
   if (pore) {
     return (
       <group>
@@ -167,12 +167,12 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_OUT}
             transparent
-            opacity={0.62}
-            roughness={0.32}
+            opacity={0.48}
+            roughness={0.34}
             metalness={0.04}
-            transmission={0.18}
+            transmission={0.2}
             thickness={0.4}
-            sheen={0.14}
+            sheen={0.12}
             sheenColor="#d0e4ee"
             side={THREE.FrontSide}
             depthWrite={false}
@@ -182,11 +182,11 @@ function VoidSurface({ pore }: { pore: boolean }) {
           <meshPhysicalMaterial
             color={VOID_IN}
             transparent
-            opacity={0.28}
-            roughness={0.48}
+            opacity={0.2}
+            roughness={0.5}
             metalness={0.02}
             emissive={VOID_IN}
-            emissiveIntensity={0.05}
+            emissiveIntensity={0.04}
             side={THREE.BackSide}
             depthWrite={false}
           />
@@ -497,8 +497,8 @@ function Scene({
 
   const showVoids = phase === 'voids'
   const showCubane = phase === 'cubane'
-  // Voids beat: channel mesh alone — Mn/O balls fight the tubes.
-  const showBalls = !showCubane && !poreView
+  // Voids beat: channels + Mn/O; mesh is open at cell faces (no cubic shell).
+  const showBalls = !showCubane
   const heroCubane = data.cubanes[0] as CubaneData
   const controls = useRef<{ enabled: boolean; target: THREE.Vector3 } | null>(null)
 
@@ -515,21 +515,21 @@ function Scene({
   return (
     <>
       <color attach="background" args={['#000000']} />
-      <ambientLight intensity={cubaneFocus ? 0.4 : poreView ? 0.48 : 0.55} />
+      <ambientLight intensity={cubaneFocus ? 0.4 : poreView ? 0.5 : 0.55} />
       <directionalLight
         position={[6, 8, 4]}
-        intensity={cubaneFocus ? 1.55 : poreView ? 1.35 : 1.15}
+        intensity={cubaneFocus ? 1.55 : poreView ? 1.2 : 1.15}
         color="#fff3dc"
       />
       <directionalLight
         position={[-4, 2, -6]}
-        intensity={cubaneFocus ? 0.5 : poreView ? 0.85 : 0.35}
+        intensity={cubaneFocus ? 0.5 : poreView ? 0.7 : 0.35}
         color="#9ec4d4"
       />
       {cubaneFocus && <directionalLight position={[2, -4, 5]} intensity={0.3} color="#f0c878" />}
-      {poreView && <pointLight position={[0, 0, 0]} intensity={0.4} color="#b8d4e4" distance={9} />}
+      {poreView && <pointLight position={[0, 0, 0]} intensity={0.35} color="#b8d4e4" distance={9} />}
       <group ref={group} scale={SCALE}>
-        {!cubaneFocus && <CellWire size={CELL_A} opacity={poreView ? 0.16 : 0.28} />}
+        {!cubaneFocus && <CellWire size={CELL_A} opacity={poreView ? 0.2 : 0.28} />}
         {showBalls && <VibratingCell phase={phase} vibeOn={vibeOn} active={active} reduced={reduced} />}
         {showVoids && <VoidSurface pore={poreView} />}
         {exchange && (
@@ -820,6 +820,8 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
         ]
       : phase === 'voids'
         ? [
+            { color: MN_COLOR, label: 'Mn' },
+            { color: O_COLOR, label: 'O' },
             { color: VOID_OUT, label: 'channel' },
             { color: VOID_IN, label: 'interior' },
           ]

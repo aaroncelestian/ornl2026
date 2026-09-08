@@ -23,6 +23,8 @@ const TUBE_R = 0.58
 const SITE_8A_R = 0.72
 const SITE_16C_R = 0.5
 const SMOOTH_ITERS = 4
+/** Kill isosurface near cell faces — stops the cubic “ghost wrapper”. */
+const FACE_MARGIN = 0.55
 const CARVE = { Mn: 0.72, O: 0.62 }
 
 function parseNum(value) {
@@ -439,7 +441,11 @@ function channelField(x, y, z) {
     if (d < carve) carve = d
   }
   // Inside channel AND outside Mn/O carve spheres.
-  return Math.min(best, carve)
+  let field = Math.min(best, carve)
+  // Open the mesh at cell faces so we don't get a cubic shell.
+  const faceDist = Math.min(x, y, z, a - x, a - y, a - z)
+  field = Math.min(field, faceDist - FACE_MARGIN)
+  return field
 }
 
 const n = GRID
@@ -749,7 +755,8 @@ const payload = {
     site16cR: SITE_16C_R,
     grid: GRID,
     hops: segments.length,
-    note: 'Soft tubes on crystallographic 8a→16c→8a Li path; carved by Mn/O',
+    faceMargin: FACE_MARGIN,
+    note: 'Soft tubes on crystallographic 8a→16c→8a Li path; open at cell faces; carved by Mn/O',
     positions: [...positions],
     normals: [...normals],
     index,

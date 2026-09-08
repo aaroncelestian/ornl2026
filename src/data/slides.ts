@@ -414,7 +414,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Framework off. What remains is the crystallographic 8a→16c→8a Li path — soft tubes on the interstitial graph. That tunnel geometry is the product.',
+          'Ball-and-stick Mn–O with the crystallographic 8a→16c→8a Li path as open tubes — no cubic shell on the cell faces. That tunnel geometry is the product.',
       },
       {
         id: '8a',
