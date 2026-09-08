@@ -8,6 +8,7 @@ import styles from './Motifs.module.css'
 const W = 920
 const H = 500
 const PAD = { t: 48, r: 220, b: 56, l: 64 }
+const LABEL_GAP = 36
 
 function catmullRom(points: [number, number][]) {
   if (points.length < 2) return ''
@@ -31,19 +32,42 @@ function catmullRom(points: [number, number][]) {
 
 const STROKE: Record<string, string> = {
   zorite_ets4: '#8fd4a8',
-  sitinakite_cst: '#6ebf8a',
+  sitinakite: '#6ebf8a',
+  cst_ets10: '#3d9a68',
   georgechaoite: '#7ec4d4',
   umbite: '#5aa8c4',
   szc: '#f0c878',
 }
 
-type Phase = 'cloud' | 'natural' | 'synthetic' | 'converge'
+type Phase = 'cloud' | 'sitinakite' | 'natural'
 
 function phaseForBeat(id?: string): Phase {
-  if (id === 'precedents' || id === 'natural') return 'natural'
-  if (id === 'zs9' || id === 'synthetic' || id === 'patients') return 'synthetic'
-  if (id === 'converge' || id === 'same') return 'converge'
+  if (id === 'sitinakite' || id === 'split') return 'sitinakite'
+  if (id === 'precedents' || id === 'natural' || id === 'zs9' || id === 'synthetic') {
+    return 'natural'
+  }
   return 'cloud'
+}
+
+function separateLabels(raw: number[], minY: number, maxY: number) {
+  const ys = [...raw]
+  const order = ys
+    .map((y, i) => ({ y, i }))
+    .sort((a, b) => a.y - b.y)
+  for (let n = 0; n < 8; n++) {
+    for (let k = 1; k < order.length; k++) {
+      const prev = order[k - 1]
+      const cur = order[k]
+      const gap = cur.y - prev.y
+      if (gap >= LABEL_GAP) continue
+      const need = (LABEL_GAP - gap) / 2
+      prev.y = Math.max(minY, prev.y - need)
+      cur.y = Math.min(maxY, cur.y + need)
+    }
+  }
+  const out = [...ys]
+  for (const row of order) out[row.i] = row.y
+  return out
 }
 
 export function FrameworkLineage({ active, label }: { active: boolean; label?: string }) {
@@ -60,29 +84,33 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
   const sx = (yr: number) => PAD.l + ((yr - xMin) / (xMax - xMin)) * plotW
   const sy = (v: number) => PAD.t + plotH - (v / yMax) * plotH
 
-  const named = useMemo(
-    () =>
-      data.named.map((s, idx) => {
-        const start = years.findIndex((_, i) => (s.vals[i] ?? 0) > 0 || years[i] >= s.discovery)
-        const sliceFrom = Math.max(0, start)
-        const pts: [number, number][] = years
-          .slice(sliceFrom)
-          .map((yr, i) => [sx(yr), sy(s.vals[sliceFrom + i] ?? 0)])
-        const last = pts[pts.length - 1]
-        const labelLift = (data.named.length - 1 - idx) * 22
-        return {
-          ...s,
-          d: catmullRom(pts),
-          end: last,
-          labelY: (last?.[1] ?? 0) - labelLift,
-          stroke: STROKE[s.id] ?? '#7ec4d4',
-          focus: s.id === 'szc',
-          isMineral: s.family === 'mineral',
-        }
-      }),
+  const named = useMemo(() => {
+    const built = data.named.map((s) => {
+      const start = years.findIndex((_, i) => (s.vals[i] ?? 0) > 0 || years[i] >= s.discovery)
+      const sliceFrom = Math.max(0, start)
+      const pts: [number, number][] = years
+        .slice(sliceFrom)
+        .map((yr, i) => [sx(yr), sy(s.vals[sliceFrom + i] ?? 0)])
+      const last = pts[pts.length - 1]
+      return {
+        ...s,
+        d: catmullRom(pts),
+        end: last,
+        labelY: last?.[1] ?? PAD.t + plotH,
+        stroke: STROKE[s.id] ?? '#7ec4d4',
+        focus: s.id === 'szc',
+        isMineral: s.family === 'mineral',
+        isSplit: s.id === 'sitinakite' || s.id === 'cst_ets10',
+      }
+    })
+    const separated = separateLabels(
+      built.map((s) => s.labelY),
+      PAD.t + 8,
+      PAD.t + plotH - 8,
+    )
+    return built.map((s, i) => ({ ...s, labelY: separated[i] }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  )
+  }, [])
 
   const yTicks = [0, Math.round(yMax / 3), Math.round((2 * yMax) / 3), Math.round(yMax)]
 
@@ -139,29 +167,36 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
         </text>
 
         {named.map((s, i) => {
-          const dimOthers = phase === 'synthetic' && !s.focus
+          const hiddenOnCloud = phase === 'cloud' && s.id === 'cst_ets10'
+          const dimOthers = phase === 'sitinakite' && !s.isSplit
+          const emphasize = phase === 'sitinakite' && s.isSplit
+          const opacity = hiddenOnCloud
+            ? 0
+            : dimOthers
+              ? 0.28
+              : 1
           return (
             <g key={s.id}>
               <motion.path
                 d={s.d}
                 fill="none"
                 stroke={s.stroke}
-                strokeWidth={s.focus ? 3.2 : s.isMineral ? 1.8 : 2.2}
+                strokeWidth={emphasize || s.focus ? 3.2 : s.isMineral ? 1.8 : 2.2}
                 strokeLinecap="round"
                 initial={false}
                 animate={{
-                  pathLength: active ? 1 : 0,
-                  opacity: active ? (dimOthers ? 0.28 : 1) : 0,
+                  pathLength: active && !hiddenOnCloud ? 1 : 0,
+                  opacity: active ? opacity : 0,
                 }}
                 transition={{
-                  duration: reduced ? 0 : 1.05,
-                  delay: reduced || !active ? 0 : 0.1 + i * 0.08,
+                  duration: reduced ? 0 : hiddenOnCloud ? 0.35 : 1.05,
+                  delay: reduced || !active || hiddenOnCloud ? 0 : 0.1 + i * 0.08,
                 }}
               />
               <motion.g
                 initial={false}
-                animate={{ opacity: active ? (dimOthers ? 0.35 : 1) : 0 }}
-                transition={{ delay: reduced ? 0 : 0.3 + i * 0.06 }}
+                animate={{ opacity: active ? (hiddenOnCloud ? 0 : dimOthers ? 0.35 : 1) : 0 }}
+                transition={{ delay: reduced || hiddenOnCloud ? 0 : 0.3 + i * 0.06 }}
               >
                 <text x={(s.end?.[0] ?? 0) + 10} y={s.labelY + 4} className={styles.plotAnnotate}>
                   {s.label}

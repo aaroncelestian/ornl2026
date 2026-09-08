@@ -17,12 +17,13 @@
       "id": "perovskite",
       "name": "Perovskite",
       "apps": [
-        "Solar cells · 2009"
+        "Ferroelectrics",
+        "Solar cells"
       ],
       "domain": "energy",
       "tier": "hero",
       "named": 1839,
-      "afterlife": "Halide solar · 2009",
+      "afterlife": "BaTiO₃ · halide solar",
       "x": 420,
       "y": 310
     },

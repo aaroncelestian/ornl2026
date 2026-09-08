@@ -26,9 +26,8 @@ const LI_O_COUNT = 4
 /** Fade Li–O sticks in once Li is this far through its inbound hop. */
 const LI_O_BOND_AT = 0.35
 /** Stick radius — thick enough to read against Mn–O clutter. */
-const LI_O_RADIUS = 0.12
+const LI_O_RADIUS = 0.14
 const LI_RADIUS = 0.4
-const O_RADIUS_DRAW = 0.24
 const CELL = data.cell.a
 const CELL_PAD = CELL * 0.5 + 0.2
 const HERO_AT = v3(CELL * 0.25, -CELL * 0.25, CELL * 0.25)
@@ -320,7 +319,6 @@ export function ExchangeIons({
   const liMesh = useRef<(THREE.Mesh | null)[]>([])
   const liMat = useRef<(THREE.MeshStandardMaterial | null)[]>([])
   const liOMesh = useRef<(THREE.Mesh | null)[][]>([])
-  const liOMat = useRef<(THREE.MeshStandardMaterial | null)[][]>([])
   const distLabelEls = useRef<(HTMLSpanElement | null)[]>([])
   const extraMesh = useRef<(THREE.Mesh | null)[]>([])
   const flashLight = useRef<THREE.PointLight>(null)
@@ -517,7 +515,7 @@ export function ExchangeIons({
         }
       }
 
-      // Tetrahedral Li–O sticks once Li is near 8a (after H has cleared).
+      // Tetrahedral Li–O sticks once Li is near 8a.
       const liLocal = (t - LI_GATHER - i * LI_STAGGER) / LI_TRAVEL
       const bondOn = phase === 'lithium' && (reduced || capturing || liLocal > LI_O_BOND_AT)
       const bondFade =
@@ -525,44 +523,37 @@ export function ExchangeIons({
           ? 0
           : reduced || capturing
             ? 1
-            : THREE.MathUtils.smoothstep(LI_O_BOND_AT, 0.75, liLocal)
+            : THREE.MathUtils.smoothstep(LI_O_BOND_AT, 0.72, liLocal)
       const loRow = liOMesh.current[i]
-      const lomRow = liOMat.current[i]
       for (let j = 0; j < site.liOxygens.length; j++) {
         const stick = loRow?.[j]
-        const sm = lomRow?.[j]
         if (!stick) continue
-        if (!bondOn || bondFade < 0.03) {
+        const sm = (
+          Array.isArray(stick.material) ? stick.material[0] : stick.material
+        ) as THREE.MeshBasicMaterial | null
+        if (!bondOn || bondFade < 0.02) {
           stick.visible = false
-          if (sm) {
-            sm.opacity = 0
-            sm.transparent = true
-          }
+          if (sm) sm.opacity = 0
           continue
         }
-        // Anchor at 8a so sticks don't stretch across the inbound hop.
+        // Full center-to-center stick (same pattern as OH) — read clearly against Mn–O.
         tmpA.set(...site.site8a)
         tmpB.set(...site.liOxygens[j])
+        tmpMid.copy(tmpA).add(tmpB).multiplyScalar(0.5)
         tmpDir.copy(tmpB).sub(tmpA)
         const L = tmpDir.length()
         if (L < 0.5) {
           stick.visible = false
           continue
         }
-        // Surface-to-surface so the stick isn't buried in the Li/O spheres.
-        const gap = Math.max(0.35, L - LI_RADIUS - O_RADIUS_DRAW)
-        tmpDir.normalize()
-        tmpMid.copy(tmpA).addScaledVector(tmpDir, LI_RADIUS + gap * 0.5)
         stick.visible = true
         stick.position.copy(tmpMid)
-        stick.scale.set(1, gap / LI_O_LEN, 1)
-        tmpQ.setFromUnitVectors(yUp, tmpDir)
+        stick.scale.set(1, L / LI_O_LEN, 1)
+        tmpQ.setFromUnitVectors(yUp, tmpDir.normalize())
         stick.quaternion.copy(tmpQ)
         if (sm) {
-          sm.transparent = bondFade < 0.98
+          sm.transparent = bondFade < 0.99
           sm.opacity = bondFade
-          sm.emissiveIntensity = 0.85 + 0.55 * bondFade
-          sm.needsUpdate = true
         }
       }
 
@@ -697,20 +688,13 @@ export function ExchangeIons({
               frustumCulled={false}
             >
               <cylinderGeometry args={[LI_O_RADIUS, LI_O_RADIUS, LI_O_LEN, 12]} />
-              <meshStandardMaterial
-                ref={(el) => {
-                  if (!liOMat.current[i]) liOMat.current[i] = []
-                  liOMat.current[i][j] = el
-                }}
+              <meshBasicMaterial
                 color={LI_O_COLOR}
-                emissive={LI_O_COLOR}
-                emissiveIntensity={0.9}
                 transparent
                 opacity={0}
                 depthTest={false}
                 depthWrite={false}
-                roughness={0.22}
-                metalness={0.05}
+                toneMapped={false}
               />
             </mesh>
           ))}

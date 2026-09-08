@@ -418,7 +418,7 @@ export const slides: Slide[] = [
         title: 'That window leaves\nLi⁺ almost alone.',
         layers: ['plume'],
         notes:
-          'Same narrow gate against real brine competitors. Shannon radii: Li⁺ ~0.76 Å, Mg²⁺ 0.72, Na⁺ 1.02, Ca²⁺ 1.0, K⁺ 1.38. Size-selective interstitial chemistry is why a spinel can still pull Li out of desalination reject and geothermal brine — Na and Mg dominate the soup; the pore does not care.',
+          'Same narrow gate against real brine competitors. Shannon effective ionic radii (CN=6): Li⁺ 0.76 Å, Mg²⁺ 0.72, Na⁺ 1.02, Ca²⁺ 1.00, K⁺ 1.38. Yes — Mg²⁺ is slightly smaller than Li⁺; that is real Shannon data, not a typo. Size alone would let Mg in. Charge density and hydration shell are what λ-MnO₂ uses to reject it. Size-selective interstitial chemistry plus that charge/hydration filter is why a spinel can still pull Li out of desalination reject and geothermal brine — Na and Mg dominate the soup; the pore does not care.',
       },
       {
         id: 'brine',
@@ -541,34 +541,25 @@ export const slides: Slide[] = [
         title: 'Natural names barely\nmove the literature.',
         layers: ['lineage'],
         notes:
-          'Same axis for all. Lump only where mineral = industrial rebuild: zorite/ETS-4; sitinakite/CST/ETS-10. Georgechaoite has no trade name — stays on the floor. Umbite may have one; we do not know it, so it stays mineral-only. SZC / ZS-9 / Lokelma are one product under three names — that is the curve that detonates.',
+          'Same axis for all. Mineral names stay on the floor: sitinakite, georgechaoite, umbite. Zorite is shown with its known industrial alias ETS-4. Georgechaoite has no trade name. Umbite may have one; we do not know it, so it stays mineral-only. SZC / ZS-9 / Lokelma already leaves the floor — that is the curve that detonates.',
+      },
+      {
+        id: 'sitinakite',
+        label: 'Sitinakite split',
+        kicker: 'Mineral vs industrial name',
+        title: 'Same lineage.\nMineral name. Then trade name.',
+        layers: ['lineage'],
+        notes:
+          'Split sitinakite from CST / ETS-10. The mineral name barely registers. Crystalline silicotitanate and ETS-10 — the industrial rebuild — carry the literature. That is the point: collections preserve the teacher; deployment happens under the trade name. Zorite → ETS-4 is the same pattern, already lumped. Georgechaoite never got a product name. The Zr product that did is SZC / ZS-9 / Lokelma.',
       },
       {
         id: 'precedents',
         label: 'Precedents',
         kicker: 'Natural teachers',
-        title: 'Same pore.\nMineral name, then trade name.',
+        title: 'Teachers without\na product name stay quiet.',
         layers: ['lineage'],
         notes:
-          'Where the mapping is known, mineral and industry share a line: zorite → ETS-4; sitinakite → CST / ETS-10. Georgechaoite taught the Zr–Si 3MR (DFT analog in the Lokelma Raman paper) but never got a product name. Umbite is the other natural Zr teacher — industrial alias unknown. The product that did get named is SZC / ZS-9 / Lokelma.',
-      },
-      {
-        id: 'converge',
-        label: 'Convergence',
-        kicker: 'Why unrelated lattices agree',
-        title: 'Two chemistries.\nOne physically viable door.',
-        layers: ['lineage'],
-        notes:
-          'Zirconium silicate and titanium silicate are not the same structure type. Yet both lineages converge on channel apertures that select K⁺ and Cs⁺ over Na⁺. That is not coincidence. Hydrated ion diameters and framework oxygen coordination leave a narrow band of viable pore sizes for selective monovalent transport. Collections preserve both lineages side by side — synthetic libraries usually rediscover one lineage at a time.',
-      },
-      {
-        id: 'zs9',
-        label: 'ZS-9',
-        kicker: 'Synthetic rebuild',
-        title: 'Industrial use.\nSame axis.\nThe literature detonates.',
-        layers: ['lineage'],
-        notes:
-          'Highlight SZC / ZS-9 / Lokelma — one material, three names. Clinical deployment is why that line leaves the mineral floor. Georgechaoite and umbite stay quiet beside it: teachers without a trade name (or without one we can cite). Paper: Lively & Celestian, PLoS ONE 19(3): e0298661, 2024.',
+          'Georgechaoite taught the Zr–Si 3MR (DFT analog in the Lokelma Raman paper) but never got a product name. Umbite is the other natural Zr teacher — industrial alias unknown. Where the mapping is known, mineral and industry diverge in the literature: sitinakite vs CST / ETS-10; zorite vs ETS-4. The product that did get named is SZC / ZS-9 / Lokelma. Paper: Lively & Celestian, PLoS ONE 19(3): e0298661, 2024.',
       },
       {
         id: 'scale',
@@ -580,22 +571,22 @@ export const slides: Slide[] = [
           'Crystal radii mislead in water. Watch the spheres: Na⁺ ~2.8 Å, Ca²⁺ ~2.7 Å, K⁺ ~3.3 Å. The channel sees solvated cations shedding water at the window — not bare Shannon radii.',
       },
       {
-        id: 'pore',
-        label: 'Pore',
-        kicker: 'From the CIF',
-        title: 'A 7-ring window.\nBuilt like a K⁺ channel.',
-        layers: ['structure'],
-        notes:
-          'Orbit the real ZS-9 cell from CZS-K.cif. Seven-membered rings — four SiO₄ and three ZrO₆ — light up as the free aperture. Same geometric idea as a biological K⁺ channel. Effective hydrated cutoff ~3 Å; crystallographic O–O axes ~6.5 × 5 Å.',
-      },
-      {
         id: 'k',
         label: 'Capture',
         kicker: 'From the CIF',
         title: 'K⁺ is the cargo.',
         layers: ['structure'],
         notes:
-          'Potassium sits in the channels of the same CIF model. In the clinic it is captured in the gut lumen — never in blood, never on kidney tissue. Partial protonation opens the 7MR and locks K⁺ in.',
+          'Hold here. Potassium sits in the channels of the real ZS-9 cell from CZS-K.cif. In the clinic it is captured in the gut lumen — never in blood, never on kidney tissue. The rings come next; the cargo is first.',
+      },
+      {
+        id: 'pore',
+        label: 'Pore',
+        kicker: 'From the CIF',
+        title: 'A 7-ring window.\nBuilt like a K⁺ channel.',
+        layers: ['structure'],
+        notes:
+          'Now the aperture. Seven-membered rings — four SiO₄ and three ZrO₆ — light up as the free window. Same geometric idea as a biological K⁺ channel. Effective hydrated cutoff ~3 Å; crystallographic O–O axes ~6.5 × 5 Å. Partial protonation opens the 7MR and locks K⁺ in.',
       },
       {
         id: 'gut',

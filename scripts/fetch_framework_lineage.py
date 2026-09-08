@@ -26,14 +26,24 @@ SERIES = [
         "note": "Natural zorite + Engelhard ETS-4 (same topology)",
     },
     {
-        "id": "sitinakite_cst",
-        "label": "Sitinakite / CST / ETS-10",
-        "kind": "Ti-silicate · Cs⁺ cleanup",
+        "id": "sitinakite",
+        "label": "Sitinakite",
+        "kind": "natural Ti-silicate",
+        "family": "mineral",
+        "discovery": 1989,
+        "query": "sitinakite",
+        "filter": "title_and_abstract.search:sitinakite",
+        "note": "Mineral name only — stays on the floor",
+    },
+    {
+        "id": "cst_ets10",
+        "label": "CST / ETS-10",
+        "kind": "industrial Ti-silicate · Cs⁺ cleanup",
         "family": "prior",
         "discovery": 1989,
-        "query": 'sitinakite | "crystalline silicotitanate" | "ETS-10"',
-        "filter": 'title_and_abstract.search:sitinakite|"crystalline silicotitanate"|"ETS-10"',
-        "note": "Natural sitinakite + CST + ETS-10 (same lineage)",
+        "query": '"crystalline silicotitanate" | "ETS-10"',
+        "filter": 'title_and_abstract.search:"crystalline silicotitanate"|"ETS-10"',
+        "note": "Industrial rebuild of the sitinakite lineage",
     },
     {
         "id": "georgechaoite",
@@ -111,14 +121,13 @@ def main() -> None:
         )
         print(f"{s['id']}: total={sum(vals)} max={max(vals)}")
 
-    # ZS-9 alone is noisy; verify combined series and optionally tighten
     out = {
         "source": (
             "OpenAlex API — title/abstract matches, unique works by year. "
-            "Lumped only where mineral = industrial rebuild: zorite/ETS-4; "
-            "sitinakite/CST/ETS-10. Georgechaoite and umbite stay mineral-only. "
-            "SZC / ZS-9 / Lokelma are one product (generic / framework / brand). "
-            "Same y-axis for all."
+            "Zorite/ETS-4 stay lumped. Sitinakite is mineral-only; CST / ETS-10 "
+            "are the industrial rebuild, shown separately. Georgechaoite and umbite "
+            "stay mineral-only. SZC / ZS-9 / Lokelma are one product "
+            "(generic / framework / brand). Same y-axis for all."
         ),
         "xLabel": "Year",
         "yLabel": "OpenAlex works / year",

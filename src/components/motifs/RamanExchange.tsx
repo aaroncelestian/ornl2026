@@ -40,12 +40,14 @@ const BAND_COLOR = { a1g: C_PEAK, split: C_SPLIT, f2g: C_F2G } as const
 type Phase = 'as-synth' | 'h-ex' | 'li-return' | 'al-doped' | 'durability'
 type Pt = { x: number; y: number }
 
-function phaseForBeat(id?: string): Phase {
+/** Null = not a Raman beat (keep prior phase while the layer exits). */
+function phaseForBeat(id?: string): Phase | null {
+  if (id === 'as-synth') return 'as-synth'
   if (id === 'durability' || id === 'mn-loss') return 'durability'
   if (id === 'h-ex' || id === 'h-blank') return 'h-ex'
   if (id === 'al-doped' || id === 'al') return 'al-doped'
   if (id === 'li-return' || id === 'raman' || id === 'operando') return 'li-return'
-  return 'as-synth'
+  return null
 }
 
 function linePath(pts: Pt[]): string {
@@ -95,7 +97,12 @@ function xrdSticks(
 export function RamanExchange({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
-  const phase = phaseForBeat(scene.beat?.id)
+  const mapped = phaseForBeat(scene.beat?.id)
+  // Hold the last Raman phase while AnimatePresence fades the layer out —
+  // otherwise beat→cloud (etc.) falls through to as-synth XRD for a flash.
+  const phaseHold = useRef<Phase>('li-return')
+  if (mapped) phaseHold.current = mapped
+  const phase = mapped ?? phaseHold.current
   const beatKey = scene.beat?.id ?? 'idle'
 
   const usable = W - COPY_GUTTER

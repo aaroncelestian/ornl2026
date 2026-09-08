@@ -265,6 +265,12 @@
   padding: 0;
 }
 
+/* Clear the chart y-axis / tick labels on the left */
+.scene[data-motif='framework-lineage'] .stageCopy {
+  left: calc(var(--pad-x) + 5.5rem);
+  max-width: min(22ch, 28vw);
+}
+
 .scene[data-motif='selectivity-plume'] .stageCopy {
   left: auto;
   right: var(--pad-x);
@@ -294,6 +300,16 @@
     color-mix(in srgb, var(--color-bg) 78%, transparent) 0%,
     color-mix(in srgb, var(--color-bg) 32%, transparent) 38%,
     transparent 64%
+  );
+}
+
+.scene[data-motif='framework-lineage'] .stageScrim {
+  background: linear-gradient(
+    105deg,
+    color-mix(in srgb, var(--color-bg) 82%, transparent) 0%,
+    color-mix(in srgb, var(--color-bg) 55%, transparent) 28%,
+    color-mix(in srgb, var(--color-bg) 22%, transparent) 48%,
+    transparent 68%
   );
 }
 

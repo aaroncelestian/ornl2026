@@ -258,8 +258,18 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
                   textAnchor={side < 0 ? 'end' : 'start'}
                   className={styles.plotAnnotate}
                 >
-                  {ion.label}
+                  {ion.label} · {ion.r.toFixed(2)}
                 </text>
+                {ion.id === 'Mg' && (
+                  <text
+                    x={labelX}
+                    y={labelY + 14}
+                    textAnchor={side < 0 ? 'end' : 'start'}
+                    className={styles.plotTick}
+                  >
+                    smaller than Li⁺ · charge blocks
+                  </text>
+                )}
               </motion.g>
             )
           })}

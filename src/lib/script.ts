@@ -256,24 +256,26 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       }
       if (layer?.kind === 'motif' && layer.motif === 'crystal-viewer') {
         lines.push(
-          beat?.id === 'pore'
-            ? 'Motif: ZS-9 CIF — 7-membered-ring windows lit'
-            : beat?.id === 'protons'
-              ? 'Motif: ZS-9 CIF — protons point into the empty site'
-              : beat?.id === 'lock'
-                ? 'Motif: ZS-9 CIF — H leaves; K locks'
-                : beat?.id === 'patients'
-                  ? 'Motif: ZS-9 CIF — K locked; geometry as drug'
-                  : 'Motif: ZS-9 structure from CIF — drag to orbit',
+          beat?.id === 'k'
+            ? 'Motif: ZS-9 CIF — K⁺ sites held in the channels'
+            : beat?.id === 'pore'
+              ? 'Motif: ZS-9 CIF — 7-membered-ring windows lit'
+              : beat?.id === 'protons'
+                ? 'Motif: ZS-9 CIF — protons point into the empty site'
+                : beat?.id === 'lock'
+                  ? 'Motif: ZS-9 CIF — H leaves; K locks'
+                  : beat?.id === 'patients'
+                    ? 'Motif: ZS-9 CIF — K locked; geometry as drug'
+                    : 'Motif: ZS-9 structure from CIF — drag to orbit',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-lineage') {
         lines.push(
-          beat?.id === 'zs9' || beat?.id === 'patients'
-            ? 'Motif: OpenAlex mentions/year — SZC / ZS-9 / Lokelma highlighted on shared axis'
-            : beat?.id === 'converge'
-              ? 'Motif: OpenAlex mentions/year — lumped industrials + mineral-only georgechaoite/umbite'
-              : 'Motif: OpenAlex mentions/year — zorite/ETS-4 · sitinakite/CST/ETS-10 · georgechaoite · umbite · SZC/ZS-9/Lokelma',
+          beat?.id === 'sitinakite' || beat?.id === 'split'
+            ? 'Motif: OpenAlex mentions/year — sitinakite vs CST / ETS-10 split'
+            : beat?.id === 'precedents'
+              ? 'Motif: OpenAlex mentions/year — mineral teachers vs industrial names'
+              : 'Motif: OpenAlex mentions/year — mineral names on the floor · SZC / ZS-9 / Lokelma',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'void-fit') {

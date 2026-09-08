@@ -762,6 +762,9 @@ const DIVE_PAN_SEC = 2.7
 const DIVE_PLUNGE_SEC = 2.0
 const SKY_R = 14.4
 const SKY_Y = 3.1
+/** Match OrbitControls autoRotate (positive speed → rotateLeft → decreasing theta). */
+const SKY_AUTO_ROTATE_SPEED = 0.42
+const SKY_SPIN_RAD_PER_SEC = ((2 * Math.PI) / 60) * SKY_AUTO_ROTATE_SPEED
 
 /** Highlight drawer mouth in hall space (cabinet index 3, drawer 2). */
 const DRAWER_MOUTH = new THREE.Vector3(0, 0.12, 13.05)
@@ -936,7 +939,7 @@ function CameraRig({
         persp.updateProjectionMatrix()
       }
     } else if (!focus && phase === 'sky' && progress.current >= 1) {
-      if (!reduced) skyYaw.current += dt * 0.055
+      if (!reduced) skyYaw.current -= dt * SKY_SPIN_RAD_PER_SEC
       const g = goalForPhase('sky', skyYaw.current)
       toPos.current.copy(g.pos)
       toLook.current.copy(g.look)
@@ -947,9 +950,9 @@ function CameraRig({
         persp.updateProjectionMatrix()
       }
     } else if (progress.current < 1) {
-      // Keep the sky spinning while we zoom out — don't wait until settled.
+      // Same yaw sense + speed as settled OrbitControls autoRotate.
       if (!focus && phase === 'sky' && !reduced) {
-        skyYaw.current += dt * 0.055
+        skyYaw.current -= dt * SKY_SPIN_RAD_PER_SEC
         const g = goalForPhase('sky', skyYaw.current)
         toPos.current.copy(g.pos)
         toLook.current.copy(g.look)
@@ -1074,7 +1077,7 @@ function Scene({
         enablePan={false}
         enableZoom
         autoRotate={orbit && phase === 'sky'}
-        autoRotateSpeed={0.42}
+        autoRotateSpeed={SKY_AUTO_ROTATE_SPEED}
         minDistance={phase === 'peers' ? 3.5 : 6}
         maxDistance={phase === 'peers' ? 14 : 28}
         maxPolarAngle={Math.PI * 0.48}
