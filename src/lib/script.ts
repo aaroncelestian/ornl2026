@@ -320,7 +320,9 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
                   ? 'Motif: collection hall — cabinets as materials instrument'
                   : beat?.id === 'turn'
                     ? 'Motif: collection hall — one glowing drawer; next sorbent waiting'
-                    : 'Motif: mineral night-sky constellation',
+                    : beat?.id === 'dive'
+                      ? 'Motif: dive into the drawer light — soul of the museum into Act I'
+                      : 'Motif: mineral night-sky constellation',
         )
       }
     }

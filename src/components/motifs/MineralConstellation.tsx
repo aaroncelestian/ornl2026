@@ -1,11 +1,13 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Html, OrbitControls, Stars } from '@react-three/drei'
 import * as THREE from 'three'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
+import { useSlideNav } from '../../hooks/useSlideNav'
 import { STRUCTURE_DPR, STRUCTURE_GL_OPAQUE } from '../../lib/structureCanvas'
 import data from '../../data/mineralConstellation.json'
+import { slides } from '../../data/slides'
 import styles from './Motifs.module.css'
 
 type Tier = 'hero' | 'peer' | 'field'
@@ -33,7 +35,7 @@ type Mineral = {
   afterlife?: string
 }
 
-type Phase = 'peri' | 'peers' | 'sky' | 'cabinets' | 'instrument' | 'turn'
+type Phase = 'peri' | 'peers' | 'sky' | 'cabinets' | 'instrument' | 'turn' | 'dive'
 
 type Body = Mineral & {
   pos: THREE.Vector3
@@ -90,6 +92,7 @@ function phaseForBeat(id?: string): Phase {
   if (id === 'cabinets') return 'cabinets'
   if (id === 'instrument') return 'instrument'
   if (id === 'turn') return 'turn'
+  if (id === 'dive') return 'dive'
   return 'peri'
 }
 
@@ -472,7 +475,7 @@ function MineralBody({
 }
 
 function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
-  const show = phase === 'cabinets' || phase === 'instrument' || phase === 'turn'
+  const show = phase === 'cabinets' || phase === 'instrument' || phase === 'turn' || phase === 'dive'
   const group = useRef<THREE.Group>(null)
 
   useFrame((_, dt) => {
@@ -537,7 +540,7 @@ function CabinetUnit({
 }) {
   const drawers = 6
   const openSet =
-    phase === 'turn'
+    phase === 'turn' || phase === 'dive'
       ? new Set([2])
       : phase === 'instrument'
         ? new Set([1, 3, 4])
@@ -586,7 +589,8 @@ function CabinetUnit({
             key={di}
             y={y}
             open={wantOpen}
-            highlight={phase === 'turn' && index === 3 && di === 2}
+            highlight={(phase === 'turn' || phase === 'dive') && index === 3 && di === 2}
+            surge={phase === 'dive' && index === 3 && di === 2}
             reduced={reduced}
             seed={index * 10 + di}
           />
@@ -600,12 +604,14 @@ function Drawer({
   y,
   open,
   highlight,
+  surge = false,
   reduced,
   seed,
 }: {
   y: number
   open: boolean
   highlight: boolean
+  surge?: boolean
   reduced: boolean
   seed: number
 }) {
@@ -640,6 +646,7 @@ function Drawer({
   const D = 0.88
   const H = 0.36
   const T = 0.045
+  const glow = surge ? 1.7 : 1
 
   return (
     <group ref={ref} position={[0, y, 0.08]}>
@@ -650,7 +657,7 @@ function Drawer({
           color={tray}
           roughness={0.7}
           emissive={highlight ? '#e8b86a' : open ? '#c4a06a' : '#000000'}
-          emissiveIntensity={highlight ? 0.28 : open ? 0.1 : 0}
+          emissiveIntensity={(highlight ? 0.28 : open ? 0.1 : 0) * glow}
         />
       </mesh>
       {/* left / right sides */}
@@ -675,7 +682,7 @@ function Drawer({
           roughness={0.55}
           metalness={0.08}
           emissive={highlight ? '#e8b86a' : open ? '#c4a06a' : '#000000'}
-          emissiveIntensity={highlight ? 0.2 : open ? 0.06 : 0}
+          emissiveIntensity={(highlight ? 0.2 : open ? 0.06 : 0) * glow}
         />
       </mesh>
       {/* handle */}
@@ -691,24 +698,15 @@ function Drawer({
             <meshBasicMaterial
               color={highlight ? '#f0c878' : '#e8b86a'}
               transparent
-              opacity={highlight ? 0.4 : 0.16}
+              opacity={(highlight ? 0.28 : 0.1) * Math.min(1.4, glow)}
               depthWrite={false}
               side={THREE.DoubleSide}
-            />
-          </mesh>
-          <mesh position={[0, 0.08, D / 2 + 0.12]}>
-            <sphereGeometry args={[highlight ? 0.48 : 0.28, 12, 12]} />
-            <meshBasicMaterial
-              color={highlight ? '#f2d08a' : '#e0b87a'}
-              transparent
-              opacity={highlight ? 0.26 : 0.1}
-              depthWrite={false}
             />
           </mesh>
           <pointLight
             position={[0, 0.12, 0.15]}
             color="#f0c878"
-            intensity={highlight ? 3.2 : 0.9}
+            intensity={(highlight ? 3.2 : 0.9) * glow}
             distance={highlight ? 6.5 : 3.2}
             decay={1.4}
           />
@@ -716,16 +714,34 @@ function Drawer({
             <pointLight
               position={[0, 0.35, 0.55]}
               color="#ffe6a8"
-              intensity={2.4}
+              intensity={2.4 * glow}
               distance={8}
               decay={1.2}
             />
           )}
+          {surge && (
+            <pointLight
+              position={[0, 0.2, 0.9]}
+              color="#fff3c8"
+              intensity={5.5}
+              distance={14}
+              decay={1.05}
+            />
+          )}
           {specimens.map((s, i) => (
             <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
-              <CrystalMesh habit={s.habit} color={s.color} emissive={highlight ? 1.55 : 0.85} />
+              <CrystalMesh
+                habit={s.habit}
+                color={s.color}
+                emissive={(highlight ? 1.55 : 0.85) * (surge ? 1.35 : 1)}
+              />
               {highlight && i === 2 && (
-                <pointLight color={s.color} intensity={2.8} distance={4.5} decay={1.3} />
+                <pointLight
+                  color={s.color}
+                  intensity={2.8 * glow}
+                  distance={4.5}
+                  decay={1.3}
+                />
               )}
             </group>
           ))}
@@ -740,8 +756,20 @@ function easeInOutCubic(t: number) {
 }
 
 const CAM_EASE_SEC = 2.45
+const DIVE_SEC = 3.35
 const SKY_R = 14.4
 const SKY_Y = 3.1
+
+/** Highlight drawer mouth in hall space (cabinet index 3, drawer 2). */
+const DRAWER_MOUTH = new THREE.Vector3(0, 0.12, 13.05)
+const DIVE_PAN = {
+  pos: new THREE.Vector3(0.15, 4.1, 19.2),
+  look: new THREE.Vector3(0, 0.35, 13.2),
+}
+const DIVE_PLUNGE = {
+  pos: new THREE.Vector3(0, 0.18, 12.55),
+  look: new THREE.Vector3(0, 0.12, 11.2),
+}
 
 function goalForPhase(phase: Phase, skyYaw: number): { pos: THREE.Vector3; look: THREE.Vector3 } {
   if (phase === 'peri') {
@@ -777,6 +805,9 @@ function goalForPhase(phase: Phase, skyYaw: number): { pos: THREE.Vector3; look:
       look: new THREE.Vector3(0, 1.4, 16.5),
     }
   }
+  if (phase === 'dive') {
+    return { pos: DIVE_PLUNGE.pos.clone(), look: DIVE_PLUNGE.look.clone() }
+  }
   return {
     pos: new THREE.Vector3(0.6, 1.55, 22.4),
     look: new THREE.Vector3(-0.2, 1.25, 17.8),
@@ -789,18 +820,22 @@ function CameraRig({
   reduced,
   scripted,
   onSettle,
+  onDiveProgress,
 }: {
   phase: Phase
   focusId: string | null
   reduced: boolean
   scripted: boolean
   onSettle?: (settled: boolean) => void
+  onDiveProgress?: (t: number) => void
 }) {
   const { camera } = useThree()
   const focus = BODIES.find((b) => b.id === focusId) ?? null
   const look = useRef(new THREE.Vector3().copy(HERO.pos))
   const fromPos = useRef(new THREE.Vector3(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35))
   const fromLook = useRef(new THREE.Vector3().copy(HERO.pos))
+  const midPos = useRef(DIVE_PAN.pos.clone())
+  const midLook = useRef(DIVE_PAN.look.clone())
   const toPos = useRef(new THREE.Vector3(HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35))
   const toLook = useRef(new THREE.Vector3().copy(HERO.pos))
   const progress = useRef(1)
@@ -808,10 +843,12 @@ function CameraRig({
   const prevFocus = useRef(focusId)
   const skyYaw = useRef(Math.atan2(-9.6, 10.8))
   const settled = useRef(true)
+  const baseFov = useRef(42)
 
   useFrame((_, dt) => {
+    const persp = camera as THREE.PerspectiveCamera
+
     if (!scripted) {
-      // OrbitControls owns the camera; keep look in sync for the next scripted ease
       if (phase === 'sky') look.current.set(0, 0.2, 0)
       else if (phase === 'peers') look.current.copy(HERO.pos)
       if (!settled.current) {
@@ -827,12 +864,17 @@ function CameraRig({
     if (phaseChanged || focusChanged) {
       fromPos.current.copy(camera.position)
       fromLook.current.copy(look.current)
+      baseFov.current = persp.fov
       if (focus) {
         toPos.current.set(focus.pos.x + 1.6, focus.pos.y + 0.9, focus.pos.z + 2.4)
         toLook.current.copy(focus.pos)
+      } else if (phase === 'dive') {
+        midPos.current.copy(DIVE_PAN.pos)
+        midLook.current.copy(DIVE_PAN.look)
+        toPos.current.copy(DIVE_PLUNGE.pos)
+        toLook.current.copy(DIVE_PLUNGE.look)
       } else {
         if (phase === 'sky') {
-          // Continue from current azimuth so peri → sky does not whip sideways
           skyYaw.current = Math.atan2(camera.position.x - 0, camera.position.z - 0)
           if (!Number.isFinite(skyYaw.current)) skyYaw.current = Math.atan2(-9.6, 10.8)
         }
@@ -847,21 +889,51 @@ function CameraRig({
         settled.current = false
         onSettle?.(false)
       }
+      if (phase !== 'dive') onDiveProgress?.(0)
     }
 
-    if (!focus && phase === 'sky' && progress.current >= 1) {
+    if (!focus && phase === 'dive') {
+      const dur = reduced ? 0.01 : DIVE_SEC
+      progress.current = Math.min(1, progress.current + dt / dur)
+      const u = easeInOutCubic(progress.current)
+      if (u < 0.4) {
+        const v = easeInOutCubic(u / 0.4)
+        camera.position.lerpVectors(fromPos.current, midPos.current, v)
+        look.current.lerpVectors(fromLook.current, midLook.current, v)
+        persp.fov = THREE.MathUtils.lerp(baseFov.current, 38, v)
+      } else {
+        const v = easeInOutCubic((u - 0.4) / 0.6)
+        camera.position.lerpVectors(midPos.current, toPos.current, v)
+        look.current.lerpVectors(midLook.current, toLook.current, v)
+        persp.fov = THREE.MathUtils.lerp(38, 72, v)
+      }
+      persp.updateProjectionMatrix()
+      onDiveProgress?.(progress.current)
+      if (progress.current >= 1 && !settled.current) {
+        settled.current = true
+        onSettle?.(true)
+      }
+    } else if (!focus && phase === 'sky' && progress.current >= 1) {
       if (!reduced) skyYaw.current += dt * 0.055
       const g = goalForPhase('sky', skyYaw.current)
       toPos.current.copy(g.pos)
       toLook.current.copy(g.look)
       camera.position.lerp(toPos.current, 1 - Math.exp(-1.6 * dt))
       look.current.lerp(toLook.current, 1 - Math.exp(-1.6 * dt))
+      if (persp.fov !== baseFov.current) {
+        persp.fov = THREE.MathUtils.damp(persp.fov, 42, 3, dt)
+        persp.updateProjectionMatrix()
+      }
     } else if (progress.current < 1) {
       const dur = focus ? CAM_EASE_SEC * 0.55 : CAM_EASE_SEC
       progress.current = Math.min(1, progress.current + dt / dur)
       const u = easeInOutCubic(progress.current)
       camera.position.lerpVectors(fromPos.current, toPos.current, u)
       look.current.lerpVectors(fromLook.current, toLook.current, u)
+      if (persp.fov !== 42) {
+        persp.fov = THREE.MathUtils.lerp(baseFov.current, 42, u)
+        persp.updateProjectionMatrix()
+      }
       if (progress.current >= 1 && !settled.current) {
         settled.current = true
         onSettle?.(true)
@@ -888,14 +960,16 @@ function Scene({
   focusId,
   setFocusId,
   reduced,
+  onDiveProgress,
 }: {
   active: boolean
   phase: Phase
   focusId: string | null
   setFocusId: (id: string | null) => void
   reduced: boolean
+  onDiveProgress?: (t: number) => void
 }) {
-  const inHall = phase === 'cabinets' || phase === 'instrument' || phase === 'turn'
+  const inHall = phase === 'cabinets' || phase === 'instrument' || phase === 'turn' || phase === 'dive'
   const [camSettled, setCamSettled] = useState(true)
   const canOrbit = phase === 'sky' || phase === 'peers'
   const orbit = active && canOrbit && !focusId && !reduced && camSettled
@@ -908,10 +982,29 @@ function Scene({
   return (
     <>
       <color attach="background" args={['#030303']} />
-      <fog attach="fog" args={[inHall ? '#0c0b09' : '#030303', inHall ? 22 : 14, inHall ? 55 : 44]} />
-      <ambientLight intensity={inHall ? 0.38 : 0.22} />
-      <directionalLight position={[4, 8, 3]} intensity={inHall ? 0.95 : 0.62} color="#f2e6c8" />
-      <pointLight position={[0, 2, 2]} intensity={inHall ? 0.7 : 0.45} color="#e8b86a" distance={24} />
+      <fog
+        attach="fog"
+        args={[
+          phase === 'dive' ? '#1a1408' : inHall ? '#0c0b09' : '#030303',
+          inHall ? 22 : 14,
+          inHall ? 55 : 44,
+        ]}
+      />
+      <ambientLight intensity={inHall ? (phase === 'dive' ? 0.5 : 0.38) : 0.22} />
+      <directionalLight
+        position={[4, 8, 3]}
+        intensity={inHall ? (phase === 'dive' ? 1.15 : 0.95) : 0.62}
+        color="#f2e6c8"
+      />
+      <pointLight
+        position={[0, 2, 2]}
+        intensity={inHall ? (phase === 'dive' ? 1.1 : 0.7) : 0.45}
+        color="#e8b86a"
+        distance={24}
+      />
+      {phase === 'dive' && (
+        <pointLight position={DRAWER_MOUTH.toArray()} intensity={4.5} color="#fff0c0" distance={16} />
+      )}
 
       <Stars
         radius={80}
@@ -929,6 +1022,7 @@ function Scene({
         reduced={reduced}
         scripted={scripted}
         onSettle={setCamSettled}
+        onDiveProgress={onDiveProgress}
       />
 
       <group visible={!inHall}>
@@ -963,9 +1057,12 @@ function Scene({
 
 export function MineralConstellation({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
+  const goTo = useSlideNav()
   const reduced = usePrefersReducedMotion()
   const phase = phaseForBeat(scene.beat?.id)
   const [focusId, setFocusId] = useState<string | null>(null)
+  const washRef = useRef<HTMLDivElement>(null)
+  const advanced = useRef(false)
 
   useEffect(() => {
     if (phase !== 'sky') setFocusId(null)
@@ -974,6 +1071,13 @@ export function MineralConstellation({ active, label }: { active: boolean; label
   useEffect(() => {
     if (!active) setFocusId(null)
   }, [active])
+
+  useEffect(() => {
+    if (phase !== 'dive') {
+      advanced.current = false
+      if (washRef.current) washRef.current.style.opacity = '0'
+    }
+  }, [phase])
 
   useEffect(() => {
     if (!focusId) return
@@ -986,6 +1090,23 @@ export function MineralConstellation({ active, label }: { active: boolean; label
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [focusId])
+
+  const onDiveProgress = useCallback(
+    (t: number) => {
+      const bloom = t < 0.42 ? 0 : easeInOutCubic((t - 0.42) / 0.58)
+      if (washRef.current) washRef.current.style.opacity = String(bloom)
+      if (t < 0.98 || advanced.current || !active) return
+      advanced.current = true
+      const i = slides.findIndex((s) => s.id === 'open-zoom')
+      window.setTimeout(
+        () => {
+          if (i >= 0) goTo(i + 1, 'auto', true)
+        },
+        reduced ? 120 : 420,
+      )
+    },
+    [active, goTo, reduced],
+  )
 
   const focusName = BODIES.find((b) => b.id === focusId)?.name
 
@@ -1015,9 +1136,12 @@ export function MineralConstellation({ active, label }: { active: boolean; label
             focusId={focusId}
             setFocusId={setFocusId}
             reduced={reduced}
+            onDiveProgress={onDiveProgress}
           />
         </Suspense>
       </Canvas>
+
+      <div ref={washRef} className={styles.constellationWash} aria-hidden />
 
       {phase === 'sky' && !focusId && (
         <div className={styles.constellationHint} data-idle="">

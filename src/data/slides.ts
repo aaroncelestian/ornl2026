@@ -270,9 +270,17 @@ export const slides: Slide[] = [
         notes:
           'Hard cut into one open drawer. The collection is not a museum of finished answers — it is a drawer of geometries waiting for the right problem. We’re going deep on three of them, mechanism first: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017). Nature supplied the geometry; regulation and engineering demanded the synthesis.',
       },
+      {
+        id: 'dive',
+        label: 'Dive',
+        layers: ['sky'],
+        notes:
+          'Pan up, then fall into the light — into the soul of the museum. Let the drawer take us into Act I.',
+      },
     ],
+    exitHold: 0.4,
     notes:
-      'Cinematic open: perovskite → ~100-node constellation (clickable) → cabinets → collection as instrument → drawer turn into Act I.',
+      'Cinematic open: perovskite → constellation → cabinets → instrument → drawer → dive into Act I.',
   },
 
   // ── 01 Spinel → DLE ───────────────────────────────────
@@ -283,6 +291,8 @@ export const slides: Slide[] = [
     layout: 'divider',
     ghostNum: '01',
     title: 'Interstitial sites\nas a design brief.',
+    enterBlack: true,
+    enterDelay: 0.55,
     notes:
       'Case one: natural spinel taught interstitial-site chemistry. The engineered answer is lithium manganese oxide — Li₄Mn₅O₁₂ / λ-MnO₂ — for direct lithium extraction from geothermal and reject brine. Partners: ORNL (Kumar, Paranthaman), Mineral Selective Technologies / Element3 (Bourcier, Camiré), NHMLAC. DOE AMO DE-EE0009442. Mechanism paper: Celestian et al., J. Raman Spectrosc. 2026.',
   },
