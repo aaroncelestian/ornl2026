@@ -3,7 +3,6 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import data from '../../data/lmoSpinel.json'
-import raman from '../../data/ramanExchange.json'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
 import { isCaptureMode } from '../../lib/asset'
@@ -14,7 +13,6 @@ import styles from './Motifs.module.css'
 const SCALE = 0.42
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
 const CELL_A = data.cell.a
-const CELL_HALF = CELL_A * 0.5
 const VOID_OUT = '#5e87a0'
 const VOID_IN = '#f0d7a0'
 const VOID_GHOST = '#e0b15c'
@@ -23,6 +21,12 @@ const MN_COLOR = '#8b5cad'
 const O_COLOR = '#c45a3a'
 const C_RAMAN = '#7ec4d4'
 const C_RAMAN_DIM = '#564f48'
+const SYNTH_W = 648
+const SYNTH_FWHM = 14.1
+const LI_W = 657
+const LI_FWHM = 8.5
+const H_W = LI_W - 20
+const H_FWHM = LI_FWHM * 2
 const _Y_UP = new THREE.Vector3(0, 1, 0)
 const _DIR = new THREE.Vector3()
 const _QUAT = new THREE.Quaternion()
@@ -46,8 +50,8 @@ function phaseForBeat(id?: string): Phase {
 const CAPTION: Record<Phase, string> = {
   framework: 'LiMn₂O₄ · Mn–O balls · drag to orbit',
   voids: 'VdW empty space · ball-and-stick · Li removed',
-  hydrogen: 'OH dominates · Mn–O muted at H–O',
-  lithium: 'Li in · H out the pore',
+  hydrogen: 'H-exchange · A₁g broad, −20 cm⁻¹',
+  lithium: 'Li in 8a · A₁g up and sharp',
   cubane: 'A₁g · Mn₄O₄ cubane breathe · 4 MnO₆',
 }
 
@@ -90,69 +94,35 @@ function CellWire({ size, opacity = 0.28 }: { size: number; opacity?: number }) 
   )
 }
 
-function cellClipPlanes() {
-  const h = CELL_HALF * SCALE
-  return [
-    new THREE.Plane(new THREE.Vector3(-1, 0, 0), h),
-    new THREE.Plane(new THREE.Vector3(1, 0, 0), h),
-    new THREE.Plane(new THREE.Vector3(0, -1, 0), h),
-    new THREE.Plane(new THREE.Vector3(0, 1, 0), h),
-    new THREE.Plane(new THREE.Vector3(0, 0, -1), h),
-    new THREE.Plane(new THREE.Vector3(0, 0, 1), h),
-  ]
-}
-
-function softenNormals(geo: THREE.BufferGeometry, passes = 2) {
-  geo.computeVertexNormals()
-  const nrm = geo.getAttribute('normal')
-  const idx = geo.getIndex()
-  if (!nrm || !idx) return
-  const nV = nrm.count
-  const nbrs: number[][] = Array.from({ length: nV }, () => [])
-  for (let t = 0; t < idx.count; t += 3) {
-    const a = idx.getX(t)
-    const b = idx.getX(t + 1)
-    const c = idx.getX(t + 2)
-    nbrs[a].push(b, c)
-    nbrs[b].push(a, c)
-    nbrs[c].push(a, b)
-  }
-  const next = new Float32Array(nV * 3)
-  for (let p = 0; p < passes; p++) {
-    for (let i = 0; i < nV; i++) {
-      let x = nrm.getX(i)
-      let y = nrm.getY(i)
-      let z = nrm.getZ(i)
-      for (const j of nbrs[i]) {
-        x += nrm.getX(j)
-        y += nrm.getY(j)
-        z += nrm.getZ(j)
-      }
-      const len = Math.hypot(x, y, z) || 1
-      next[i * 3] = x / len
-      next[i * 3 + 1] = y / len
-      next[i * 3 + 2] = z / len
-    }
-    for (let i = 0; i < nV; i++) {
-      nrm.setXYZ(i, next[i * 3], next[i * 3 + 1], next[i * 3 + 2])
-    }
-  }
-  nrm.needsUpdate = true
-}
-
 function VoidSurface({ pore }: { pore: boolean }) {
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.Float32BufferAttribute(data.void.positions, 3))
+    if (data.void.normals?.length === data.void.positions.length) {
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(data.void.normals, 3))
+    } else {
+      geo.computeVertexNormals()
+    }
     geo.setIndex(data.void.index)
-    softenNormals(geo, 3)
     return geo
   }, [])
 
-  const clip = useMemo(() => cellClipPlanes(), [])
+  const capGeo = useMemo(() => {
+    const caps = data.void.caps
+    if (!caps?.positions?.length || !caps.index?.length) return null
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(caps.positions, 3))
+    if (caps.normals?.length === caps.positions.length) {
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(caps.normals, 3))
+    } else {
+      geo.computeVertexNormals()
+    }
+    geo.setIndex(caps.index)
+    return geo
+  }, [])
 
-  // Steel on the outer skin, cream on the channel interior (cut-open look).
-  // Clipped to the same unit cell as the ball-and-stick model.
+  // Normals point out of the void (toward the atoms). Front = teal skin,
+  // back = cream channel. Caps seal the cell-face mouths — no GPU clip.
   if (pore) {
     return (
       <group>
@@ -166,26 +136,39 @@ function VoidSurface({ pore }: { pore: boolean }) {
             sheen={0.22}
             sheenColor="#b8d4e0"
             flatShading={false}
-            side={THREE.BackSide}
-            clippingPlanes={clip}
-            clipShadows
+            side={THREE.FrontSide}
           />
         </mesh>
-        <mesh geometry={geometry} renderOrder={2}>
+        <mesh geometry={geometry} renderOrder={1}>
           <meshPhysicalMaterial
             color={VOID_IN}
             emissive={VOID_IN}
-            emissiveIntensity={0.1}
+            emissiveIntensity={0.08}
             roughness={0.55}
             metalness={0.02}
             sheen={0.16}
             sheenColor="#f0d7a0"
             flatShading={false}
-            side={THREE.FrontSide}
-            clippingPlanes={clip}
-            clipShadows
+            side={THREE.BackSide}
           />
         </mesh>
+        {capGeo && (
+          <mesh geometry={capGeo} renderOrder={2}>
+            <meshPhysicalMaterial
+              color={VOID_IN}
+              emissive={VOID_IN}
+              emissiveIntensity={0.14}
+              roughness={0.48}
+              metalness={0.04}
+              sheen={0.2}
+              sheenColor="#f0d7a0"
+              side={THREE.DoubleSide}
+              polygonOffset
+              polygonOffsetFactor={-1}
+              polygonOffsetUnits={-1}
+            />
+          </mesh>
+        )}
       </group>
     )
   }
@@ -503,8 +486,6 @@ function Scene({
       if (ride.current.wide) controls.current.target.set(0, 0, 0)
     }
     if (!root || !active || reduced) return
-    // Hold the current yaw through H / Li so beat changes do not snap the cell.
-    if (exchange) return
     root.rotation.y += dt * (cubaneFocus ? 0.12 : 0.08)
   })
 
@@ -614,24 +595,6 @@ function CameraHome({
   return null
 }
 
-type SeriesPt = { t: number; w: number }
-
-function atTime(points: SeriesPt[], t: number): number {
-  if (!points.length) return 0
-  if (t <= points[0].t) return points[0].w
-  const last = points[points.length - 1]
-  if (t >= last.t) return last.w
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i]
-    const b = points[i + 1]
-    if (t >= a.t && t <= b.t) {
-      const f = (t - a.t) / Math.max(1e-6, b.t - a.t)
-      return a.w + f * (b.w - a.w)
-    }
-  }
-  return last.w
-}
-
 function lorentzPath(
   center: number,
   fwhm: number,
@@ -683,31 +646,32 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
     const kind = vibeKind(phase)
     if (phase === 'hydrogen') {
       const u = Math.min(1, elapsed / 4.8)
-      const ease = u * u
+      const ease = u * u * (3 - 2 * u)
       return {
-        w: 647.8,
-        fwhm: 14.1 + 26 * ease,
-        amp: 1 - 0.9 * ease,
-        label: ease < 0.2 ? 'As-synth · A₁g on' : ease < 0.7 ? 'H-exchange · A₁g collapsing' : 'OH stretch · A₁g gone',
-        mode: 'OH dominates · MnO muted',
+        w: SYNTH_W + (H_W - SYNTH_W) * ease,
+        fwhm: SYNTH_FWHM + (H_FWHM - SYNTH_FWHM) * ease,
+        amp: 0.9,
+        label: ease < 0.4 ? 'H in · A₁g softening' : 'H-exchange · A₁g broad, −20 cm⁻¹',
+        mode: 'OH dominates · MnO disordered',
         kind,
       }
     }
     if (phase === 'lithium') {
-      const tMin = Math.min(8, elapsed * 0.85)
+      const u = Math.min(1, elapsed / 4.2)
+      const ease = u * u * (3 - 2 * u)
       return {
-        w: atTime(raman.a1g.points, tMin),
-        fwhm: atTime(raman.fwhm.points, tMin),
-        amp: 0.55 + 0.4 * Math.min(1, tMin / 3),
-        label: tMin < 2.8 ? 'Li → 8a · peak rising' : 'Li in 8a · A₁g shifted',
+        w: H_W + (LI_W - H_W) * ease,
+        fwhm: H_FWHM + (LI_FWHM - H_FWHM) * ease,
+        amp: 0.9 + 0.1 * ease,
+        label: ease < 0.45 ? 'Li → 8a · A₁g walking up' : 'Li in 8a · A₁g sharp',
         mode: 'MnO₆ A₁g · stiffer',
         kind,
       }
     }
     if (phase === 'cubane') {
       return {
-        w: 648,
-        fwhm: 14.1,
+        w: SYNTH_W,
+        fwhm: SYNTH_FWHM,
         amp: 1,
         label: 'A₁g cubane stretch',
         mode: 'Mn₄O₄ breathe',
@@ -715,8 +679,8 @@ function RamanTrack({ phase, active }: { phase: Phase; active: boolean }) {
       }
     }
     return {
-      w: 648,
-      fwhm: 14.1,
+      w: SYNTH_W,
+      fwhm: SYNTH_FWHM,
       amp: 1,
       label: 'As-synth · A₁g on',
       mode: 'MnO₆ A₁g · in phase',

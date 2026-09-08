@@ -423,7 +423,7 @@ export const slides: Slide[] = [
         title: 'H-Li Exchange',
         layers: ['lmo'],
         notes:
-          'Acid prime. Protons enter the 8a→16c pores and sit on framework oxygen — the OH vector points into the tetrahedral 8a cavity. Once H is bound, the OH stretch dominates and mutes the Mn–O motion at that oxygen. The cubane no longer breathes as one: a disordered array of non-symmetric vibrations. That is why Raman blanks.',
+          'Acid prime. Protons enter the 8a→16c pores and sit on framework oxygen — the OH vector points into the tetrahedral 8a cavity. Once H is bound, the OH stretch dominates and mutes the Mn–O motion at that oxygen. The cubane no longer breathes as one: a disordered array of non-symmetric vibrations. Raman does not blank — A₁g goes broad (about 2× the Li-exchanged width) and walks ~20 cm⁻¹ down.',
       },
       {
         id: 'li-in',
@@ -432,7 +432,7 @@ export const slides: Slide[] = [
         title: 'Li lands in 8a first.',
         layers: ['lmo'],
         notes:
-          'Paper mechanism: Li first occupies structural interstitial tetrahedral (8a) voids — stable, back-exchangeable, no Mn loss yet. A₁g HWHM narrows as Li fills 8a. Each inbound Li pushes the priming H back out the same channel. Later migration into cubane 8b is what stresses the lattice.',
+          'Paper mechanism: Li first occupies structural interstitial tetrahedral (8a) voids — stable, back-exchangeable, no Mn loss yet. As Li fills 8a, A₁g walks ~20 cm⁻¹ back up and HWHM halves. Each inbound Li pushes the priming H back out the same channel. Later migration into cubane 8b is what stresses the lattice.',
       },
       {
         id: 'li-return',

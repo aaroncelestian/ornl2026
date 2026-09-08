@@ -185,6 +185,8 @@ function hullFaces(points) {
 
 const cif = readFileSync(cifPath, 'utf8')
 const a = parseNum(cif.match(/_cell_length_a\s+(\S+)/)?.[1] ?? '8.422474')
+/** Unit-cell lid, a hair inside the wire so mouths sit on the faces. */
+const CLIP_HALF = a * 0.5 - 0.02
 const ops = parseOps(cif)
 const unit = new Map()
 
@@ -1189,9 +1191,8 @@ function circularizeLoopsOnBox(pos, loops, h, mix = 0.72) {
   return n
 }
 
-/** Planar discs on cube faces — resampled circles so the lids stay clean. */
+/** Planar discs welded to the actual mouth verts on each cube face. */
 function capBoxLoops(pos, loops, h) {
-  const SEG = 28
   const capPos = []
   const capNorm = []
   const capIndex = []
@@ -1200,30 +1201,29 @@ function capBoxLoops(pos, loops, h) {
     const c = loopCentroid(pos, loop)
     const meanR = loopRadius(pos, loop, c)
     if (meanR < CAP_MIN_R || meanR > CAP_MAX_R) continue
-    if (loopSpread(pos, loop, c, meanR) > 0.32) continue
+    if (loopSpread(pos, loop, c, meanR) > 0.38) continue
     if (!onBoxFace(c[0], c[1], c[2], h, 0.55)) continue
     const out = faceNormal(c[0], c[1], c[2])
-    const { u, v } = faceBasis(out)
-    const lift = 0.05
+    const lift = 0.03
     const cx = c[0] + out[0] * lift
     const cy = c[1] + out[1] * lift
     const cz = c[2] + out[2] * lift
-    const rad = meanR * 1.02
     const base = capPos.length / 3
     capPos.push(r3(cx), r3(cy), r3(cz))
     capNorm.push(out[0], out[1], out[2])
     const rim = capPos.length / 3
-    for (let k = 0; k < SEG; k++) {
-      const ang = (k / SEG) * Math.PI * 2
-      capPos.push(
-        r3(cx + (u[0] * Math.cos(ang) + v[0] * Math.sin(ang)) * rad),
-        r3(cy + (u[1] * Math.cos(ang) + v[1] * Math.sin(ang)) * rad),
-        r3(cz + (u[2] * Math.cos(ang) + v[2] * Math.sin(ang)) * rad),
-      )
+    for (const i of loop) {
+      const s = snapToBoxFace(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], h)
+      capPos.push(r3(s[0] + out[0] * lift), r3(s[1] + out[1] * lift), r3(s[2] + out[2] * lift))
       capNorm.push(out[0], out[1], out[2])
     }
-    for (let k = 0; k < SEG; k++) {
-      capIndex.push(base, rim + k, rim + ((k + 1) % SEG))
+    for (let k = 0; k < loop.length; k++) {
+      const ia = rim + k
+      const ib = rim + ((k + 1) % loop.length)
+      const v0 = [capPos[ia * 3] - cx, capPos[ia * 3 + 1] - cy, capPos[ia * 3 + 2] - cz]
+      const v1 = [capPos[ib * 3] - cx, capPos[ib * 3 + 1] - cy, capPos[ib * 3 + 2] - cz]
+      if (dot(cross(v0, v1), out) >= 0) capIndex.push(base, ia, ib)
+      else capIndex.push(base, ib, ia)
     }
     count++
   }
@@ -1439,49 +1439,56 @@ constrainedSmooth(positions, index, 10)
 enforceOutsideAtoms(positions)
 sdfStats(positions, 'after extra relax')
 
+function collectBoxBound(pos, faces, h) {
+  const bound = boundaryVerts(faces, pos.length / 3)
+  for (let i = 0; i < pos.length / 3; i++) {
+    if (onBoxFace(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], h, 0.16)) bound.add(i)
+  }
+  return bound
+}
+
+function snapBoundToBox(pos, bound, h) {
+  for (const i of bound) {
+    const s = snapToBoxFace(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], h)
+    pos[i * 3] = s[0]
+    pos[i * 3 + 1] = s[1]
+    pos[i * 3 + 2] = s[2]
+  }
+}
+
+function clampToBox(pos, h) {
+  for (let i = 0; i < pos.length; i += 3) {
+    pos[i] = Math.min(h, Math.max(-h, pos[i]))
+    pos[i + 1] = Math.min(h, Math.max(-h, pos[i + 1]))
+    pos[i + 2] = Math.min(h, Math.max(-h, pos[i + 2]))
+  }
+}
+
 {
-  const clipped = clipMeshToSphere(positions, index, CLIP_RADIUS)
+  const h = CLIP_HALF
+  const clipped = clipMeshToBox(positions, index, h)
   positions.length = 0
   for (let i = 0; i < clipped.pos.length; i++) positions.push(clipped.pos[i])
   index.length = 0
   for (let i = 0; i < clipped.faces.length; i++) index.push(clipped.faces[i])
-  const rimTol = 0.12
-  const bound = new Set()
-  for (let i = 0; i < positions.length / 3; i++) {
-    const r = Math.hypot(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
-    if (Math.abs(r - CLIP_RADIUS) <= rimTol) bound.add(i)
-  }
-  for (const i of boundaryVerts(index, positions.length / 3)) bound.add(i)
-  taubinSmooth(positions, index, 4)
-  for (const i of bound) {
-    const x = positions[i * 3]
-    const y = positions[i * 3 + 1]
-    const z = positions[i * 3 + 2]
-    const r = Math.hypot(x, y, z) || 1
-    const s = CLIP_RADIUS / r
-    positions[i * 3] = x * s
-    positions[i * 3 + 1] = y * s
-    positions[i * 3 + 2] = z * s
-  }
-  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, BOUNDARY_SMOOTH)
+  let bound = collectBoxBound(positions, index, h)
+  snapBoundToBox(positions, bound, h)
+  clampToBox(positions, h)
   constrainedSmooth(positions, index, 8, 0.38, bound)
   enforceOutsideAtoms(positions, bound)
+  bound = collectBoxBound(positions, index, h)
+  snapBoundToBox(positions, bound, h)
+  smoothBoundaryOnBox(positions, index, bound, h, BOUNDARY_SMOOTH)
   const mouths = boundaryLoops(index)
-  const rounded = circularizeLoopsOnSphere(positions, mouths, CLIP_RADIUS, 0.55)
-  smoothBoundaryOnSphere(positions, index, bound, CLIP_RADIUS, 8)
-  enforceOutsideAtoms(positions)
-  for (const i of bound) {
-    const x = positions[i * 3]
-    const y = positions[i * 3 + 1]
-    const z = positions[i * 3 + 2]
-    const r = Math.hypot(x, y, z) || 1
-    const s = CLIP_RADIUS / r
-    positions[i * 3] = x * s
-    positions[i * 3 + 1] = y * s
-    positions[i * 3 + 2] = z * s
-  }
+  const rounded = circularizeLoopsOnBox(positions, mouths, h, 0.62)
+  bound = collectBoxBound(positions, index, h)
+  smoothBoundaryOnBox(positions, index, bound, h, 10)
+  snapBoundToBox(positions, bound, h)
+  clampToBox(positions, h)
+  enforceOutsideAtoms(positions, bound)
+  snapBoundToBox(positions, bound, h)
   console.log(
-    `  clipped to ${CLIP_RADIUS} Å sphere · ${bound.size} rim verts · ${mouths.length} loops · ${rounded} circularized`,
+    `  clipped to ${h.toFixed(3)} Å cube · ${bound.size} rim verts · ${mouths.length} loops · ${rounded} circularized`,
   )
 }
 
@@ -1528,7 +1535,7 @@ sdfStats(positions, 'final')
       const x = positions[ia * 3] * (1 - t) + positions[ib * 3] * t
       const y = positions[ia * 3 + 1] * (1 - t) + positions[ib * 3 + 1] * t
       const z = positions[ia * 3 + 2] * (1 - t) + positions[ib * 3 + 2] * t
-      if (hardAtomSdf(x + MESH_ORIGIN, y + MESH_ORIGIN, z + MESH_ORIGIN) < 0) return true
+      if (hardAtomSdf(x + MESH_ORIGIN, y + MESH_ORIGIN, z + MESH_ORIGIN) < -0.12) return true
     }
     return false
   }
@@ -1542,7 +1549,7 @@ sdfStats(positions, 'final')
     const cy = (positions[a0 * 3 + 1] + positions[a1 * 3 + 1] + positions[a2 * 3 + 1]) / 3
     const cz = (positions[a0 * 3 + 2] + positions[a1 * 3 + 2] + positions[a2 * 3 + 2]) / 3
     if (
-      hardAtomSdf(cx + MESH_ORIGIN, cy + MESH_ORIGIN, cz + MESH_ORIGIN) < 0 ||
+      hardAtomSdf(cx + MESH_ORIGIN, cy + MESH_ORIGIN, cz + MESH_ORIGIN) < -0.12 ||
       insideSeg(a0, a1) ||
       insideSeg(a1, a2) ||
       insideSeg(a2, a0)
@@ -1559,31 +1566,16 @@ sdfStats(positions, 'final')
   for (const v of compact.faces) index.push(v)
   console.log(`  dropped ${dropped} triangles that cut a VdW sphere`)
   sdfStats(positions, 'after atom-safe drop')
+  const bound = collectBoxBound(positions, index, CLIP_HALF)
+  snapBoundToBox(positions, bound, CLIP_HALF)
+  clampToBox(positions, CLIP_HALF)
 }
 
-const voidAtoms = []
-{
-  const rKeep = CLIP_RADIUS + 0.35
-  const r2 = rKeep * rKeep
-  const seen = new Set()
-  for (let ix = -1; ix <= 2; ix++) {
-    for (let iy = -1; iy <= 2; iy++) {
-      for (let iz = -1; iz <= 2; iz++) {
-        for (const atom of unitFw) {
-          const x = atom.x + ix * a - MESH_ORIGIN
-          const y = atom.y + iy * a - MESH_ORIGIN
-          const z = atom.z + iz * a - MESH_ORIGIN
-          if (x * x + y * y + z * z > r2) continue
-          const key = `${atom.element}:${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`
-          if (seen.has(key)) continue
-          seen.add(key)
-          voidAtoms.push({ element: atom.element, x: r3(x), y: r3(y), z: r3(z) })
-        }
-      }
-    }
-  }
-  console.log(`Void cluster atoms: ${voidAtoms.length} within ${rKeep.toFixed(2)} Å`)
-}
+const voidAtoms = [
+  ...manganese.map((p) => ({ element: 'Mn', x: r3(p.x), y: r3(p.y), z: r3(p.z) })),
+  ...oxygen.map((p) => ({ element: 'O', x: r3(p.x), y: r3(p.y), z: r3(p.z) })),
+]
+console.log(`Void cell atoms: ${voidAtoms.length}`)
 
 const normals = new Array(positions.length).fill(0)
 const step = A / n
@@ -1634,7 +1626,7 @@ for (let i = 0; i < positions.length; i += 3) {
 for (let i = 0; i < normals.length; i++) normals[i] = r3(normals[i])
 for (let i = 0; i < positions.length; i++) positions[i] = r3(positions[i])
 
-const voidCaps = capSphereLoops(positions, boundaryLoops(index))
+const voidCaps = capBoxLoops(positions, boundaryLoops(index), CLIP_HALF)
 console.log(`  capped ${voidCaps.count} channel mouths (${voidCaps.positions.length / 3} cap verts)`)
 
 function mean(xs) {
@@ -1659,8 +1651,9 @@ const payload = {
     supercell: sc,
     box: A,
     clipRadius: CLIP_RADIUS,
-    clipShape: 'sphere',
-    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Taubin-smoothed; Li removed; sphere-clipped`,
+    clipHalf: CLIP_HALF,
+    clipShape: 'cube',
+    note: `Accessible void outside VdW spheres (Mn ${RADII.Mn} Å, O ${RADII.O} Å) with ${PROBE} Å probe; Taubin-smoothed; Li removed; cube-clipped`,
     positions,
     normals,
     index,
