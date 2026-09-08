@@ -37,11 +37,11 @@ export function protonBind(t: number, i: number) {
 
 export const LI_GATHER = 1.2
 const LI_STAGGER = 0.45
-const LI_TRAVEL = 3.6
+const LI_TRAVEL = 4.2
 const H_EXIT_TRAVEL = 1.15
 const BOLT_AFTER = 0.55
-/** Far enough to enter from off-frame, short enough to finish in LI_TRAVEL. */
-const LI_OFFSTAGE = 14
+/** Just outside the cell so the whole inbound hop stays on camera. */
+const LI_OFFSTAGE = 8.5
 
 export type RideStage = 'idle' | 'approach' | 'chase' | 'orbit' | 'flash' | 'escape' | 'hold' | 'pullback'
 
@@ -183,12 +183,12 @@ export function buildExchangeSites(): ExchangeSite[] {
     const outward = outwardDir(site8a, gate)
     const mouth = add(site8a, scale(outward, 1.35))
     const hStart = add(site8a, scale(outward, 5.8))
-    // Same axis as the pore mouth — long radial detours never reached 8a in time.
+    // Same pore axis as H; start just outside the cell so the hop is on-camera.
     const liStart = add(site8a, scale(outward, LI_OFFSTAGE))
-    const approach = add(site8a, scale(outward, 4.2))
+    const approach = add(site8a, scale(outward, 3.6))
     const hExit = add(site8a, scale(outward, 7.4))
     const hIn: Vec3[] = [hStart, mouth, hHome]
-    // Off-stage → approach → mouth → 8a (arc-length sampled below).
+    // Outside cell → approach → mouth → 8a (arc-length sampled below).
     const liIn: Vec3[] = [liStart, approach, mouth, site8a]
     const hOut: Vec3[] = [hHome, mouth, hExit]
     return { site8a, oxygen, hHome, c16: gate, outward, hIn, liIn, hOut }
@@ -299,13 +299,15 @@ export function ExchangeIons({
     return [0, 1, 2].map((i) => {
       const ang = (i / 3) * Math.PI * 2 + 0.4
       return {
-        base: v3(Math.cos(ang) * 14, -1.6 + i * 1.2, Math.sin(ang) * 14),
+        base: v3(Math.cos(ang) * 9, -1.6 + i * 1.2, Math.sin(ang) * 9),
         spin: 0.2 + i * 0.04,
       }
     })
   }, [])
 
-  useEffect(() => {
+  const animPhase = useRef(phase)
+
+  const resetAnim = () => {
     clock.current = 0
     cam.current.arrived = false
     cam.current.bolted = false
@@ -319,10 +321,21 @@ export function ExchangeIons({
     ride.current.flash = 0
     ride.current.fov = 40
     ride.current.stage = 'idle'
+  }
+
+  useEffect(() => {
+    animPhase.current = phase
+    resetAnim()
   }, [phase, active, ride])
 
   useFrame((_, dt) => {
     if (!active) return
+    // Must reset before reading clock — useEffect runs after paint, so the
+    // leftover H-phase clock otherwise parks Li on 8a for a frame, then hides them.
+    if (animPhase.current !== phase) {
+      animPhase.current = phase
+      resetAnim()
+    }
     if (!reduced && !capturing) clock.current += dt
     const t = capturing
       ? phase === 'hydrogen'
@@ -445,18 +458,13 @@ export function ExchangeIons({
         const lm = liMat.current[i]
         if (lm) {
           const local = (t - LI_GATHER - i * LI_STAGGER) / LI_TRAVEL
-          // Fade in once the fly-in starts; stay fully opaque through arrival.
-          const fade =
-            phase === 'lithium'
-              ? reduced || capturing || local >= 1
-                ? 1
-                : local <= 0
-                  ? 0
-                  : THREE.MathUtils.smoothstep(0, 0.12, local)
-              : 0
+          // Opaque for the whole inbound hop — fading hid the motion off-camera.
+          const on =
+            phase === 'lithium' && (reduced || capturing || local > 0)
+          const fade = on ? 1 : 0
           lm.opacity = fade
           lm.transparent = true
-          li.visible = fade > 0.02
+          li.visible = on
         }
       }
       if (i === HERO) {
