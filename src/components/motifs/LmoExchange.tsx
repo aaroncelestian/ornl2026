@@ -35,13 +35,13 @@ export function protonBind(t: number, i: number) {
   return u * u * (3 - 2 * u)
 }
 
-export const LI_GATHER = 1.4
-const LI_STAGGER = 0.55
-const LI_TRAVEL = 3.4
+export const LI_GATHER = 1.2
+const LI_STAGGER = 0.45
+const LI_TRAVEL = 3.6
 const H_EXIT_TRAVEL = 1.15
 const BOLT_AFTER = 0.55
-/** Crystal-Å past the 8a site — must clear the camera frustum before the fly-in. */
-const LI_OFFSTAGE = 28
+/** Far enough to enter from off-frame, short enough to finish in LI_TRAVEL. */
+const LI_OFFSTAGE = 14
 
 export type RideStage = 'idle' | 'approach' | 'chase' | 'orbit' | 'flash' | 'escape' | 'hold' | 'pullback'
 
@@ -183,14 +183,13 @@ export function buildExchangeSites(): ExchangeSite[] {
     const outward = outwardDir(site8a, gate)
     const mouth = add(site8a, scale(outward, 1.35))
     const hStart = add(site8a, scale(outward, 5.8))
-    // Far along the pore exit + a little radial so Li enters from true off-stage.
-    const radial = len(site8a) > 0.35 ? norm(site8a) : outward
-    const leave = norm(add(outward, scale(radial, 0.35)))
-    const liStart = add(site8a, scale(leave, LI_OFFSTAGE))
+    // Same axis as the pore mouth — long radial detours never reached 8a in time.
+    const liStart = add(site8a, scale(outward, LI_OFFSTAGE))
+    const approach = add(site8a, scale(outward, 4.2))
     const hExit = add(site8a, scale(outward, 7.4))
     const hIn: Vec3[] = [hStart, mouth, hHome]
-    // Approach: far off-stage → pore mouth → 8a (not a mid-screen pop-in).
-    const liIn: Vec3[] = [liStart, mouth, site8a]
+    // Off-stage → approach → mouth → 8a (arc-length sampled below).
+    const liIn: Vec3[] = [liStart, approach, mouth, site8a]
     const hOut: Vec3[] = [hHome, mouth, hExit]
     return { site8a, oxygen, hHome, c16: gate, outward, hIn, liIn, hOut }
   }).filter((site) => inCell(site.oxygen) && inCell(site.hHome))
@@ -211,10 +210,25 @@ function samplePath(path: Vec3[], t: number, ease: (u: number) => number = easeI
   if (path.length === 1) {
     return { p: new THREE.Vector3(...path[0]), tan: new THREE.Vector3(0, 0, 1) }
   }
-  const segs = path.length - 1
-  const x = u * segs
-  const i = Math.min(segs - 1, Math.floor(x))
-  const f = x - i
+  // Arc-length parameterization — equal time per segment stranded Li on the long leg.
+  const segLen: number[] = []
+  let total = 0
+  for (let i = 0; i < path.length - 1; i++) {
+    const d = len(sub(path[i + 1], path[i]))
+    segLen.push(d)
+    total += d
+  }
+  if (total < 1e-8) {
+    return { p: new THREE.Vector3(...path[path.length - 1]), tan: new THREE.Vector3(0, 0, 1) }
+  }
+  let dist = u * total
+  let i = 0
+  while (i < segLen.length - 1 && dist > segLen[i]) {
+    dist -= segLen[i]
+    i++
+  }
+  const span = segLen[i] || 1
+  const f = Math.min(1, Math.max(0, dist / span))
   const a = path[i]
   const b = path[i + 1]
   const p = new THREE.Vector3(
@@ -285,8 +299,8 @@ export function ExchangeIons({
     return [0, 1, 2].map((i) => {
       const ang = (i / 3) * Math.PI * 2 + 0.4
       return {
-        base: v3(Math.cos(ang) * 22, -2.2 + i * 1.4, Math.sin(ang) * 22),
-        spin: 0.18 + i * 0.04,
+        base: v3(Math.cos(ang) * 14, -1.6 + i * 1.2, Math.sin(ang) * 14),
+        spin: 0.2 + i * 0.04,
       }
     })
   }, [])
@@ -361,7 +375,8 @@ export function ExchangeIons({
           ly = site.liIn[0][1]
           lz = site.liIn[0][2]
         } else {
-          const samp = samplePath(site.liIn, local)
+          // Linear in arc-length so the long approach still finishes on 8a.
+          const samp = samplePath(site.liIn, local, (u) => Math.min(1, Math.max(0, u)))
           lx = samp.p.x
           ly = samp.p.y
           lz = samp.p.z
@@ -429,12 +444,15 @@ export function ExchangeIons({
         li.position.set(lx, ly, lz)
         const lm = liMat.current[i]
         if (lm) {
-          // Invisible while parked off-stage; fade up as the fly-in begins.
+          const local = (t - LI_GATHER - i * LI_STAGGER) / LI_TRAVEL
+          // Fade in once the fly-in starts; stay fully opaque through arrival.
           const fade =
             phase === 'lithium'
-              ? reduced || capturing
+              ? reduced || capturing || local >= 1
                 ? 1
-                : THREE.MathUtils.smoothstep(-0.02, 0.18, (t - LI_GATHER - i * LI_STAGGER) / LI_TRAVEL)
+                : local <= 0
+                  ? 0
+                  : THREE.MathUtils.smoothstep(0, 0.12, local)
               : 0
           lm.opacity = fade
           lm.transparent = true
