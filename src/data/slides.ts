@@ -235,10 +235,10 @@ export const slides: Slide[] = [
         label: 'Perovskite',
         kicker: '1839',
         title: 'Perovskite',
-        subtitle: 'Ferroelectrics · solar',
+        subtitle: 'Solar cells · 2009',
         layers: ['sky'],
         notes:
-          'Start here — every physicist in the room already speaks this name. Gustav Rose, 1839, Urals, named for Lev Perovski. BaTiO₃ ceramics in the 1940s; halide perovskite solar after 2009. The mineralogist named the architecture. Industry showed up speaking the name as if it were a materials term. Hold the close-up, then pull.',
+          'Start here — every physicist in the room already speaks this name. Gustav Rose, 1839, Urals, named for Lev Perovski. Halide perovskite solar cells from 2009 (Kojima). The mineralogist named the architecture. Industry showed up speaking the name as if it were a materials term. Hold the close-up, then pull.',
       },
       {
         id: 'sky',
@@ -259,7 +259,7 @@ export const slides: Slide[] = [
       {
         id: 'instrument',
         label: 'Instrument',
-        title: '150,000 specimens.\nA materials instrument.',
+        title: '150,000 specimens. A materials library.',
         layers: ['sky'],
         notes:
           'Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented, spanning framework chemistries you would not assemble from scratch in a materials lab without years and a small fortune. Comparative depth is the point: when a channel geometry shows up in one place, you can ask whether related topologies elsewhere in the collection already solved a neighboring problem. Nature solved selective ion transport first. Collections keep the answers.',
@@ -338,10 +338,10 @@ export const slides: Slide[] = [
         id: 'property',
         label: 'The property',
         kicker: 'Direct lithium extraction',
-        title: 'Not the mineral.\nThe interstitial site.',
+        title: 'Not the mineral.\nThe structure.',
         layers: ['spinel'],
         notes:
-          'Look at this spinel. Nobody accessioned it as battery feedstock. Natural AB₂O₄ spinels already know how to host a small cation in tetrahedral interstices — selective, reversible, geometrically fussy. The engineered rebuild is Li₄Mn₅O₁₂ spinel (λ-MnO₂ after H⁺ priming). We take the interstitial property, not the hand specimen, and put it under synthetic control.',
+          'Look at this spinel. Nobody accessioned it as battery feedstock. Natural AB₂O₄ spinels already know how to host a small cation in tetrahedral interstices — selective, reversible, geometrically fussy. The engineered rebuild is Li₄Mn₅O₁₂ spinel (λ-MnO₂ after H⁺ priming). We take the structure, not the hand specimen, and put it under synthetic control.',
       },
       {
         id: 'lattice',

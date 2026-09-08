@@ -947,6 +947,13 @@ function CameraRig({
         persp.updateProjectionMatrix()
       }
     } else if (progress.current < 1) {
+      // Keep the sky spinning while we zoom out — don't wait until settled.
+      if (!focus && phase === 'sky' && !reduced) {
+        skyYaw.current += dt * 0.055
+        const g = goalForPhase('sky', skyYaw.current)
+        toPos.current.copy(g.pos)
+        toLook.current.copy(g.look)
+      }
       const dur = focus ? CAM_EASE_SEC * 0.55 : CAM_EASE_SEC
       progress.current = Math.min(1, progress.current + dt / dur)
       const u = easeInOutCubic(progress.current)

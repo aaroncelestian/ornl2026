@@ -68,6 +68,17 @@ class MotifBoundary extends Component<
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.warn(`Motif "${this.props.kind}" failed to load`, error, info.componentStack)
     clearLazy(this.props.kind)
+    if (
+      /Importing a module script failed|Failed to fetch dynamically imported module/i.test(
+        error.message,
+      )
+    ) {
+      const key = `ornl-motif-reload-${this.props.kind}`
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1')
+        window.setTimeout(() => this.retry(), 200)
+      }
+    }
   }
 
   private retry = () => {
@@ -95,7 +106,16 @@ class MotifBoundary extends Component<
         </button>
       )
     }
-    return <div key={this.state.nonce}>{this.props.children}</div>
+    // Fill the motif host — an unsized wrapper collapses 100%-height canvases
+    // (constellation, crystal viewer, etc.) and leaves Html labels floating over copy.
+    return (
+      <div
+        key={this.state.nonce}
+        style={{ width: '100%', height: '100%', minHeight: 0 }}
+      >
+        {this.props.children}
+      </div>
+    )
   }
 }
 

@@ -24,7 +24,11 @@ const OH_LEN = 0.97
 const LI_O_LEN = 2.015
 const LI_O_COUNT = 4
 /** Fade Li–O sticks in once Li is this far through its inbound hop. */
-const LI_O_BOND_AT = 0.55
+const LI_O_BOND_AT = 0.35
+/** Stick radius — thick enough to read against Mn–O clutter. */
+const LI_O_RADIUS = 0.12
+const LI_RADIUS = 0.4
+const O_RADIUS_DRAW = 0.24
 const CELL = data.cell.a
 const CELL_PAD = CELL * 0.5 + 0.2
 const HERO_AT = v3(CELL * 0.25, -CELL * 0.25, CELL * 0.25)
@@ -521,7 +525,7 @@ export function ExchangeIons({
           ? 0
           : reduced || capturing
             ? 1
-            : THREE.MathUtils.smoothstep(LI_O_BOND_AT, 0.88, liLocal)
+            : THREE.MathUtils.smoothstep(LI_O_BOND_AT, 0.75, liLocal)
       const loRow = liOMesh.current[i]
       const lomRow = liOMat.current[i]
       for (let j = 0; j < site.liOxygens.length; j++) {
@@ -536,25 +540,29 @@ export function ExchangeIons({
           }
           continue
         }
-        // Anchor at the settled 8a site so sticks don't stretch across the hop.
+        // Anchor at 8a so sticks don't stretch across the inbound hop.
         tmpA.set(...site.site8a)
         tmpB.set(...site.liOxygens[j])
-        tmpMid.copy(tmpB).add(tmpA).multiplyScalar(0.5)
-        tmpDir.copy(tmpA).sub(tmpB)
+        tmpDir.copy(tmpB).sub(tmpA)
         const L = tmpDir.length()
-        if (L < 0.4) {
+        if (L < 0.5) {
           stick.visible = false
           continue
         }
+        // Surface-to-surface so the stick isn't buried in the Li/O spheres.
+        const gap = Math.max(0.35, L - LI_RADIUS - O_RADIUS_DRAW)
+        tmpDir.normalize()
+        tmpMid.copy(tmpA).addScaledVector(tmpDir, LI_RADIUS + gap * 0.5)
         stick.visible = true
         stick.position.copy(tmpMid)
-        stick.scale.set(1, L / LI_O_LEN, 1)
-        tmpQ.setFromUnitVectors(yUp, tmpDir.normalize())
+        stick.scale.set(1, gap / LI_O_LEN, 1)
+        tmpQ.setFromUnitVectors(yUp, tmpDir)
         stick.quaternion.copy(tmpQ)
         if (sm) {
           sm.transparent = bondFade < 0.98
           sm.opacity = bondFade
-          sm.emissiveIntensity = 0.55 + 0.35 * bondFade
+          sm.emissiveIntensity = 0.85 + 0.55 * bondFade
+          sm.needsUpdate = true
         }
       }
 
@@ -565,7 +573,7 @@ export function ExchangeIons({
           phase === 'lithium'
             ? reduced || capturing
               ? 1
-              : THREE.MathUtils.smoothstep(0.82, 1, liLocal)
+              : THREE.MathUtils.smoothstep(0.7, 0.92, liLocal)
             : 0
         for (const el of distLabelEls.current) {
           if (el) el.style.opacity = String(labelFade)
@@ -685,9 +693,10 @@ export function ExchangeIons({
                 liOMesh.current[i][j] = el
               }}
               visible={false}
-              renderOrder={3}
+              renderOrder={6}
+              frustumCulled={false}
             >
-              <cylinderGeometry args={[0.085, 0.085, LI_O_LEN, 10]} />
+              <cylinderGeometry args={[LI_O_RADIUS, LI_O_RADIUS, LI_O_LEN, 12]} />
               <meshStandardMaterial
                 ref={(el) => {
                   if (!liOMat.current[i]) liOMat.current[i] = []
@@ -695,11 +704,13 @@ export function ExchangeIons({
                 }}
                 color={LI_O_COLOR}
                 emissive={LI_O_COLOR}
-                emissiveIntensity={0.55}
+                emissiveIntensity={0.9}
                 transparent
                 opacity={0}
-                roughness={0.32}
-                metalness={0.08}
+                depthTest={false}
+                depthWrite={false}
+                roughness={0.22}
+                metalness={0.05}
               />
             </mesh>
           ))}
@@ -711,7 +722,7 @@ export function ExchangeIons({
               position={site.liIn[0]}
               renderOrder={4}
             >
-              <sphereGeometry args={[0.4, 18, 18]} />
+              <sphereGeometry args={[LI_RADIUS, 18, 18]} />
               <meshStandardMaterial
                 ref={(el) => {
                   liMat.current[i] = el

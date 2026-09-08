@@ -311,13 +311,13 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'mineral-constellation') {
         lines.push(
           beat?.id === 'peri'
-            ? 'Motif: constellation — perovskite close-up; ferroelectrics · solar'
+            ? 'Motif: constellation — perovskite close-up; solar cells · 2009'
             : beat?.id === 'sky'
               ? 'Motif: night-sky constellation — ~100 crystals; drag to orbit, click to zoom'
               : beat?.id === 'cabinets'
                 ? 'Motif: 3D collection hall — cabinets with open drawers of specimens'
                 : beat?.id === 'instrument'
-                  ? 'Motif: collection hall — cabinets as materials instrument'
+                  ? 'Motif: collection hall — cabinets as materials library'
                   : beat?.id === 'turn'
                     ? 'Motif: collection hall — one glowing drawer; next sorbent waiting'
                     : beat?.id === 'dive'

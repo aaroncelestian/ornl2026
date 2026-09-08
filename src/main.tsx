@@ -35,6 +35,17 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Talk render error', error, info.componentStack)
+    if (
+      /Importing a module script failed|Failed to fetch dynamically imported module/i.test(
+        error.message,
+      )
+    ) {
+      const key = 'ornl-module-reload'
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1')
+        window.setTimeout(() => location.reload(), 120)
+      }
+    }
   }
 
   render() {
@@ -98,6 +109,16 @@ async function bootDeck() {
       </ErrorBoundary>
     </StrictMode>,
   )
+
+  // Allow a future module-flake reload after a successful boot.
+  try {
+    sessionStorage.removeItem('ornl-module-reload')
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith('ornl-motif-reload-')) sessionStorage.removeItem(key)
+    }
+  } catch {
+    /* ignore */
+  }
 
   const boot = document.getElementById('boot')
   if (boot && !boot.dataset.error) boot.remove()
