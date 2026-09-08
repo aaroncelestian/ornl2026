@@ -1,8 +1,9 @@
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useMemo, useRef, type MutableRefObject } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import spinel from '../../data/lmoSpinel.json'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
+import { STRUCTURE_DPR, STRUCTURE_GL } from '../../lib/structureCanvas'
 import { VIBE_SYNTH, type CubaneVibe } from '../../lib/smoothSeries'
 import styles from './Motifs.module.css'
 
@@ -79,14 +80,18 @@ export function CubaneUnit({
   reduced,
   vibeOn,
   vibe = VIBE_SYNTH,
+  vibeRef: vibeRefProp,
   atOrigin = false,
+  lite = false,
 }: {
   cubane: CubaneData
   active: boolean
   reduced: boolean
   vibeOn: boolean
   vibe?: CubaneVibe
+  vibeRef?: MutableRefObject<CubaneVibe>
   atOrigin?: boolean
+  lite?: boolean
 }) {
   const atomGroup = useRef<THREE.Group>(null)
   const bondA = useRef<(THREE.Mesh | null)[]>([])
@@ -94,8 +99,9 @@ export function CubaneUnit({
   const mnLive = useRef<THREE.Vector3[]>([])
   const coreLive = useRef<THREE.Vector3[]>([])
   const termLive = useRef<THREE.Vector3[]>([])
-  const vibeRef = useRef(vibe)
-  vibeRef.current = vibe
+  const localVibeRef = useRef(vibe)
+  if (!vibeRefProp) localVibeRef.current = vibe
+  const vibeRef = vibeRefProp ?? localVibeRef
   const liveVibe = useRef({ ...vibe })
   const wave = useRef(0)
   const radial = useRef(new THREE.Vector3())
@@ -157,6 +163,9 @@ export function CubaneUnit({
   if (termLive.current.length !== termLocal.length) {
     termLive.current = termLocal.map((o) => new THREE.Vector3(...o))
   }
+
+  const segs = lite ? 12 : 20
+  const cylSegs = lite ? 6 : 8
 
   useFrame((_, dt) => {
     const root = atomGroup.current
@@ -258,7 +267,7 @@ export function CubaneUnit({
               bondA.current[i] = el
             }}
           >
-            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
+            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, cylSegs]} />
             <meshStandardMaterial color={MN_COLOR} roughness={0.4} metalness={0.2} />
           </mesh>
           <mesh
@@ -266,7 +275,7 @@ export function CubaneUnit({
               bondB.current[i] = el
             }}
           >
-            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, 8]} />
+            <cylinderGeometry args={[0.07, 0.07, bond.rest * 0.5, cylSegs]} />
             <meshStandardMaterial color={O_COLOR} roughness={0.4} metalness={0.15} />
           </mesh>
         </group>
@@ -275,7 +284,7 @@ export function CubaneUnit({
       <group ref={atomGroup}>
         {mnLocal.map((m, i) => (
           <mesh key={`mn-${i}`} position={m}>
-            <sphereGeometry args={[0.38, 28, 28]} />
+            <sphereGeometry args={[0.38, segs, segs]} />
             <meshStandardMaterial
               color={MN_COLOR}
               roughness={0.28}
@@ -287,7 +296,7 @@ export function CubaneUnit({
         ))}
         {coreLocal.map((o, i) => (
           <mesh key={`co-${i}`} position={o}>
-            <sphereGeometry args={[0.26, 24, 24]} />
+            <sphereGeometry args={[0.26, segs, segs]} />
             <meshStandardMaterial
               color={O_COLOR}
               roughness={0.32}
@@ -299,7 +308,7 @@ export function CubaneUnit({
         ))}
         {termLocal.map((o, i) => (
           <mesh key={`to-${i}`} position={o}>
-            <sphereGeometry args={[0.24, 20, 20]} />
+            <sphereGeometry args={[0.24, lite ? 10 : 16, lite ? 10 : 16]} />
             <meshStandardMaterial color={O_COLOR} roughness={0.38} metalness={0.08} />
           </mesh>
         ))}
@@ -310,22 +319,28 @@ export function CubaneUnit({
 
 const CAM_OPEN = new THREE.Vector3(8.2, 4.2, 10.1)
 const CAM_CLOSED = new THREE.Vector3(6.4, 3.4, 7.8)
+const LOOK_ORIGIN = new THREE.Vector3(0, 0, 0)
 
 function InsetScene({
   active,
   reduced,
-  vibe,
+  vibeRef,
   open,
 }: {
   active: boolean
   reduced: boolean
-  vibe: CubaneVibe
+  vibeRef: MutableRefObject<CubaneVibe>
   open?: boolean
 }) {
   const group = useRef<THREE.Group>(null)
+  const camReady = useRef(false)
   useFrame(({ camera }, dt) => {
-    camera.position.copy(open ? CAM_OPEN : CAM_CLOSED)
-    camera.lookAt(0, 0, 0)
+    const want = open ? CAM_OPEN : CAM_CLOSED
+    if (!camReady.current || camera.position.distanceToSquared(want) > 1e-6) {
+      camera.position.copy(want)
+      camera.lookAt(LOOK_ORIGIN)
+      camReady.current = true
+    }
     if (!group.current || !active || reduced) return
     group.current.rotation.y += dt * 0.18
   })
@@ -336,9 +351,16 @@ function InsetScene({
       <ambientLight intensity={0.72} />
       <directionalLight position={[4, 6, 3]} intensity={2.15} color="#fff8ea" />
       <directionalLight position={[-3, 1, -4]} intensity={0.78} color="#b6dff0" />
-      <directionalLight position={[1, -3, 4]} intensity={0.48} color="#f5d28a" />
       <group ref={group}>
-        <CubaneUnit cubane={cubane} active={active} reduced={reduced} vibeOn vibe={vibe} atOrigin />
+        <CubaneUnit
+          cubane={cubane}
+          active={active}
+          reduced={reduced}
+          vibeOn
+          vibeRef={vibeRef}
+          atOrigin
+          lite
+        />
       </group>
     </>
   )
@@ -347,17 +369,22 @@ function InsetScene({
 export function CubaneInset({
   active,
   vibe,
+  vibeRef: vibeRefProp,
   caption,
   open,
   embedded,
 }: {
   active: boolean
   vibe: CubaneVibe
+  vibeRef?: MutableRefObject<CubaneVibe>
   caption?: string
   open?: boolean
   embedded?: boolean
 }) {
   const reduced = usePrefersReducedMotion()
+  const localVibeRef = useRef(vibe)
+  if (!vibeRefProp) localVibeRef.current = vibe
+  const vibeRef = vibeRefProp ?? localVibeRef
   return (
     <div
       className={embedded ? styles.cubaneEmbed : styles.cubaneDock}
@@ -365,13 +392,13 @@ export function CubaneInset({
       aria-hidden
     >
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={STRUCTURE_DPR}
         camera={{ position: CAM_OPEN.toArray(), fov: 40 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={STRUCTURE_GL}
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       >
         <Suspense fallback={null}>
-          <InsetScene active={active} reduced={reduced} vibe={vibe} open={open} />
+          <InsetScene active={active} reduced={reduced} vibeRef={vibeRef} open={open} />
         </Suspense>
       </Canvas>
       {caption && <div className={styles.cubaneCap}>{caption}</div>}

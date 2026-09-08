@@ -7,6 +7,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import mesh from '../../data/rowleyiteVoid.json'
 import guests from '../../data/rowleyiteGuests.json'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
+import { STRUCTURE_DPR, STRUCTURE_GL } from '../../lib/structureCanvas'
 import styles from './Motifs.module.css'
 
 const VOID_IN = '#e0b15c'
@@ -290,7 +291,7 @@ function Scene({
         intensity={1.7}
         color="#fff3dc"
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.00045}
         shadow-normalBias={0.045}
         shadow-camera-near={0.5}
@@ -340,6 +341,7 @@ function Scene({
         scale={14}
         blur={2.1}
         far={8}
+        frames={1}
         color="#050403"
       />
       <OrbitControls
@@ -417,10 +419,10 @@ export function VoidViewer({
         </div>
       </div>
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={STRUCTURE_DPR}
         shadows
         camera={{ position: [5.4, 3.2, 12.2], fov: 40 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={STRUCTURE_GL}
         style={{ width: '100%', height: '100%' }}
       >
         <Suspense fallback={null}>

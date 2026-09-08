@@ -19,10 +19,12 @@ import {
   type RideState,
 } from './LmoExchange'
 import { CubaneUnit, type CubaneData } from './CubaneUnit'
+import { STRUCTURE_DPR, STRUCTURE_GL } from '../../lib/structureCanvas'
 import styles from './Motifs.module.css'
 
 const SCALE = 0.42
 const HOME = new THREE.Vector3(4.2, 2.6, 5.8)
+const LOOK_ORIGIN = new THREE.Vector3(0, 0, 0)
 const CELL_A = data.cell.a
 const VOID_OUT = '#7eafc4'
 const VOID_IN = '#d4a574'
@@ -327,6 +329,7 @@ function VibratingCell({
   const bondB = useRef<(THREE.Mesh | null)[]>([])
   const elapsed = useRef(0)
   const muteOf = useRef<Float32Array>(new Float32Array(0))
+  const rested = useRef(false)
   const kind = vibeKind(phase)
   const capturing = isCaptureMode()
   const protonated = useMemo(() => {
@@ -362,6 +365,30 @@ function VibratingCell({
     const t = clock.getElapsedTime()
     if (phase === 'hydrogen' && active && !reduced) elapsed.current += dt
     const protonT = capturing ? 99 : elapsed.current
+
+    if (!on) {
+      if (!rested.current) {
+        for (let i = 0; i < n; i++) {
+          const atom = atoms[i]
+          const mesh = atomRefs.current[i]
+          if (mesh) mesh.position.set(atom.x, atom.y, atom.z)
+        }
+        for (let b = 0; b < bonds.length; b++) {
+          const { ia, ib, rest } = bonds[b]
+          const A = atomRefs.current[ia]
+          const B = atomRefs.current[ib]
+          const ha = bondA.current[b]
+          const hb = bondB.current[b]
+          if (!A || !B || !ha || !hb) continue
+          placeHalfBond(ha, A.position.x, A.position.y, A.position.z, B.position.x, B.position.y, B.position.z, rest, true)
+          placeHalfBond(hb, A.position.x, A.position.y, A.position.z, B.position.x, B.position.y, B.position.z, rest, false)
+        }
+        rested.current = true
+      }
+      return
+    }
+    rested.current = false
+
     if (muteOf.current.length !== n) muteOf.current = new Float32Array(n)
     muteOf.current.fill(0)
     if (kind === 'damped') {
@@ -464,7 +491,7 @@ function VibratingCell({
           position={[atom.x, atom.y, atom.z]}
           renderOrder={2}
         >
-          <sphereGeometry args={[atom.element === 'Mn' ? ATOM_DRAW.Mn : ATOM_DRAW.O, 20, 20]} />
+          <sphereGeometry args={[atom.element === 'Mn' ? ATOM_DRAW.Mn : ATOM_DRAW.O, 14, 14]} />
           <meshStandardMaterial
             color={atom.element === 'Mn' ? MN_COLOR : O_COLOR}
             roughness={0.34}
@@ -599,7 +626,7 @@ function CameraHome({
       return
     }
     const targetPos = phase === 'cubane' ? cubaneHome : HOME
-    const targetLook = phase === 'cubane' ? cubaneTarget : new THREE.Vector3(0, 0, 0)
+    const targetLook = phase === 'cubane' ? cubaneTarget : LOOK_ORIGIN
     camera.position.lerp(targetPos, 0.12)
     camera.lookAt(targetLook)
     look.current.copy(targetLook)
@@ -866,9 +893,9 @@ export function LmoSpinel({ active, label }: { active: boolean; label?: string }
         ))}
       </div>
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={STRUCTURE_DPR}
         camera={{ position: HOME.toArray(), fov: 40 }}
-        gl={{ antialias: true, alpha: true, localClippingEnabled: true }}
+        gl={{ ...STRUCTURE_GL, localClippingEnabled: true }}
         style={{ width: '100%', height: '100%' }}
       >
         <Suspense fallback={null}>

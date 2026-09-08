@@ -4,6 +4,7 @@ import { Html, Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
+import { STRUCTURE_DPR, STRUCTURE_GL_OPAQUE } from '../../lib/structureCanvas'
 import styles from './Motifs.module.css'
 
 type CycleBeat = 'brine' | 'absorb' | 'air' | 'product' | 'award' | 'recycle'
@@ -562,9 +563,9 @@ export function LithiumCycle({ active, label }: { active: boolean; label?: strin
       aria-label={label || 'Lithium extraction loop'}
     >
       <Canvas
-        dpr={[1, 2]}
+        dpr={STRUCTURE_DPR}
         camera={{ position: [-4.47, 0.34, 1.35], fov: 60, near: 0.12, far: 40 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={STRUCTURE_GL_OPAQUE}
         style={{ width: '100%', height: '100%' }}
       >
         <color attach="background" args={['#000000']} />

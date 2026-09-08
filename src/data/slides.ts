@@ -542,15 +542,6 @@ export const slides: Slide[] = [
           'Acid prime / H-exchange: XRD stays good — the spinel framework is still there. But the Raman is basically gone. Diffraction would say “fine.” Local cubane symmetry says otherwise. That is why Raman is the reporter.',
       },
       {
-        id: 'cubane',
-        label: 'Cubane',
-        kicker: 'Fig 8 · A₁g assignment',
-        title: 'A₁g is the cubane\nbreathing.',
-        layers: ['lmo'],
-        notes:
-          'Why Raman cares: A₁g is the symmetric stretch of the Mn₄O₄ cubane — four face-shared MnO₆. When that local order collapses on H-exchange, Raman blanks even though XRD still sees the spinel. When Li restores it, the spectrum comes back shifted.',
-      },
-      {
         id: 'durability',
         label: 'Durability',
         kicker: 'J. Raman Spectrosc. 2026',

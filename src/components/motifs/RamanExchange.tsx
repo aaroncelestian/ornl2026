@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
 import data from '../../data/ramanExchange.json'
@@ -142,17 +142,33 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   const sxA = (t: number) => aBox.ox + aBox.pad.l + (t / a.xMax) * aPlotW
   const syA = (w: number) => aBot - ((w - a.yMin) / (a.yMax - a.yMin)) * aPlotH
-  const aPts = aSmooth.map((p) => ({ x: sxA(p.t), y: syA(p.w) }))
-
   const sxF = (t: number) => fBox.ox + fBox.pad.l + (t / f.xMax) * fPlotW
   const syF = (w: number) => fBot - ((w - f.yMin) / (f.yMax - f.yMin)) * fPlotH
-  const fPts = fSmooth.map((p) => ({ x: sxF(p.t), y: syF(p.w) }))
+
+  const aPts = useMemo(
+    () => aSmooth.map((p) => ({ x: sxA(p.t), y: syA(p.w) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [aSmooth, aBox.ox, aBox.pad.l, aPlotW, aBot, aPlotH, a.xMax, a.yMin, a.yMax],
+  )
+  const fPts = useMemo(
+    () => fSmooth.map((p) => ({ x: sxF(p.t), y: syF(p.w) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fSmooth, fBox.ox, fBox.pad.l, fPlotW, fBot, fPlotH, f.xMax, f.yMin, f.yMax],
+  )
 
   const m = data.mnLoss
   const sxM = (n: number) => rightOx + PAD.l + (n / m.xMax) * plotWR
   const syM = (pct: number) => PAD.t + plotH - (pct / m.yMax) * plotH
-  const fullPts = m.fullLoad.map((p) => ({ x: sxM(p.n), y: syM(p.pct) }))
-  const partPts = m.partialLoad.map((p) => ({ x: sxM(p.n), y: syM(p.pct) }))
+  const fullPts = useMemo(
+    () => m.fullLoad.map((p) => ({ x: sxM(p.n), y: syM(p.pct) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [m.fullLoad, rightOx, plotWR, plotH],
+  )
+  const partPts = useMemo(
+    () => m.partialLoad.map((p) => ({ x: sxM(p.n), y: syM(p.pct) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [m.partialLoad, rightOx, plotWR, plotH],
+  )
 
   const [playT, setPlayT] = useState(t0)
 
@@ -162,7 +178,10 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   const liveW = atTime(aSmooth, playT)
   const liveFwhm = atTime(fSmooth, playT)
-  const exchange = exchangeStatus(playT, liveW, liveFwhm)
+  const exchange = useMemo(
+    () => exchangeStatus(playT, liveW, liveFwhm),
+    [playT, liveW, liveFwhm],
+  )
   const cursor = { x: sxA(playT), y: syA(liveW) }
   const cursorF = { x: sxF(playT), y: syF(liveFwhm) }
 
@@ -171,14 +190,26 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
   const liveBaseY = 118
   const liveSx = (w: number) => 18 + ((w - liveRamW0) / (liveRamW1 - liveRamW0)) * 264
   const liveSy = (h: number) => liveBaseY - h * 92
-  const livePath = spectrumPath(exchange.bands, liveSx, liveSy, liveRamW0, liveRamW1, 1)
-  const liveMarks = exchange.bands.filter((b) => b.h > 0.12)
+  const livePath = useMemo(
+    () => spectrumPath(exchange.bands, liveSx, liveSy, liveRamW0, liveRamW1, 1),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [exchange.bands],
+  )
+  const liveMarks = useMemo(
+    () => exchange.bands.filter((b) => b.h > 0.12),
+    [exchange.bands],
+  )
 
-  const pathD = linePath(aPts)
-  const fillD = aPts.length
-    ? `${pathD} L ${sxA(aSmooth[aSmooth.length - 1].t)} ${aBot} L ${sxA(aSmooth[0].t)} ${aBot} Z`
-    : ''
-  const fPathD = linePath(fPts)
+  const pathD = useMemo(() => linePath(aPts), [aPts])
+  const fillD = useMemo(
+    () =>
+      aPts.length
+        ? `${pathD} L ${sxA(aSmooth[aSmooth.length - 1].t)} ${aBot} L ${sxA(aSmooth[0].t)} ${aBot} Z`
+        : '',
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [aPts, pathD, aSmooth, aBot],
+  )
+  const fPathD = useMemo(() => linePath(fPts), [fPts])
 
   const xrdAmp = 1
   const ramanAmp = phase === 'h-ex' ? 0.06 : 1
@@ -194,15 +225,25 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   const sxRam = (w: number) => rightOx + PAD.l + ((w - 450) / 350) * plotWR
   const syRam = (h: number) => PAD.t + plotH - h * plotH * 0.92
-  const ramanPath = spectrumPath(ramanPeaks, sxRam, syRam, 450, 800, ramanAmp, ramanNoise)
+  const ramanPath = useMemo(
+    () => spectrumPath(ramanPeaks, sxRam, syRam, 450, 800, ramanAmp, ramanNoise),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ramanPeaks, rightOx, plotWR, plotH, ramanAmp, ramanNoise],
+  )
 
-  const vibe = showOperando
-    ? exchange.vibe
-    : phase === 'h-ex'
-      ? VIBE_HEX
-      : phase === 'durability'
-        ? VIBE_WORN
-        : VIBE_SYNTH
+  const vibe = useMemo(
+    () =>
+      showOperando
+        ? exchange.vibe
+        : phase === 'h-ex'
+          ? VIBE_HEX
+          : phase === 'durability'
+            ? VIBE_WORN
+            : VIBE_SYNTH,
+    [showOperando, exchange.vibe, phase],
+  )
+  const vibeRef = useRef(vibe)
+  vibeRef.current = vibe
 
   const cubaneCaption =
     phase === 'h-ex'
@@ -245,14 +286,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 Raman · live
               </text>
               <line x1="18" y1={liveBaseY} x2="282" y2={liveBaseY} stroke={C_AXIS} />
-              <path
-                d={livePath}
-                fill="none"
-                stroke={C_LIVE}
-                strokeWidth="2.8"
-                strokeLinecap="round"
-                style={{ filter: 'drop-shadow(0 0 4px rgba(200,240,248,0.55))' }}
-              />
+              <path d={livePath} fill="none" stroke={C_LIVE} strokeWidth="2.8" strokeLinecap="round" />
               {liveMarks.map((b) => (
                 <g key={b.kind}>
                   <line
@@ -282,11 +316,11 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               </text>
             </svg>
           </div>
-          <CubaneInset active={active} vibe={vibe} open />
+          <CubaneInset active={active} vibe={vibe} vibeRef={vibeRef} open />
           <p className={styles.cubaneReadout}>{exchange.cubane}</p>
         </div>
       ) : (
-        <CubaneInset active={active} vibe={vibe} caption={cubaneCaption} />
+        <CubaneInset active={active} vibe={vibe} vibeRef={vibeRef} caption={cubaneCaption} />
       )}
       <svg
         viewBox={`0 0 ${W} ${H}`}

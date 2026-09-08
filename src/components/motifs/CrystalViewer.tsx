@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import structure from '../../data/lokelmaAtoms.json'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
+import { STRUCTURE_DPR, STRUCTURE_GL } from '../../lib/structureCanvas'
 import {
   CELL_SHRUNK,
   K_HELD,
@@ -620,9 +621,9 @@ export function CrystalViewer({ active, label }: { active: boolean; label?: stri
         ))}
       </div>
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={STRUCTURE_DPR}
         camera={{ position: [3.2, 1.6, 9.2], fov: 38 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={STRUCTURE_GL}
         style={{ width: '100%', height: '100%' }}
       >
         <Suspense fallback={null}>
