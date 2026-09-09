@@ -63,7 +63,7 @@ Outline: [`docs/ORNL_Talk_Outline.md`](docs/ORNL_Talk_Outline.md). Slides source
 | `PoreGate` | Hydrated diameters vs ~3 Å window |
 | `CrystalViewer` | ZS-9 structure + H exchange |
 | `VoidViewer` / `VoidFit` | Rowleyite voids + guest volume match |
-| `MineralConstellation` | Open zoom: perovskite → peers → ~100-node sky → cabinets |
+| `MineralConstellation` | Open zoom: perovskite → peers → sky → drawer reveal → cabinets |
 
 ## Timing guide (~45 min)
 

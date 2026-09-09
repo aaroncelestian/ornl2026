@@ -226,7 +226,7 @@ export const slides: Slide[] = [
         id: 'sky',
         kind: 'motif',
         motif: 'mineral-constellation',
-        alt: 'Zoom from perovskite through a mineral constellation into museum cabinets',
+        alt: 'Zoom from perovskite through a mineral constellation spilling from one drawer into the collection hall',
       },
     ],
     scene: [
@@ -249,12 +249,20 @@ export const slides: Slide[] = [
           'Pull out into the full constellation. Names the room already uses show up first — zeolite → molecular sieves; olivine → LiFePO₄; fluorite → YSZ; garnet → YIG then LLZO; stibnite → thin-film PV — then a hundred more across energy, medicine, optics, sieves, electronics, structure. Tiny labels on purpose. Invite a click; Esc or empty click pulls back. Spinel waits for Act I.',
       },
       {
+        id: 'reveal',
+        label: 'Reveal',
+        title: 'One drawer.',
+        layers: ['sky'],
+        notes:
+          'Hold the sky. Wood rises at the rim — a cabinet silhouette, one drawer mouth open toward us. The constellation is not a metaphor; it is light spilling from a single NHMLA tray. That whole sky fits in one drawer. Hold the gasp, then pull back.',
+      },
+      {
         id: 'cabinets',
         label: 'Cabinets',
         title: 'Not a warehouse.',
         layers: ['sky'],
         notes:
-          'Zoom out again until the constellation becomes a place. Cabinets. Drawers. Specimens with provenance. This is where the names still have rocks attached — not a slide of jargon, a physical instrument.',
+          'Pull back through the aisle. One tray still glowing; a wall of closed drawers beyond it. Cabinets. Specimens with provenance. This is where the names still have rocks attached — not a slide of jargon, a physical instrument.',
       },
       {
         id: 'instrument',
@@ -270,7 +278,7 @@ export const slides: Slide[] = [
         title: 'The next sorbent\nis already in a drawer.',
         layers: ['sky'],
         notes:
-          'Hard cut into one open drawer. The collection is not a museum of finished answers — it is a drawer of geometries waiting for the right problem. We’re going deep on three of them, mechanism first: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017). Nature supplied the geometry; regulation and engineering demanded the synthesis.',
+          'That glowing drawer again — but now the job is mechanism, not vastness. One drawer holds a universe of topologies; we’re going into three of them: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017). Nature supplied the geometry; regulation and engineering demanded the synthesis.',
       },
       {
         id: 'dive',
@@ -282,7 +290,7 @@ export const slides: Slide[] = [
     ],
     exitHold: 0.4,
     notes:
-      'Cinematic open: perovskite → constellation → cabinets → instrument → drawer → dive into Act I.',
+      'Cinematic open: perovskite → constellation → one drawer reveal → cabinets → instrument → drawer dive into Act I.',
   },
 
   // ── 01 Spinel → DLE ───────────────────────────────────

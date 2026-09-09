@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Html, OrbitControls, Stars } from '@react-three/drei'
 import * as THREE from 'three'
@@ -35,7 +35,7 @@ type Mineral = {
   afterlife?: string
 }
 
-type Phase = 'peri' | 'peers' | 'sky' | 'cabinets' | 'instrument' | 'turn' | 'dive'
+type Phase = 'peri' | 'peers' | 'sky' | 'reveal' | 'cabinets' | 'instrument' | 'turn' | 'dive'
 
 type Body = Mineral & {
   pos: THREE.Vector3
@@ -89,11 +89,32 @@ const HABIT_BY_DOMAIN: Record<Domain, Habit> = {
 function phaseForBeat(id?: string): Phase {
   if (id === 'peers') return 'peers'
   if (id === 'sky') return 'sky'
+  if (id === 'reveal') return 'reveal'
   if (id === 'cabinets') return 'cabinets'
   if (id === 'instrument') return 'instrument'
   if (id === 'turn') return 'turn'
   if (id === 'dive') return 'dive'
   return 'peri'
+}
+
+function inHallPhase(phase: Phase) {
+  return (
+    phase === 'reveal' ||
+    phase === 'cabinets' ||
+    phase === 'instrument' ||
+    phase === 'turn' ||
+    phase === 'dive'
+  )
+}
+
+function skyVisiblePhase(phase: Phase) {
+  return (
+    phase === 'peri' ||
+    phase === 'peers' ||
+    phase === 'sky' ||
+    phase === 'reveal' ||
+    phase === 'cabinets'
+  )
 }
 
 function hash01(s: string) {
@@ -368,7 +389,7 @@ function MineralBody({
   const root = useRef<THREE.Group>(null)
   const isHero = body.tier === 'hero'
   const isPeer = body.tier === 'peer'
-  const inCabinets = phase === 'cabinets' || phase === 'instrument' || phase === 'turn'
+  const inSpill = phase === 'reveal' || phase === 'cabinets'
 
   const visible =
     focused ||
@@ -376,7 +397,7 @@ function MineralBody({
     (isPeer && phase !== 'peri') ||
     phase === 'sky' ||
     phase === 'peers' ||
-    inCabinets
+    inSpill
 
   const showMoons =
     focused ||
@@ -397,7 +418,7 @@ function MineralBody({
     (phase === 'peers' && (isHero || isPeer)) ||
     (phase === 'sky' && (isHero || isPeer))
 
-  const showCrystal = focused || isHero || isPeer || phase === 'sky'
+  const showCrystal = focused || isHero || isPeer || phase === 'sky' || inSpill
 
   useFrame((_, dt) => {
     if (!root.current || reduced) return
@@ -424,7 +445,7 @@ function MineralBody({
         document.body.style.cursor = 'auto'
       }}
     >
-      {(isHero || isPeer || focused) && (
+      {(isHero || isPeer || focused) && phase !== 'reveal' && phase !== 'cabinets' && (
         <mesh>
           <sphereGeometry args={[1.55, 16, 16]} />
           <meshBasicMaterial color={body.color} transparent opacity={0.08} depthWrite={false} />
@@ -434,7 +455,23 @@ function MineralBody({
         <CrystalMesh
           habit={body.habit}
           color={body.color}
-          emissive={focused ? 0.95 : isHero ? 0.7 : isPeer ? 0.55 : 0.28}
+          emissive={
+            focused
+              ? 0.95
+              : isHero
+                ? phase === 'reveal'
+                  ? 1.15
+                  : 0.7
+                : isPeer
+                  ? phase === 'reveal'
+                    ? 0.85
+                    : 0.55
+                  : phase === 'reveal'
+                    ? 0.55
+                    : phase === 'cabinets'
+                      ? 0.4
+                      : 0.28
+          }
         />
       ) : (
         body.tier === 'field' &&
@@ -475,38 +512,58 @@ function MineralBody({
 }
 
 function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
-  const show = phase === 'cabinets' || phase === 'instrument' || phase === 'turn' || phase === 'dive'
+  const show = inHallPhase(phase)
   const group = useRef<THREE.Group>(null)
+  const appear = useRef(0)
 
   useFrame((_, dt) => {
     if (!group.current) return
     const target = show ? 1 : 0
-    const cur = group.current.scale.x
-    const next = reduced ? target : THREE.MathUtils.damp(cur, target, 2.4, dt)
+    // Snap in faster on reveal so the drawer frame meets the collapsing sky
+    const rate = phase === 'reveal' ? 4.8 : 2.4
+    appear.current = reduced ? target : THREE.MathUtils.damp(appear.current, target, rate, dt)
+    const next = appear.current
     group.current.scale.setScalar(Math.max(0.001, next))
     group.current.visible = next > 0.02
-    group.current.position.y = THREE.MathUtils.lerp(-2.4, -1.2, next)
+    group.current.position.y = THREE.MathUtils.lerp(-2.4, ROOM_Y, next)
   })
 
   const cabinets = useMemo(() => {
     const out: { x: number; z: number; rot: number }[] = []
-    for (let i = 0; i < 7; i++) out.push({ x: -9 + i * 3, z: -6.5, rot: 0 })
-    for (let i = 0; i < 3; i++) out.push({ x: -10.5, z: -4 + i * 3.2, rot: Math.PI / 2 })
-    for (let i = 0; i < 3; i++) out.push({ x: 10.5, z: -4 + i * 3.2, rot: -Math.PI / 2 })
+    // Dense back wall — sells “hundreds” without new assets
+    for (let i = 0; i < 11; i++) out.push({ x: -12.5 + i * 2.5, z: -6.5, rot: 0 })
+    for (let i = 0; i < 9; i++) out.push({ x: -10 + i * 2.5, z: -9.2, rot: 0 })
+    for (let i = 0; i < 4; i++) out.push({ x: -12.5, z: -5.2 + i * 2.8, rot: Math.PI / 2 })
+    for (let i = 0; i < 4; i++) out.push({ x: 12.5, z: -5.2 + i * 2.8, rot: -Math.PI / 2 })
     return out
   }, [])
 
+  const silhouette = phase === 'reveal'
+
   return (
-    <group ref={group} position={[0, -1.2, 18]} scale={0.001} visible={false}>
+    <group ref={group} position={[0, ROOM_Y, ROOM_Z]} scale={0.001} visible={false}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-        <planeGeometry args={[40, 28]} />
+        <planeGeometry args={[48, 32]} />
         <meshStandardMaterial color="#2a241c" roughness={0.9} metalness={0.04} />
       </mesh>
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[2, 8, 6]} intensity={1.15} color="#f5e6c8" />
-      <pointLight position={[0, 5, 4]} intensity={1.4} color="#f2e0b4" distance={36} />
-      <pointLight position={[-7, 3.5, 0]} intensity={0.7} color="#b8dfc8" distance={22} />
-      <pointLight position={[7, 3.5, 0]} intensity={0.65} color="#e8c898" distance={22} />
+      <ambientLight intensity={silhouette ? 0.22 : 0.55} />
+      <directionalLight
+        position={[2, 8, 6]}
+        intensity={silhouette ? 0.35 : 1.15}
+        color="#f5e6c8"
+      />
+      <pointLight
+        position={[0, 5, 4]}
+        intensity={silhouette ? 0.45 : 1.4}
+        color="#f2e0b4"
+        distance={36}
+      />
+      {!silhouette && (
+        <>
+          <pointLight position={[-7, 3.5, 0]} intensity={0.7} color="#b8dfc8" distance={22} />
+          <pointLight position={[7, 3.5, 0]} intensity={0.65} color="#e8c898" distance={22} />
+        </>
+      )}
 
       {cabinets.map((c, ci) => (
         <CabinetUnit
@@ -517,6 +574,7 @@ function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
           rotY={c.rot}
           phase={phase}
           reduced={reduced}
+          silhouette={silhouette && ci !== FEATURED_CABINET}
         />
       ))}
     </group>
@@ -530,6 +588,7 @@ function CabinetUnit({
   rotY,
   phase,
   reduced,
+  silhouette = false,
 }: {
   index: number
   x: number
@@ -537,17 +596,18 @@ function CabinetUnit({
   rotY: number
   phase: Phase
   reduced: boolean
+  silhouette?: boolean
 }) {
   const drawers = 6
   const openSet =
-    phase === 'turn' || phase === 'dive'
-      ? new Set([2])
+    phase === 'turn' || phase === 'dive' || phase === 'reveal' || phase === 'cabinets'
+      ? new Set([FEATURED_DRAWER])
       : phase === 'instrument'
-        ? new Set([1, 3, 4])
-        : new Set([2, 4])
-  const isFeature = index === 3 || index === 1 || index === 8
-  const wood = '#4a3f32'
-  const face = '#5a4c3c'
+        ? new Set([1, FEATURED_DRAWER, 4])
+        : new Set([FEATURED_DRAWER])
+  const isFeature = index === FEATURED_CABINET
+  const wood = silhouette ? '#1a1612' : '#4a3f32'
+  const face = silhouette ? '#221c16' : '#5a4c3c'
 
   return (
     <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
@@ -583,16 +643,24 @@ function CabinetUnit({
       ))}
       {Array.from({ length: drawers }).map((_, di) => {
         const y = 0.35 + di * 0.48
-        const wantOpen = isFeature && openSet.has(di)
+        const wantOpen = !silhouette && isFeature && openSet.has(di)
+        const highlight =
+          (phase === 'reveal' ||
+            phase === 'cabinets' ||
+            phase === 'turn' ||
+            phase === 'dive') &&
+          isFeature &&
+          di === FEATURED_DRAWER
         return (
           <Drawer
             key={di}
             y={y}
             open={wantOpen}
-            highlight={(phase === 'turn' || phase === 'dive') && index === 3 && di === 2}
-            surge={phase === 'dive' && index === 3 && di === 2}
+            highlight={highlight}
+            surge={phase === 'dive' && isFeature && di === FEATURED_DRAWER}
             reduced={reduced}
             seed={index * 10 + di}
+            spill={phase === 'reveal' && highlight}
           />
         )
       })}
@@ -607,6 +675,7 @@ function Drawer({
   surge = false,
   reduced,
   seed,
+  spill = false,
 }: {
   y: number
   open: boolean
@@ -614,14 +683,15 @@ function Drawer({
   surge?: boolean
   reduced: boolean
   seed: number
+  spill?: boolean
 }) {
   const ref = useRef<THREE.Group>(null)
   const pull = useRef(0)
 
   useFrame((_, dt) => {
     if (!ref.current) return
-    const target = open ? (highlight ? 1.05 : 0.72) : 0
-    pull.current = reduced ? target : THREE.MathUtils.damp(pull.current, target, 2.6, dt)
+    const target = open ? (highlight ? (spill ? 1.15 : 1.05) : 0.72) : 0
+    pull.current = reduced ? target : THREE.MathUtils.damp(pull.current, target, spill ? 3.4 : 2.6, dt)
     ref.current.position.z = 0.08 + pull.current
   })
 
@@ -646,7 +716,7 @@ function Drawer({
   const D = 0.88
   const H = 0.36
   const T = 0.045
-  const glow = surge ? 1.7 : 1
+  const glow = surge ? 1.7 : spill ? 1.45 : 1
 
   return (
     <group ref={ref} position={[0, y, 0.08]}>
@@ -714,9 +784,18 @@ function Drawer({
             <pointLight
               position={[0, 0.35, 0.55]}
               color="#ffe6a8"
-              intensity={2.4 * glow}
-              distance={8}
+              intensity={(spill ? 3.6 : 2.4) * glow}
+              distance={spill ? 12 : 8}
               decay={1.2}
+            />
+          )}
+          {spill && (
+            <pointLight
+              position={[0, 0.25, 1.1]}
+              color="#fff3c8"
+              intensity={4.2}
+              distance={16}
+              decay={1.05}
             />
           )}
           {surge && (
@@ -728,23 +807,25 @@ function Drawer({
               decay={1.05}
             />
           )}
-          {specimens.map((s, i) => (
-            <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
-              <CrystalMesh
-                habit={s.habit}
-                color={s.color}
-                emissive={(highlight ? 1.55 : 0.85) * (surge ? 1.35 : 1)}
-              />
-              {highlight && i === 2 && (
-                <pointLight
+          {/* Specimens stay for hall beats; reveal lets the constellation be the light */}
+          {!spill &&
+            specimens.map((s, i) => (
+              <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
+                <CrystalMesh
+                  habit={s.habit}
                   color={s.color}
-                  intensity={2.8 * glow}
-                  distance={4.5}
-                  decay={1.3}
+                  emissive={(highlight ? 1.55 : 0.85) * (surge ? 1.35 : 1)}
                 />
-              )}
-            </group>
-          ))}
+                {highlight && i === 2 && (
+                  <pointLight
+                    color={s.color}
+                    intensity={2.8 * glow}
+                    distance={4.5}
+                    decay={1.3}
+                  />
+                )}
+              </group>
+            ))}
         </>
       )}
     </group>
@@ -756,6 +837,8 @@ function easeInOutCubic(t: number) {
 }
 
 const CAM_EASE_SEC = 2.45
+/** Longer ease for sky ↔ reveal ↔ cabinets nested-doll handoff. */
+const REVEAL_CAM_EASE_SEC = 3.2
 /** Pan-up to overlook the glowing drawer (2× the original pan duration). */
 const DIVE_PAN_SEC = 2.7
 /** Plunge into the drawer light — left at the previous zoom pace. */
@@ -766,8 +849,24 @@ const SKY_Y = 3.1
 const SKY_AUTO_ROTATE_SPEED = 0.42
 const SKY_SPIN_RAD_PER_SEC = ((2 * Math.PI) / 60) * SKY_AUTO_ROTATE_SPEED
 
-/** Highlight drawer mouth in hall space (cabinet index 3, drawer 2). */
+/** Hall room placement — featured cabinet sits on the back wall at local x=0. */
+const ROOM_Y = -1.2
+const ROOM_Z = 18
+/** Featured cabinet index in densified layout (back-wall center). */
+const FEATURED_CABINET = 5
+const FEATURED_DRAWER = 2
+/**
+ * Highlight drawer mouth in hall space.
+ * Cabinet FEATURED_CABINET at local (0,0,-6.5) → world z = ROOM_Z - 6.5 = 11.5;
+ * open drawer mouth ~1.5 in front of carcass → z ≈ 13.05.
+ */
 const DRAWER_MOUTH = new THREE.Vector3(0, 0.12, 13.05)
+/** Constellation nestled just inside the open tray during reveal. */
+const SKY_IN_DRAWER = new THREE.Vector3(0, 0.18, 12.55)
+const SKY_COLLAPSED = new THREE.Vector3(0, 0.14, 12.35)
+const SKY_SCALE_REVEAL = 0.085
+const SKY_SCALE_COLLAPSED = 0.018
+
 const DIVE_PAN = {
   pos: new THREE.Vector3(0.1, 6.4, 18.6),
   look: new THREE.Vector3(0, 0.2, 13.1),
@@ -775,6 +874,48 @@ const DIVE_PAN = {
 const DIVE_PLUNGE = {
   pos: new THREE.Vector3(0, 0.18, 12.55),
   look: new THREE.Vector3(0, 0.12, 11.2),
+}
+
+/** Collapse the celestial disc into the featured drawer (0=sky, 1=reveal, 2=collapsed). */
+function ConstellationSky({
+  phase,
+  reduced,
+  children,
+}: {
+  phase: Phase
+  reduced: boolean
+  children: ReactNode
+}) {
+  const ref = useRef<THREE.Group>(null)
+  const amount = useRef(
+    phase === 'reveal' ? 1 : phase === 'cabinets' ? 1.65 : inHallPhase(phase) ? 2 : 0,
+  )
+
+  useFrame((_, dt) => {
+    if (!ref.current) return
+    let target = 0
+    if (phase === 'reveal') target = 1
+    else if (phase === 'cabinets') target = 1.65
+    else if (inHallPhase(phase)) target = 2
+    amount.current = reduced ? target : THREE.MathUtils.damp(amount.current, target, 2.2, dt)
+    const a = amount.current
+
+    if (a < 1) {
+      ref.current.position.set(0, 0, 0).lerp(SKY_IN_DRAWER, a)
+      ref.current.scale.setScalar(THREE.MathUtils.lerp(1, SKY_SCALE_REVEAL, a))
+    } else {
+      const t = Math.min(1, a - 1)
+      ref.current.position.copy(SKY_IN_DRAWER).lerp(SKY_COLLAPSED, t)
+      ref.current.scale.setScalar(THREE.MathUtils.lerp(SKY_SCALE_REVEAL, SKY_SCALE_COLLAPSED, t))
+    }
+    ref.current.visible = skyVisiblePhase(phase) && a < 1.95
+  })
+
+  return (
+    <group ref={ref} visible={skyVisiblePhase(phase)}>
+      {children}
+    </group>
+  )
 }
 
 function goalForPhase(phase: Phase, skyYaw: number): { pos: THREE.Vector3; look: THREE.Vector3 } {
@@ -799,6 +940,13 @@ function goalForPhase(phase: Phase, skyYaw: number): { pos: THREE.Vector3; look:
       look: new THREE.Vector3(0, 0.2, 0),
     }
   }
+  if (phase === 'reveal') {
+    // Just outside the drawer mouth, looking into the tray so stars fill the aperture
+    return {
+      pos: new THREE.Vector3(0.05, 0.42, 15.35),
+      look: DRAWER_MOUTH.clone(),
+    }
+  }
   if (phase === 'cabinets') {
     return {
       pos: new THREE.Vector3(0.2, 2.4, 26.5),
@@ -818,6 +966,15 @@ function goalForPhase(phase: Phase, skyYaw: number): { pos: THREE.Vector3; look:
     pos: new THREE.Vector3(0.6, 1.55, 22.4),
     look: new THREE.Vector3(-0.2, 1.25, 17.8),
   }
+}
+
+function camEaseSec(from: Phase, to: Phase) {
+  const nest =
+    (from === 'sky' && to === 'reveal') ||
+    (from === 'reveal' && to === 'cabinets') ||
+    (from === 'reveal' && to === 'sky') ||
+    (from === 'cabinets' && to === 'reveal')
+  return nest ? REVEAL_CAM_EASE_SEC : CAM_EASE_SEC
 }
 
 function CameraRig({
@@ -852,6 +1009,7 @@ function CameraRig({
   const skyYaw = useRef(Math.atan2(-9.6, 10.8))
   const settled = useRef(true)
   const baseFov = useRef(42)
+  const easeDur = useRef(CAM_EASE_SEC)
 
   useFrame((_, dt) => {
     const persp = camera as THREE.PerspectiveCamera
@@ -877,11 +1035,13 @@ function CameraRig({
       if (focus) {
         toPos.current.set(focus.pos.x + 1.6, focus.pos.y + 0.9, focus.pos.z + 2.4)
         toLook.current.copy(focus.pos)
+        easeDur.current = CAM_EASE_SEC * 0.55
       } else if (phase === 'dive') {
         midPos.current.copy(DIVE_PAN.pos)
         midLook.current.copy(DIVE_PAN.look)
         toPos.current.copy(DIVE_PLUNGE.pos)
         toLook.current.copy(DIVE_PLUNGE.look)
+        easeDur.current = CAM_EASE_SEC
       } else {
         if (phase === 'sky') {
           skyYaw.current = Math.atan2(camera.position.x - 0, camera.position.z - 0)
@@ -890,6 +1050,7 @@ function CameraRig({
         const g = goalForPhase(phase, skyYaw.current)
         toPos.current.copy(g.pos)
         toLook.current.copy(g.look)
+        easeDur.current = camEaseSec(prevPhase.current, phase)
       }
       progress.current = reduced ? 1 : 0
       prevPhase.current = phase
@@ -957,13 +1118,14 @@ function CameraRig({
         toPos.current.copy(g.pos)
         toLook.current.copy(g.look)
       }
-      const dur = focus ? CAM_EASE_SEC * 0.55 : CAM_EASE_SEC
+      const dur = easeDur.current
       progress.current = Math.min(1, progress.current + dt / dur)
       const u = easeInOutCubic(progress.current)
       camera.position.lerpVectors(fromPos.current, toPos.current, u)
       look.current.lerpVectors(fromLook.current, toLook.current, u)
-      if (persp.fov !== 42) {
-        persp.fov = THREE.MathUtils.lerp(baseFov.current, 42, u)
+      const goalFov = phase === 'reveal' ? 36 : 42
+      if (persp.fov !== goalFov) {
+        persp.fov = THREE.MathUtils.lerp(baseFov.current, goalFov, u)
         persp.updateProjectionMatrix()
       }
       if (progress.current >= 1 && !settled.current) {
@@ -1001,7 +1163,8 @@ function Scene({
   reduced: boolean
   onDiveProgress?: (wash: number, done: boolean) => void
 }) {
-  const inHall = phase === 'cabinets' || phase === 'instrument' || phase === 'turn' || phase === 'dive'
+  const inHall = inHallPhase(phase)
+  const revealish = phase === 'reveal'
   const [camSettled, setCamSettled] = useState(true)
   const canOrbit = phase === 'sky' || phase === 'peers'
   const orbit = active && canOrbit && !focusId && !reduced && camSettled
@@ -1011,41 +1174,48 @@ function Scene({
     setCamSettled(reduced)
   }, [phase, focusId, reduced])
 
+  const fogColor =
+    phase === 'dive' ? '#1a1408' : revealish ? '#0a0806' : inHall ? '#0c0b09' : '#030303'
+  const fogNear = revealish ? 6 : inHall ? 22 : 14
+  const fogFar = revealish ? 38 : inHall ? 55 : 44
+
   return (
     <>
-      <color attach="background" args={['#030303']} />
-      <fog
-        attach="fog"
-        args={[
-          phase === 'dive' ? '#1a1408' : inHall ? '#0c0b09' : '#030303',
-          inHall ? 22 : 14,
-          inHall ? 55 : 44,
-        ]}
+      <color attach="background" args={[revealish || inHall ? '#0a0806' : '#030303']} />
+      <fog attach="fog" args={[fogColor, fogNear, fogFar]} />
+      <ambientLight
+        intensity={
+          phase === 'dive' ? 0.5 : revealish ? 0.28 : inHall ? 0.38 : 0.22
+        }
       />
-      <ambientLight intensity={inHall ? (phase === 'dive' ? 0.5 : 0.38) : 0.22} />
       <directionalLight
         position={[4, 8, 3]}
-        intensity={inHall ? (phase === 'dive' ? 1.15 : 0.95) : 0.62}
+        intensity={phase === 'dive' ? 1.15 : revealish ? 0.55 : inHall ? 0.95 : 0.62}
         color="#f2e6c8"
       />
       <pointLight
-        position={[0, 2, 2]}
-        intensity={inHall ? (phase === 'dive' ? 1.1 : 0.7) : 0.45}
+        position={revealish ? DRAWER_MOUTH.toArray() : [0, 2, 2]}
+        intensity={phase === 'dive' ? 1.1 : revealish ? 1.6 : inHall ? 0.7 : 0.45}
         color="#e8b86a"
-        distance={24}
+        distance={revealish ? 28 : 24}
       />
-      {phase === 'dive' && (
-        <pointLight position={DRAWER_MOUTH.toArray()} intensity={4.5} color="#fff0c0" distance={16} />
+      {(phase === 'dive' || phase === 'reveal') && (
+        <pointLight
+          position={DRAWER_MOUTH.toArray()}
+          intensity={phase === 'reveal' ? 3.8 : 4.5}
+          color="#fff0c0"
+          distance={16}
+        />
       )}
 
       <Stars
         radius={80}
         depth={40}
-        count={reduced ? 800 : 2800}
-        factor={3.2}
+        count={reduced ? 800 : revealish || inHall ? 1200 : 2800}
+        factor={revealish ? 2.4 : 3.2}
         saturation={0}
         fade
-        speed={reduced ? 0 : 0.35}
+        speed={reduced || inHall ? 0 : 0.35}
       />
 
       <CameraRig
@@ -1057,7 +1227,7 @@ function Scene({
         onDiveProgress={onDiveProgress}
       />
 
-      <group visible={!inHall}>
+      <ConstellationSky phase={phase} reduced={reduced}>
         {BODIES.map((body) => (
           <MineralBody
             key={body.id}
@@ -1068,7 +1238,7 @@ function Scene({
             onSelect={(id) => setFocusId(focusId === id ? null : id)}
           />
         ))}
-      </group>
+      </ConstellationSky>
 
       <CabinetsRoom phase={phase} reduced={reduced} />
 
@@ -1189,9 +1359,14 @@ export function MineralConstellation({ active, label }: { active: boolean; label
           {focusName} · Esc / click empty to pull back
         </button>
       )}
+      {phase === 'reveal' && (
+        <div className={styles.constellationHint} data-idle="">
+          One drawer · light spilling
+        </div>
+      )}
       {(phase === 'cabinets' || phase === 'instrument' || phase === 'turn') && (
         <div className={styles.constellationHint} data-idle="">
-          Collection hall · drawers open
+          Collection hall · one tray glowing
         </div>
       )}
     </div>

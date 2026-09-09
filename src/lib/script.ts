@@ -158,7 +158,7 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: porosity as luminous voids — rowleyite as the hero hole'
   }
   if (slide.motif === 'mineral-constellation') {
-    return 'Motif: mineral constellation — perovskite zoom-out to cabinets'
+    return 'Motif: mineral constellation — perovskite → sky → drawer reveal → cabinets'
   }
   if (slide.motif === 'crystal-viewer') {
     return 'Motif: ZS-9 structure from CIF — 7MR windows and exchange'
@@ -316,15 +316,17 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
             ? 'Motif: constellation — perovskite close-up; solar cells · 2009'
             : beat?.id === 'sky'
               ? 'Motif: night-sky constellation — ~100 crystals; drag to orbit, click to zoom'
-              : beat?.id === 'cabinets'
-                ? 'Motif: 3D collection hall — cabinets with open drawers of specimens'
-                : beat?.id === 'instrument'
-                  ? 'Motif: collection hall — cabinets as materials library'
-                  : beat?.id === 'turn'
-                    ? 'Motif: collection hall — one glowing drawer; next sorbent waiting'
-                    : beat?.id === 'dive'
-                      ? 'Motif: dive into the drawer light — soul of the museum into Act I'
-                      : 'Motif: mineral night-sky constellation',
+              : beat?.id === 'reveal'
+                ? 'Motif: nested-doll reveal — constellation as light spilling from one open drawer'
+                : beat?.id === 'cabinets'
+                  ? 'Motif: 3D collection hall — aisle pull-back; one tray still glowing'
+                  : beat?.id === 'instrument'
+                    ? 'Motif: collection hall — cabinets as materials library'
+                    : beat?.id === 'turn'
+                      ? 'Motif: collection hall — one glowing drawer; next sorbent waiting'
+                      : beat?.id === 'dive'
+                        ? 'Motif: dive into the drawer light — soul of the museum into Act I'
+                        : 'Motif: mineral night-sky constellation',
         )
       }
     }
