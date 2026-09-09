@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Hold the sky. Wood rises at the rim — a cabinet silhouette, one drawer mouth open toward us. The constellation is not a metaphor; it is light spilling from a single NHMLA tray. That whole sky fits in one drawer. Hold the gasp, then pull back.',
+          'Sky snaps into the tray — we are inside the light. Slow pull out of the drawer mouth until the wood frame reads. That whole constellation fits in one NHMLA tray. Hold, then keep pulling back.',
       },
       {
         id: 'cabinets',
@@ -262,7 +262,7 @@ export const slides: Slide[] = [
         title: 'Not a warehouse.',
         layers: ['sky'],
         notes:
-          'Pull back through the aisle. One tray still glowing; a wall of closed drawers beyond it. Cabinets. Specimens with provenance. This is where the names still have rocks attached — not a slide of jargon, a physical instrument.',
+          'Pull further into the aisle. One tray still glowing; a wall of closed drawers beyond it. Cabinets. Specimens with provenance. This is where the names still have rocks attached — not a slide of jargon, a physical instrument.',
       },
       {
         id: 'instrument',
@@ -270,7 +270,7 @@ export const slides: Slide[] = [
         title: '150,000 specimens. A materials library.',
         layers: ['sky'],
         notes:
-          'Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented, spanning framework chemistries you would not assemble from scratch in a materials lab without years and a small fortune. Comparative depth is the point: when a channel geometry shows up in one place, you can ask whether related topologies elsewhere in the collection already solved a neighboring problem. Nature solved selective ion transport first. Collections keep the answers.',
+          'Walk the row. Drawers open as we pass — more trays, more topologies. Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented. Comparative depth is the point: when a channel geometry shows up in one place, ask whether related topologies elsewhere already solved a neighboring problem. Nature solved selective ion transport first. Collections keep the answers.',
       },
       {
         id: 'turn',
