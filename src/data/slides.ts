@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Sky snaps into the tray — we are inside the light. Slow pull out of the drawer mouth until the wood frame reads. That whole constellation fits in one NHMLA tray. Hold, then keep pulling back.',
+          'Sky snaps into the tray — start looking down into the open drawer, constellation contained in the wood. Hold, then slow pull out until the frame reads. That whole constellation fits in one NHMLA tray.',
       },
       {
         id: 'cabinets',

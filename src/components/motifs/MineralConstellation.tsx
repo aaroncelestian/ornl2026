@@ -712,6 +712,10 @@ function Drawer({
     }
     if (want !== open) setOpen(want)
     const target = want ? (highlight ? (spill ? 1.15 : 1.05) : 0.72) : 0
+    // Snap open on reveal so the top-down start already shows constellation in the tray
+    if (spill && pull.current < target * 0.85) {
+      pull.current = reduced ? target : Math.max(pull.current, target * 0.92)
+    }
     pull.current = reduced ? target : THREE.MathUtils.damp(pull.current, target, spill ? 3.4 : 2.6, dt)
     ref.current.position.z = 0.08 + pull.current
   })
@@ -882,23 +886,21 @@ const FEATURED_DRAWER = 2
  */
 const DRAWER_MOUTH = new THREE.Vector3(0, 0.12, 13.05)
 /** Constellation nestled in the open tray — never travels from celestial origin through the hall. */
-const SKY_IN_DRAWER = new THREE.Vector3(0, 0.16, 12.45)
-const SKY_COLLAPSED = new THREE.Vector3(0, 0.14, 12.35)
-/** Scale when camera is inside the mouth (fills the aperture). */
-const SKY_SCALE_INSIDE = 0.42
-/** Scale once pulled out — reads as tray light. */
-const SKY_SCALE_REVEAL = 0.09
+const SKY_IN_DRAWER = new THREE.Vector3(0, 0.16, 12.55)
+const SKY_COLLAPSED = new THREE.Vector3(0, 0.14, 12.45)
+/** Scale when camera is close over the tray (still contained in wood). */
+const SKY_SCALE_INSIDE = 0.065
+/** Scale once pulled out — reads as tray light, fits NHMLA drawer depth. */
+const SKY_SCALE_REVEAL = 0.055
 const SKY_SCALE_COLLAPSED = 0.018
 
-/** Elevated aisle approach — keeps the sky→drawer path from tunneling through cabinets. */
-const REVEAL_APPROACH = {
-  pos: new THREE.Vector3(0.2, 7.2, 21.5),
-  look: new THREE.Vector3(0, 0.4, 13.0),
-}
-/** Camera inside the open drawer, looking at constellation light. */
-const REVEAL_IN = {
-  pos: new THREE.Vector3(0.02, 0.28, 13.15),
-  look: new THREE.Vector3(0, 0.16, 12.2),
+/**
+ * Looking down into the open tray — sky→reveal starts here (no aisle overview).
+ * High enough to read the wood rim; aimed at the nested constellation.
+ */
+const REVEAL_OVER = {
+  pos: new THREE.Vector3(0.02, 2.75, 12.95),
+  look: new THREE.Vector3(0, 0.12, 12.55),
 }
 /** Slow pull-out: clear of the mouth, wood frame readable. */
 const REVEAL_OUT = {
@@ -957,9 +959,9 @@ function ConstellationSky({
     const enteringReveal =
       target >= 1 && wasCelestial.current && (phase === 'reveal' || inHallPhase(phase))
     // Snap into the drawer on first hall frame so we never lerp through cabinet carcasses.
-    // Start near aperture-fill scale; damp toward tray-light as the camera pulls out.
+    // Start at tray-fit scale — top-down reveal must not overflow the wood.
     if (enteringReveal && amount.current < 0.5) {
-      amount.current = reduced ? target : 0.06
+      amount.current = reduced ? target : 1
       wasCelestial.current = false
     }
     if (phase === 'peri' || phase === 'peers' || phase === 'sky') {
@@ -974,7 +976,7 @@ function ConstellationSky({
       ref.current.position.set(0, 0, 0)
       ref.current.scale.setScalar(1)
     } else if (a <= 1) {
-      // Already in drawer; scale from aperture-fill → tray light as we pull out
+      // Already in drawer; scale stays tray-fit (inside → reveal is a small tightening)
       ref.current.position.copy(SKY_IN_DRAWER)
       const u = Math.min(1, a)
       ref.current.scale.setScalar(THREE.MathUtils.lerp(SKY_SCALE_INSIDE, SKY_SCALE_REVEAL, u))
@@ -1057,10 +1059,10 @@ function camEaseSec(from: Phase, to: Phase) {
   return CAM_EASE_SEC
 }
 
-/** sky→reveal: approach above aisle → into drawer → slow pull-out. */
-const REVEAL_ENTER_SEC = 4.6
-const REVEAL_APPROACH_FRAC = 0.28
-const REVEAL_IN_FRAC = 0.48
+/** sky→reveal: hold looking down into tray, then slow pull-out. */
+const REVEAL_ENTER_SEC = 3.8
+/** Fraction of enter spent holding the top-down tray view before pull-out. */
+const REVEAL_HOLD_FRAC = 0.22
 
 function CameraRig({
   phase,
@@ -1139,8 +1141,12 @@ function CameraRig({
         toLook.current.copy(DIVE_PLUNGE.look)
         easeDur.current = CAM_EASE_SEC
       } else if (phase === 'reveal' && prevPhase.current === 'sky') {
-        // Staged: elevated approach → inside drawer → slow pull-out
+        // Snap to top-down over the tray, then pull out — skip aisle overview
         revealEnter.current = true
+        fromPos.current.copy(REVEAL_OVER.pos)
+        fromLook.current.copy(REVEAL_OVER.look)
+        camera.position.copy(REVEAL_OVER.pos)
+        look.current.copy(REVEAL_OVER.look)
         toPos.current.copy(REVEAL_OUT.pos)
         toLook.current.copy(REVEAL_OUT.look)
         easeDur.current = REVEAL_ENTER_SEC
@@ -1234,24 +1240,18 @@ function CameraRig({
       revealClock.current += dt
       const t = Math.min(1, revealClock.current / REVEAL_ENTER_SEC)
       const u = easeInOutCubic(t)
-      // Piecewise: sky → approach → inside drawer → pull out
-      const aEnd = REVEAL_APPROACH_FRAC
-      const iEnd = REVEAL_IN_FRAC
-      if (u <= aEnd) {
-        const v = u / aEnd
-        camera.position.lerpVectors(fromPos.current, REVEAL_APPROACH.pos, easeInOutCubic(v))
-        look.current.lerpVectors(fromLook.current, REVEAL_APPROACH.look, easeInOutCubic(v))
-        persp.fov = THREE.MathUtils.lerp(baseFov.current, 40, v)
-      } else if (u <= iEnd) {
-        const v = (u - aEnd) / (iEnd - aEnd)
-        camera.position.lerpVectors(REVEAL_APPROACH.pos, REVEAL_IN.pos, easeInOutCubic(v))
-        look.current.lerpVectors(REVEAL_APPROACH.look, REVEAL_IN.look, easeInOutCubic(v))
-        persp.fov = THREE.MathUtils.lerp(40, 48, v)
+      // Hold looking down into the tray, then pull out until the wood frame reads
+      const holdEnd = REVEAL_HOLD_FRAC
+      if (u <= holdEnd) {
+        camera.position.copy(REVEAL_OVER.pos)
+        look.current.copy(REVEAL_OVER.look)
+        persp.fov = THREE.MathUtils.lerp(baseFov.current, 44, u / holdEnd)
       } else {
-        const v = (u - iEnd) / (1 - iEnd)
-        camera.position.lerpVectors(REVEAL_IN.pos, REVEAL_OUT.pos, easeInOutCubic(v))
-        look.current.lerpVectors(REVEAL_IN.look, REVEAL_OUT.look, easeInOutCubic(v))
-        persp.fov = THREE.MathUtils.lerp(48, 36, v)
+        const v = (u - holdEnd) / (1 - holdEnd)
+        const e = easeInOutCubic(v)
+        camera.position.lerpVectors(REVEAL_OVER.pos, REVEAL_OUT.pos, e)
+        look.current.lerpVectors(REVEAL_OVER.look, REVEAL_OUT.look, e)
+        persp.fov = THREE.MathUtils.lerp(44, 36, e)
       }
       persp.updateProjectionMatrix()
       progress.current = t
