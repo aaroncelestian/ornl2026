@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Sky snaps into the tray — start looking down into the open drawer, constellation contained in the wood. Hold, then slow pull out until the frame reads. That whole constellation fits in one NHMLA tray.',
+          'Night sky gently warms to tray wood as the constellation shrinks into one drawer. Camera arrives looking down into the open tray, then pulls back and looks up until the cabinet face and glowing drawer read. That whole sky fits in one NHMLA tray.',
       },
       {
         id: 'cabinets',
@@ -270,7 +270,7 @@ export const slides: Slide[] = [
         title: '150,000 specimens. A materials library.',
         layers: ['sky'],
         notes:
-          'Walk the row. Drawers open as we pass — more trays, more topologies. Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented. Comparative depth is the point: when a channel geometry shows up in one place, ask whether related topologies elsewhere already solved a neighboring problem. Nature solved selective ion transport first. Collections keep the answers.',
+          'Walk the row from the left. Drawers open and close as we pass. Stop at the glowing featured drawer — looking in. Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented. Comparative depth is the point: when a channel geometry shows up in one place, ask whether related topologies elsewhere already solved a neighboring problem.',
       },
       {
         id: 'turn',
@@ -278,7 +278,7 @@ export const slides: Slide[] = [
         title: 'The next sorbent\nis already in a drawer.',
         layers: ['sky'],
         notes:
-          'That glowing drawer again — but now the job is mechanism, not vastness. One drawer holds a universe of topologies; we’re going into three of them: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017). Nature supplied the geometry; regulation and engineering demanded the synthesis.',
+          'Hold on the glowing drawer — stop and look. The job is mechanism now, not vastness. One drawer holds a universe of topologies; we’re going into three of them: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017).',
       },
       {
         id: 'dive',
