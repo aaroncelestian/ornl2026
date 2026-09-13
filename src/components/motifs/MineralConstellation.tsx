@@ -859,16 +859,6 @@ const FEATURED_DRAWER = 2
  * open drawer extends forward to ~13).
  */
 const DRAWER_MOUTH = new THREE.Vector3(0, 0.12, 13.05)
-/** Constellation nestled in the open tray — never travels from celestial origin through the hall. */
-const SKY_IN_DRAWER = new THREE.Vector3(0, 0.16, 12.55)
-const SKY_COLLAPSED = new THREE.Vector3(0, 0.14, 12.45)
-/** Pre-nest shrink floor (still at celestial origin) before the quiet cut into the tray. */
-const SKY_SCALE_PRENEST = 0.11
-/** Scale once nested — tray light, fits NHMLA drawer depth. */
-const SKY_SCALE_REVEAL = 0.055
-const SKY_SCALE_COLLAPSED = 0.018
-/** revealBlend where constellation cuts from origin into the tray (camera already overhead). */
-const REVEAL_NEST_CUT = 0.36
 
 /**
  * Top-down over the open tray — mid beat after the sky morphs into wood.
