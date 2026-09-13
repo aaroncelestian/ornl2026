@@ -8,7 +8,8 @@ import styles from './Motifs.module.css'
 const W = 920
 const H = 500
 const PAD = { t: 48, r: 220, b: 56, l: 64 }
-const LABEL_GAP = 36
+/** Title + subtitle block height; keep this ≥ the two <text> baselines span. */
+const LABEL_GAP = 48
 
 function catmullRom(points: [number, number][]) {
   if (points.length < 2) return ''
@@ -49,23 +50,31 @@ function phaseForBeat(id?: string): Phase {
   return 'cloud'
 }
 
+/** Pack end-labels top→bottom, then clamp from the floor so two-line rows never collide. */
 function separateLabels(raw: number[], minY: number, maxY: number) {
-  const ys = [...raw]
-  const order = ys
+  const order = raw
     .map((y, i) => ({ y, i }))
     .sort((a, b) => a.y - b.y)
-  for (let n = 0; n < 8; n++) {
-    for (let k = 1; k < order.length; k++) {
-      const prev = order[k - 1]
-      const cur = order[k]
-      const gap = cur.y - prev.y
-      if (gap >= LABEL_GAP) continue
-      const need = (LABEL_GAP - gap) / 2
-      prev.y = Math.max(minY, prev.y - need)
-      cur.y = Math.min(maxY, cur.y + need)
+
+  for (let k = 1; k < order.length; k++) {
+    order[k].y = Math.max(order[k].y, order[k - 1].y + LABEL_GAP)
+  }
+
+  if (order.length && order[order.length - 1].y > maxY) {
+    order[order.length - 1].y = maxY
+    for (let k = order.length - 2; k >= 0; k--) {
+      order[k].y = Math.min(order[k].y, order[k + 1].y - LABEL_GAP)
     }
   }
-  const out = [...ys]
+
+  if (order.length && order[0].y < minY) {
+    order[0].y = minY
+    for (let k = 1; k < order.length; k++) {
+      order[k].y = Math.max(order[k].y, order[k - 1].y + LABEL_GAP)
+    }
+  }
+
+  const out = [...raw]
   for (const row of order) out[row.i] = row.y
   return out
 }
@@ -84,8 +93,8 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
   const sx = (yr: number) => PAD.l + ((yr - xMin) / (xMax - xMin)) * plotW
   const sy = (v: number) => PAD.t + plotH - (v / yMax) * plotH
 
-  const named = useMemo(() => {
-    const built = data.named.map((s) => {
+  const series = useMemo(() => {
+    return data.named.map((s) => {
       const start = years.findIndex((_, i) => (s.vals[i] ?? 0) > 0 || years[i] >= s.discovery)
       const sliceFrom = Math.max(0, start)
       const pts: [number, number][] = years
@@ -96,21 +105,35 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
         ...s,
         d: catmullRom(pts),
         end: last,
-        labelY: last?.[1] ?? PAD.t + plotH,
+        rawLabelY: last?.[1] ?? PAD.t + plotH,
         stroke: STROKE[s.id] ?? '#7ec4d4',
         focus: s.id === 'szc',
         isMineral: s.family === 'mineral',
         isSplit: s.id === 'sitinakite' || s.id === 'cst_ets10',
       }
     })
-    const separated = separateLabels(
-      built.map((s) => s.labelY),
-      PAD.t + 8,
-      PAD.t + plotH - 8,
-    )
-    return built.map((s, i) => ({ ...s, labelY: separated[i] }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const named = useMemo(() => {
+    // Cloud hides CST. Sitinakite beat only packs focus labels so soft rows
+    // don't steal vertical space from CST / Sitinakite.
+    const participates = series.map((s) => {
+      if (phase === 'cloud' && s.id === 'cst_ets10') return false
+      if (phase === 'sitinakite' && !s.isSplit) return false
+      return true
+    })
+    const targets = series.map((s, i) => (participates[i] ? s.rawLabelY : Number.NaN))
+    const visibleYs = targets.filter((y) => !Number.isNaN(y))
+    const separatedVisible = separateLabels(visibleYs, PAD.t + 14, PAD.t + plotH - 14)
+    let v = 0
+    const separated = targets.map((y) => (Number.isNaN(y) ? y : separatedVisible[v++]))
+    return series.map((s, i) => ({
+      ...s,
+      labelY: Number.isNaN(separated[i]) ? s.rawLabelY : separated[i],
+      hidden: phase === 'cloud' && s.id === 'cst_ets10',
+    }))
+  }, [series, phase, plotH])
 
   const yTicks = [0, Math.round(yMax / 3), Math.round((2 * yMax) / 3), Math.round(yMax)]
 
@@ -120,6 +143,11 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
       aria-label={label || 'OpenAlex literature mentions versus year'}
     >
       <svg viewBox={`0 0 ${W} ${H}`} className={styles.plotSvg} role="img">
+        <defs>
+          <filter id="lineage-soft" x="-8%" y="-20%" width="116%" height="140%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.4" />
+          </filter>
+        </defs>
         <line
           x1={PAD.l}
           y1={PAD.t + plotH}
@@ -166,42 +194,62 @@ export function FrameworkLineage({ active, label }: { active: boolean; label?: s
           {data.yLabel}
         </text>
 
-        {named.map((s, i) => {
-          const hiddenOnCloud = phase === 'cloud' && s.id === 'cst_ets10'
-          const dimOthers = phase === 'sitinakite' && !s.isSplit
+        {/* Soft background traces first, then sharp focus lines on top */}
+        {[...named]
+          .sort((a, b) => {
+            const aSoft = phase === 'sitinakite' && !a.isSplit ? 0 : 1
+            const bSoft = phase === 'sitinakite' && !b.isSplit ? 0 : 1
+            return aSoft - bSoft
+          })
+          .map((s, i) => {
+          const soft = phase === 'sitinakite' && !s.isSplit
           const emphasize = phase === 'sitinakite' && s.isSplit
-          const opacity = hiddenOnCloud
-            ? 0
-            : dimOthers
-              ? 0.28
-              : 1
+          const opacity = s.hidden ? 0 : soft ? 0.16 : 1
+          const labelOpacity = s.hidden ? 0 : soft ? 0.14 : 1
+          const labelX = (s.end?.[0] ?? 0) + 12
+          const endX = s.end?.[0] ?? 0
+          const endY = s.end?.[1] ?? s.labelY
+          const offset = Math.abs(s.labelY - endY) > 6
           return (
             <g key={s.id}>
               <motion.path
                 d={s.d}
                 fill="none"
                 stroke={s.stroke}
-                strokeWidth={emphasize || s.focus ? 3.2 : s.isMineral ? 1.8 : 2.2}
+                strokeWidth={emphasize ? 3.4 : soft ? 1.6 : s.focus ? 3.2 : s.isMineral ? 1.8 : 2.2}
                 strokeLinecap="round"
+                filter={soft && !reduced ? 'url(#lineage-soft)' : undefined}
                 initial={false}
                 animate={{
-                  pathLength: active && !hiddenOnCloud ? 1 : 0,
+                  pathLength: active && !s.hidden ? 1 : 0,
                   opacity: active ? opacity : 0,
                 }}
                 transition={{
-                  duration: reduced ? 0 : hiddenOnCloud ? 0.35 : 1.05,
-                  delay: reduced || !active || hiddenOnCloud ? 0 : 0.1 + i * 0.08,
+                  duration: reduced ? 0 : soft || s.hidden ? 0.4 : 1.05,
+                  delay: reduced || !active || s.hidden ? 0 : soft ? 0 : 0.12 + i * 0.05,
                 }}
               />
               <motion.g
                 initial={false}
-                animate={{ opacity: active ? (hiddenOnCloud ? 0 : dimOthers ? 0.35 : 1) : 0 }}
-                transition={{ delay: reduced || hiddenOnCloud ? 0 : 0.3 + i * 0.06 }}
+                animate={{ opacity: active ? labelOpacity : 0 }}
+                transition={{ delay: reduced || s.hidden ? 0 : soft ? 0.1 : 0.3 + i * 0.06 }}
+                filter={soft && !reduced ? 'url(#lineage-soft)' : undefined}
               >
-                <text x={(s.end?.[0] ?? 0) + 10} y={s.labelY + 4} className={styles.plotAnnotate}>
+                {offset && !soft && (
+                  <line
+                    x1={endX}
+                    y1={endY}
+                    x2={labelX - 2}
+                    y2={s.labelY + 4}
+                    stroke={s.stroke}
+                    strokeOpacity={0.4}
+                    strokeWidth={1}
+                  />
+                )}
+                <text x={labelX} y={s.labelY + 4} className={styles.plotAnnotate}>
                   {s.label}
                 </text>
-                <text x={(s.end?.[0] ?? 0) + 10} y={s.labelY + 20} className={styles.plotTick}>
+                <text x={labelX} y={s.labelY + 20} className={styles.plotTick}>
                   {s.kind}
                 </text>
               </motion.g>
