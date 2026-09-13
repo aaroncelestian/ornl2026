@@ -497,9 +497,9 @@ function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
     if (!group.current) return
     const target = show ? 1 : 0
     if (phase === 'reveal') {
-      // Hall appears only after the void cut — when we pull out of the drawer
+      // Hall arrives as we pull back to the drawer (after constellation is gone)
       const b = reduced ? 1 : revealBlend
-      const fade = THREE.MathUtils.smoothstep(b, REVEAL_VOID_FRAC, REVEAL_VOID_FRAC + 0.12)
+      const fade = THREE.MathUtils.smoothstep(b, REVEAL_SHRINK_FRAC, REVEAL_SHRINK_FRAC + 0.2)
       appear.current = fade
     } else {
       appear.current = reduced
@@ -687,7 +687,7 @@ function Drawer({
     if (spill) {
       const openAmt = reduced
         ? 1
-        : THREE.MathUtils.smoothstep(revealBlend, REVEAL_VOID_FRAC, REVEAL_VOID_FRAC + 0.18)
+        : THREE.MathUtils.smoothstep(revealBlend, REVEAL_SHRINK_FRAC, REVEAL_SHRINK_FRAC + 0.22)
       target = 1.15 * openAmt
     }
     pull.current = reduced ? target : THREE.MathUtils.damp(pull.current, target, spill ? 2.8 : 2.6, dt)
@@ -898,15 +898,14 @@ const WALK_END = {
 /** Shared aisle walk X so cabinets can open as the camera passes. */
 let hallWalkX = 0
 let hallWalkActive = false
-/** sky→reveal: plunge into void, then hard-cut to the drawer (no zoom-out on this beat). */
-const REVEAL_ENTER_SEC = 4.2
-/** 0→this: rush into the sky field until nothing. */
-const REVEAL_ZOOM_FRAC = 0.62
-/** this→1: hold black void, then cut to drawer and settle. */
-const REVEAL_VOID_FRAC = 0.78
+/** sky→reveal: shrink constellation to nothing, then pull back to the open drawer. */
+const REVEAL_ENTER_SEC = 4.8
+/** 0→this: constellation scales down until invisible (camera holds). */
+const REVEAL_SHRINK_FRAC = 0.55
+/** After shrink: pull camera back to the open glowing drawer. */
 
 /**
- * Shared 0–1 progress for sky→reveal (zoom-void → drawer cut).
+ * Shared 0–1 progress for sky→reveal (shrink → drawer pull-back).
  * Driven by CameraRig during the enter path; held at 1 while reveal is settled.
  */
 let revealBlend = 0
@@ -918,10 +917,7 @@ const COL_DIVE = new THREE.Color('#1a1408')
 const COL_BG = new THREE.Color()
 const COL_FOG = new THREE.Color()
 
-/**
- * Constellation rushes past as we plunge into void; hidden from the void beat onward.
- * No opacity fade — scale + camera do the work, then a hard cut to the drawer.
- */
+/** Shrink the whole constellation to a point, then hide — no camera plunge. */
 function ConstellationSky({
   phase,
   reduced,
@@ -945,16 +941,13 @@ function ConstellationSky({
 
     if (phase === 'reveal') {
       const b = reduced ? 1 : revealBlend
-      // During the plunge, swell the field so crystals rush past the lens
-      if (b < REVEAL_ZOOM_FRAC) {
-        const u = b / REVEAL_ZOOM_FRAC
-        const rush = easeInOutCubic(u)
-        ref.current.position.set(0, 0, 0)
-        ref.current.scale.setScalar(THREE.MathUtils.lerp(1, 3.8, rush))
-        ref.current.visible = true
-      } else {
-        ref.current.visible = false
-      }
+      const u = Math.min(1, b / REVEAL_SHRINK_FRAC)
+      const e = easeInOutCubic(u)
+      // Get really small until it reads as gone
+      const s = THREE.MathUtils.lerp(1, 0.002, e)
+      ref.current.position.set(0, 0, 0)
+      ref.current.scale.setScalar(s)
+      ref.current.visible = s > 0.008
       return
     }
 
@@ -1102,9 +1095,10 @@ function CameraRig({
         toLook.current.copy(DIVE_PLUNGE.look)
         easeDur.current = CAM_EASE_SEC
       } else if (phase === 'reveal' && prevPhase.current === 'sky') {
-        // Continuity from sky orbit — plunge into void, then hard-cut to drawer
+        // Hold sky camera while constellation shrinks, then pull back to drawer
         revealEnter.current = true
         revealBlend = reduced ? 1 : 0
+        fromLook.current.set(0, 0.2, 0)
         toPos.current.copy(REVEAL_IN.pos)
         toLook.current.copy(REVEAL_IN.look)
         easeDur.current = REVEAL_ENTER_SEC
@@ -1198,30 +1192,20 @@ function CameraRig({
       hallWalkActive = false
       revealClock.current += dt
       const t = Math.min(1, revealClock.current / REVEAL_ENTER_SEC)
-      // Linear clock for stage cuts; ease within each stage
       revealBlend = t
 
-      if (t <= REVEAL_ZOOM_FRAC) {
-        // Plunge through the constellation into nothing — one direction only
-        const v = t / REVEAL_ZOOM_FRAC
-        const e = easeInOutCubic(v)
-        const skyCenter = new THREE.Vector3(0, 0.2, 0)
-        const plunge = fromPos.current.clone().lerp(skyCenter, 1.12)
-        camera.position.lerpVectors(fromPos.current, plunge, e)
-        look.current.lerpVectors(fromLook.current, skyCenter, Math.min(1, e * 1.15))
-        persp.fov = THREE.MathUtils.lerp(baseFov.current, 92, e)
-      } else if (t <= REVEAL_VOID_FRAC) {
-        // Brief black void — hold deep in the plunge
-        const skyCenter = new THREE.Vector3(0, 0.2, 0)
-        const plunge = fromPos.current.clone().lerp(skyCenter, 1.12)
-        camera.position.copy(plunge)
-        look.current.copy(skyCenter)
-        persp.fov = 92
+      if (t <= REVEAL_SHRINK_FRAC) {
+        // Hold the sky view — only the constellation shrinks
+        camera.position.copy(fromPos.current)
+        look.current.set(0, 0.2, 0)
+        persp.fov = baseFov.current
       } else {
-        // Hard cut to the empty glowing drawer and hold (aisle pull is cabinets)
-        camera.position.copy(REVEAL_IN.pos)
-        look.current.copy(REVEAL_IN.look)
-        persp.fov = THREE.MathUtils.damp(persp.fov, 42, 6, dt)
+        // Pull back to the open glowing drawer
+        const v = (t - REVEAL_SHRINK_FRAC) / (1 - REVEAL_SHRINK_FRAC)
+        const e = easeInOutCubic(v)
+        camera.position.lerpVectors(fromPos.current, REVEAL_IN.pos, e)
+        look.current.lerpVectors(fromLook.current, REVEAL_IN.look, e)
+        persp.fov = THREE.MathUtils.lerp(baseFov.current, 42, e)
       }
       persp.updateProjectionMatrix()
       progress.current = t
@@ -1315,21 +1299,17 @@ function Atmosphere({ phase, reduced }: { phase: Phase; reduced: boolean }) {
 
     if (phase === 'reveal') {
       const b = reduced ? 1 : revealBlend
-      if (b <= REVEAL_VOID_FRAC) {
-        // Stay in night/void through the plunge — no tray-wood morph
+      if (b <= REVEAL_SHRINK_FRAC) {
         COL_BG.copy(COL_SKY)
         COL_FOG.copy(COL_SKY)
-        near = THREE.MathUtils.lerp(14, 2, Math.min(1, b / REVEAL_ZOOM_FRAC))
-        far = THREE.MathUtils.lerp(44, 12, Math.min(1, b / REVEAL_ZOOM_FRAC))
+        near = 14
+        far = 44
       } else {
-        // Snap hall lighting with the drawer cut
-        const u = easeInOutCubic(
-          Math.min(1, (b - REVEAL_VOID_FRAC) / Math.max(0.001, 1 - REVEAL_VOID_FRAC)),
-        )
+        const u = easeInOutCubic((b - REVEAL_SHRINK_FRAC) / (1 - REVEAL_SHRINK_FRAC))
         COL_BG.copy(COL_SKY).lerp(COL_HALL, u)
         COL_FOG.copy(COL_SKY).lerp(COL_FOG_HALL, u)
-        near = THREE.MathUtils.lerp(6, 18, u)
-        far = THREE.MathUtils.lerp(18, 48, u)
+        near = THREE.MathUtils.lerp(14, 18, u)
+        far = THREE.MathUtils.lerp(44, 48, u)
       }
     } else if (phase === 'dive') {
       COL_BG.copy(COL_DIVE)
@@ -1567,7 +1547,7 @@ export function MineralConstellation({ active, label }: { active: boolean; label
       )}
       {phase === 'reveal' && (
         <div className={styles.constellationHint} data-idle="">
-          Zoom into void · cut to drawer
+          Constellation shrinks · pull back to drawer
         </div>
       )}
       {phase === 'cabinets' && (

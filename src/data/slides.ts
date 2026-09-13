@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Plunge through the constellation into black void — one direction, no zoom-out. Hard cut to one open glowing drawer (empty tray, light only) and hold. Aisle pull waits for the next beat.',
+          'Hold the sky. The whole constellation shrinks until it is gone — no plunge, no fade. Then pull back to one open glowing drawer (empty tray, light only) and hold.',
       },
       {
         id: 'cabinets',
