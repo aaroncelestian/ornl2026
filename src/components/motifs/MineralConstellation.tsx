@@ -108,13 +108,8 @@ function inHallPhase(phase: Phase) {
 }
 
 function skyVisiblePhase(phase: Phase) {
-  return (
-    phase === 'peri' ||
-    phase === 'peers' ||
-    phase === 'sky' ||
-    phase === 'reveal' ||
-    phase === 'cabinets'
-  )
+  // Constellation only through sky; reveal fades it out, then it stays gone
+  return phase === 'peri' || phase === 'peers' || phase === 'sky' || phase === 'reveal'
 }
 
 function hash01(s: string) {
@@ -389,15 +384,13 @@ function MineralBody({
   const root = useRef<THREE.Group>(null)
   const isHero = body.tier === 'hero'
   const isPeer = body.tier === 'peer'
-  const inSpill = phase === 'reveal' || phase === 'cabinets'
 
   const visible =
     focused ||
     isHero ||
     (isPeer && phase !== 'peri') ||
     phase === 'sky' ||
-    phase === 'peers' ||
-    inSpill
+    phase === 'peers'
 
   const showMoons =
     focused ||
@@ -418,7 +411,7 @@ function MineralBody({
     (phase === 'peers' && (isHero || isPeer)) ||
     (phase === 'sky' && (isHero || isPeer))
 
-  const showCrystal = focused || isHero || isPeer || phase === 'sky' || inSpill
+  const showCrystal = focused || isHero || isPeer || phase === 'sky'
 
   useFrame((_, dt) => {
     if (!root.current || reduced) return
