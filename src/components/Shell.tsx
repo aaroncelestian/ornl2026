@@ -474,6 +474,10 @@ export function Shell() {
           />
         )}
 
+        <div className={styles.buildId} title={`Build ${__BUILD_ID__}`} aria-label={`Build ${__BUILD_ID__}`}>
+          {__BUILD_ID__}
+        </div>
+
         <AnimatePresence mode={hard ? 'wait' : 'sync'}>
           <motion.section
             key={slide.id}

@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Constellation and starfield dissolve (fade out at full scale — no collapse into a ball). Background warms from black to the drawer-tray wood. Hard cut to the open glowing drawer (empty, light only), then pull out of that drawer — not the full hall yet.',
+          'Constellation shrinks into the already-open glowing drawer while the camera zooms out onto it. Stars fade early (no scale-collapse). Then pull out of that drawer — not the full hall yet.',
       },
       {
         id: 'cabinets',
