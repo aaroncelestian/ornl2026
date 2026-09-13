@@ -438,7 +438,7 @@ function MineralBody({
         document.body.style.cursor = 'auto'
       }}
     >
-      {(isHero || isPeer || focused) && phase !== 'reveal' && phase !== 'cabinets' && (
+      {(isHero || isPeer || focused) && (
         <mesh>
           <sphereGeometry args={[1.55, 16, 16]} />
           <meshBasicMaterial color={body.color} transparent opacity={0.08} depthWrite={false} />
@@ -448,23 +448,7 @@ function MineralBody({
         <CrystalMesh
           habit={body.habit}
           color={body.color}
-          emissive={
-            focused
-              ? 0.95
-              : isHero
-                ? phase === 'reveal'
-                  ? 1.15
-                  : 0.7
-                : isPeer
-                  ? phase === 'reveal'
-                    ? 0.85
-                    : 0.55
-                  : phase === 'reveal'
-                    ? 0.55
-                    : phase === 'cabinets'
-                      ? 0.4
-                      : 0.28
-          }
+          emissive={focused ? 0.95 : isHero ? 0.7 : isPeer ? 0.55 : 0.28}
         />
       ) : (
         body.tier === 'field' &&
@@ -546,24 +530,12 @@ function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
         <planeGeometry args={[48, 32]} />
         <meshStandardMaterial color="#2a241c" roughness={0.9} metalness={0.04} />
       </mesh>
-      <ambientLight intensity={silhouette ? 0.22 : 0.55} />
-      <directionalLight
-        position={[2, 8, 6]}
-        intensity={silhouette ? 0.35 : 1.15}
-        color="#f5e6c8"
-      />
-      <pointLight
-        position={[0, 5, 4]}
-        intensity={silhouette ? 0.45 : 1.4}
-        color="#f2e0b4"
-        distance={36}
-      />
-      {!silhouette && (
-        <>
-          <pointLight position={[-7, 3.5, 0]} intensity={0.7} color="#b8dfc8" distance={22} />
-          <pointLight position={[7, 3.5, 0]} intensity={0.65} color="#e8c898" distance={22} />
-        </>
-      )}
+      {/* Same hall fill for reveal → cabinets so the beat handoff does not relight the room */}
+      <ambientLight intensity={0.55} />
+      <directionalLight position={[2, 8, 6]} intensity={1.15} color="#f5e6c8" />
+      <pointLight position={[0, 5, 4]} intensity={1.4} color="#f2e0b4" distance={36} />
+      <pointLight position={[-7, 3.5, 0]} intensity={0.7} color="#b8dfc8" distance={22} />
+      <pointLight position={[7, 3.5, 0]} intensity={0.65} color="#e8c898" distance={22} />
 
       {cabinets.map((c, ci) => (
         <CabinetUnit
@@ -601,8 +573,8 @@ function CabinetUnit({
   const drawers = 6
   const isFeature = index === FEATURED_CABINET
   const isBackRow = Math.abs(rotY) < 0.01 && z > -8
-  const wood = silhouette ? '#1a1612' : '#4a3f32'
-  const face = silhouette ? '#221c16' : '#5a4c3c'
+  const wood = '#4a3f32'
+  const face = '#5a4c3c'
 
   return (
     <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
@@ -691,7 +663,10 @@ function Drawer({
       phase === 'turn' ||
       phase === 'dive')
   const spill = phase === 'reveal' && highlight
+  const emptyGlow =
+    highlight && (phase === 'reveal' || phase === 'cabinets')
   const surge = phase === 'dive' && highlight
+  const glow = surge ? 1.7 : emptyGlow ? 1.45 : 1
 
   useFrame((_, dt) => {
     if (!ref.current) return
@@ -741,7 +716,6 @@ function Drawer({
   const D = 0.88
   const H = 0.36
   const T = 0.045
-  const glow = surge ? 1.7 : spill ? 1.45 : 1
 
   return (
     <group ref={ref} position={[0, y, 0.08]}>
@@ -809,12 +783,12 @@ function Drawer({
             <pointLight
               position={[0, 0.35, 0.55]}
               color="#ffe6a8"
-              intensity={(spill ? 3.6 : 2.4) * glow}
-              distance={spill ? 12 : 8}
+              intensity={(emptyGlow ? 3.6 : 2.4) * glow}
+              distance={emptyGlow ? 12 : 8}
               decay={1.2}
             />
           )}
-          {spill && (
+          {emptyGlow && (
             <pointLight
               position={[0, 0.25, 1.1]}
               color="#fff3c8"
@@ -832,8 +806,8 @@ function Drawer({
               decay={1.05}
             />
           )}
-          {/* Specimens for hall beats; reveal lets the constellation be the light */}
-          {!spill &&
+          {/* Empty glowing tray on reveal/cabinets — specimens wait for the aisle walk */}
+          {!emptyGlow &&
             specimens.map((s, i) => (
               <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
                 <CrystalMesh
@@ -919,6 +893,7 @@ const DIVE_PLUNGE = {
 }
 
 /** Lateral aisle walk during instrument — opens drawers as we pass; ends at the glowing drawer. */
+const WALK_APPROACH_SEC = 2.8
 const WALK_SEC = 8.0
 const WALK_START = {
   pos: new THREE.Vector3(-9.2, 1.85, 20.8),
@@ -947,7 +922,7 @@ const COL_DIVE = new THREE.Color('#1a1408')
 const COL_BG = new THREE.Color()
 const COL_FOG = new THREE.Color()
 
-/** Nest constellation in the drawer (no world-space travel behind cabinets). */
+/** Fade constellation out on reveal — gone from cabinets onward (no nest into tray). */
 function ConstellationSky({
   phase,
   reduced,
@@ -958,62 +933,33 @@ function ConstellationSky({
   children: ReactNode
 }) {
   const ref = useRef<THREE.Group>(null)
-  // 0 = celestial at origin; 1 = nested in tray; 2 = tray spark; 3 = gone
-  const amount = useRef(
-    phase === 'reveal' ? 1 : phase === 'cabinets' ? 2 : inHallPhase(phase) ? 3 : 0,
-  )
-  const wasCelestial = useRef(phase === 'peri' || phase === 'peers' || phase === 'sky')
+  const fade = useRef(phase === 'peri' || phase === 'peers' || phase === 'sky' ? 1 : 0)
 
   useFrame((_, dt) => {
     if (!ref.current) return
 
-    // Sky→reveal morph is driven by revealBlend so bg / nest / camera stay locked.
-    if (phase === 'reveal') {
-      const b = reduced ? 1 : revealBlend
-      wasCelestial.current = false
-      amount.current = 1
-      if (b < REVEAL_NEST_CUT) {
-        const u = easeInOutCubic(b / REVEAL_NEST_CUT)
-        ref.current.position.set(0, 0, 0)
-        ref.current.scale.setScalar(THREE.MathUtils.lerp(1, SKY_SCALE_PRENEST, u))
-      } else {
-        const u = easeInOutCubic((b - REVEAL_NEST_CUT) / (1 - REVEAL_NEST_CUT))
-        ref.current.position.copy(SKY_IN_DRAWER)
-        ref.current.scale.setScalar(THREE.MathUtils.lerp(SKY_SCALE_PRENEST, SKY_SCALE_REVEAL, u))
-      }
-      ref.current.visible = true
+    if (phase === 'peri' || phase === 'peers' || phase === 'sky') {
+      fade.current = reduced ? 1 : THREE.MathUtils.damp(fade.current, 1, 3.2, dt)
+      ref.current.position.set(0, 0, 0)
+      ref.current.scale.setScalar(1)
+      ref.current.visible = fade.current > 0.02
       return
     }
 
-    let target = 0
-    if (phase === 'cabinets') target = 2
-    else if (inHallPhase(phase)) target = 3
-
-    if (phase === 'peri' || phase === 'peers' || phase === 'sky') {
-      wasCelestial.current = true
-      revealBlend = 0
-      amount.current = reduced ? 0 : THREE.MathUtils.damp(amount.current, 0, 2.4, dt)
-    } else {
-      amount.current = reduced ? target : THREE.MathUtils.damp(amount.current, target, 2.2, dt)
-    }
-    const a = amount.current
-
-    if (a < 0.02) {
+    if (phase === 'reveal') {
+      // Fade with the sky→hall blend; finished before the drawer read settles
+      const b = reduced ? 1 : revealBlend
+      const out = 1 - easeInOutCubic(Math.min(1, b / 0.55))
+      fade.current = out
       ref.current.position.set(0, 0, 0)
-      ref.current.scale.setScalar(1)
-    } else if (a <= 1) {
-      ref.current.position.copy(SKY_IN_DRAWER)
-      ref.current.scale.setScalar(SKY_SCALE_REVEAL)
-    } else if (a <= 2) {
-      const t = a - 1
-      ref.current.position.copy(SKY_IN_DRAWER).lerp(SKY_COLLAPSED, t)
-      ref.current.scale.setScalar(THREE.MathUtils.lerp(SKY_SCALE_REVEAL, SKY_SCALE_COLLAPSED, t))
-    } else {
-      const t = Math.min(1, a - 2)
-      ref.current.position.copy(SKY_COLLAPSED)
-      ref.current.scale.setScalar(THREE.MathUtils.lerp(SKY_SCALE_COLLAPSED, 0.004, t))
+      ref.current.scale.setScalar(Math.max(0.001, THREE.MathUtils.lerp(0.35, 1, out)))
+      ref.current.visible = out > 0.02
+      return
     }
-    ref.current.visible = skyVisiblePhase(phase) && a < 2.85
+
+    // cabinets / instrument / turn / dive — constellation stays gone
+    fade.current = 0
+    ref.current.visible = false
   })
 
   return (
@@ -1172,16 +1118,15 @@ function CameraRig({
         toLook.current.copy(REVEAL_OUT.look)
         easeDur.current = REVEAL_ENTER_SEC
       } else if (phase === 'instrument') {
+        // Ease from the cabinets view into the left-aisle start — no hard teleport
         walkActive.current = true
         hallWalkActive = true
-        fromPos.current.copy(WALK_START.pos)
-        fromLook.current.copy(WALK_START.look)
+        midPos.current.copy(WALK_START.pos)
+        midLook.current.copy(WALK_START.look)
         toPos.current.copy(WALK_END.pos)
         toLook.current.copy(WALK_END.look)
-        camera.position.copy(WALK_START.pos)
-        look.current.copy(WALK_START.look)
-        hallWalkX = WALK_START.pos.x
-        easeDur.current = WALK_SEC
+        hallWalkX = camera.position.x
+        easeDur.current = WALK_APPROACH_SEC + WALK_SEC
       } else {
         if (phase === 'sky') {
           skyYaw.current = Math.atan2(camera.position.x - 0, camera.position.z - 0)
@@ -1295,24 +1240,35 @@ function CameraRig({
       }
     } else if (!focus && walkActive.current && phase === 'instrument') {
       walkClock.current += dt
-      const raw = Math.min(1, walkClock.current / WALK_SEC)
-      const v = easeInOutCubic(raw)
-      camera.position.lerpVectors(WALK_START.pos, WALK_END.pos, v)
-      look.current.lerpVectors(WALK_START.look, WALK_END.look, v)
-      hallWalkX = camera.position.x
+      const approach = reduced ? 0.01 : WALK_APPROACH_SEC
+      const walk = reduced ? 0.01 : WALK_SEC
       hallWalkActive = true
-      persp.fov = THREE.MathUtils.damp(persp.fov, 40, 3, dt)
-      persp.updateProjectionMatrix()
-      progress.current = raw
-      if (raw >= 1) {
-        walkActive.current = false
-        // Hold at end; keep walk X so last drawers stay open until turn
-        hallWalkActive = true
-        if (!settled.current) {
-          settled.current = true
-          onSettle?.(true)
+      if (walkClock.current <= approach) {
+        const raw = Math.min(1, walkClock.current / approach)
+        const v = easeInOutCubic(raw)
+        camera.position.lerpVectors(fromPos.current, midPos.current, v)
+        look.current.lerpVectors(fromLook.current, midLook.current, v)
+        hallWalkX = camera.position.x
+        persp.fov = THREE.MathUtils.lerp(baseFov.current, 40, v)
+        progress.current = raw * 0.25
+      } else {
+        const raw = Math.min(1, (walkClock.current - approach) / walk)
+        const v = easeInOutCubic(raw)
+        camera.position.lerpVectors(midPos.current, toPos.current, v)
+        look.current.lerpVectors(midLook.current, toLook.current, v)
+        hallWalkX = camera.position.x
+        persp.fov = THREE.MathUtils.damp(persp.fov, 40, 3, dt)
+        progress.current = 0.25 + raw * 0.75
+        if (raw >= 1) {
+          walkActive.current = false
+          hallWalkActive = true
+          if (!settled.current) {
+            settled.current = true
+            onSettle?.(true)
+          }
         }
       }
+      persp.updateProjectionMatrix()
     } else if (!focus && phase === 'sky' && progress.current >= 1) {
       hallWalkActive = false
       if (!reduced) skyYaw.current -= dt * SKY_SPIN_RAD_PER_SEC
@@ -1384,8 +1340,9 @@ function Atmosphere({ phase, reduced }: { phase: Phase; reduced: boolean }) {
         COL_BG.copy(COL_TRAY).lerp(COL_HALL, u)
         COL_FOG.copy(COL_TRAY).lerp(COL_FOG_HALL, u)
       }
-      near = THREE.MathUtils.lerp(16, 7, b)
-      far = THREE.MathUtils.lerp(48, 38, b)
+      // Land on the same fog envelope as cabinets so 2-3 → 2-4 does not pop
+      near = THREE.MathUtils.lerp(16, 22, b)
+      far = THREE.MathUtils.lerp(48, 55, b)
     } else if (phase === 'dive') {
       COL_BG.copy(COL_DIVE)
       COL_FOG.copy(COL_DIVE)
@@ -1444,25 +1401,23 @@ function Scene({
     <>
       <Atmosphere phase={phase} reduced={reduced} />
       <ambientLight
-        intensity={
-          phase === 'dive' ? 0.5 : revealish ? 0.34 : inHall ? 0.38 : 0.22
-        }
+        intensity={phase === 'dive' ? 0.5 : inHall ? 0.38 : 0.22}
       />
       <directionalLight
         position={[4, 8, 3]}
-        intensity={phase === 'dive' ? 1.15 : revealish ? 0.7 : inHall ? 0.95 : 0.62}
+        intensity={phase === 'dive' ? 1.15 : inHall ? 0.95 : 0.62}
         color="#f2e6c8"
       />
       <pointLight
-        position={revealish ? DRAWER_MOUTH.toArray() : [0, 2, 2]}
-        intensity={phase === 'dive' ? 1.1 : revealish ? 1.5 : inHall ? 0.7 : 0.45}
+        position={[0, 2, 2]}
+        intensity={phase === 'dive' ? 1.1 : inHall ? 0.7 : 0.45}
         color="#e8b86a"
-        distance={revealish ? 28 : 24}
+        distance={24}
       />
-      {(phase === 'dive' || phase === 'reveal') && (
+      {(phase === 'dive' || phase === 'reveal' || phase === 'cabinets') && (
         <pointLight
           position={DRAWER_MOUTH.toArray()}
-          intensity={phase === 'reveal' ? 3.4 : 4.5}
+          intensity={phase === 'dive' ? 4.5 : 3.4}
           color="#fff0c0"
           distance={16}
         />
