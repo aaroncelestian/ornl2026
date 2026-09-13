@@ -867,10 +867,16 @@ function backWallDrawerMouth(cabinetIndex: number, drawerIndex: number) {
 const ENTRY_MOUTH = backWallDrawerMouth(ENTRY_CABINET, ENTRY_DRAWER)
 const DIVE_MOUTH = backWallDrawerMouth(DIVE_CABINET, DIVE_DRAWER)
 
-/** End of reveal: entry drawer + cabinet face readable, gaze lifting into the hall. */
-const REVEAL_OUT = {
-  pos: new THREE.Vector3(0.2, 2.45, 19.0),
-  look: new THREE.Vector3(ENTRY_MOUTH.x, 1.05, ENTRY_MOUTH.z + 0.15),
+/** Settled reveal: close on the empty glowing entry drawer (no aisle pull on this beat). */
+const REVEAL_IN = {
+  pos: new THREE.Vector3(ENTRY_MOUTH.x + 0.05, ENTRY_MOUTH.y + 0.55, ENTRY_MOUTH.z + 2.4),
+  look: new THREE.Vector3(ENTRY_MOUTH.x, ENTRY_MOUTH.y + 0.05, ENTRY_MOUTH.z - 0.15),
+}
+
+/** Cabinets beat: pull back into the aisle from the drawer close-up. */
+const CABINETS_AISLE = {
+  pos: new THREE.Vector3(0.2, 2.6, 25.5),
+  look: new THREE.Vector3(0, 1.15, 14.5),
 }
 
 const DIVE_PAN = {
@@ -892,16 +898,15 @@ const WALK_END = {
 /** Shared aisle walk X so cabinets can open as the camera passes. */
 let hallWalkX = 0
 let hallWalkActive = false
-/** sky→reveal: plunge through constellation into void, then pull out of the glowing drawer. */
-const REVEAL_ENTER_SEC = 5.6
+/** sky→reveal: plunge into void, then hard-cut to the drawer (no zoom-out on this beat). */
+const REVEAL_ENTER_SEC = 4.2
 /** 0→this: rush into the sky field until nothing. */
-const REVEAL_ZOOM_FRAC = 0.4
-/** this→emerge: hold black void. */
-const REVEAL_VOID_FRAC = 0.5
-/** After void: cut to drawer mouth and pull out (remainder of enter). */
+const REVEAL_ZOOM_FRAC = 0.62
+/** this→1: hold black void, then cut to drawer and settle. */
+const REVEAL_VOID_FRAC = 0.78
 
 /**
- * Shared 0–1 progress for sky→reveal (zoom-void → drawer pull-out).
+ * Shared 0–1 progress for sky→reveal (zoom-void → drawer cut).
  * Driven by CameraRig during the enter path; held at 1 while reveal is settled.
  */
 let revealBlend = 0
@@ -912,12 +917,6 @@ const COL_FOG_HALL = new THREE.Color('#0c0b09')
 const COL_DIVE = new THREE.Color('#1a1408')
 const COL_BG = new THREE.Color()
 const COL_FOG = new THREE.Color()
-
-/** Close on the empty glowing entry drawer — first frame after the void cut. */
-const REVEAL_IN = {
-  pos: new THREE.Vector3(ENTRY_MOUTH.x + 0.05, ENTRY_MOUTH.y + 0.55, ENTRY_MOUTH.z + 2.4),
-  look: new THREE.Vector3(ENTRY_MOUTH.x, ENTRY_MOUTH.y + 0.05, ENTRY_MOUTH.z - 0.15),
-}
 
 /**
  * Constellation rushes past as we plunge into void; hidden from the void beat onward.
@@ -992,14 +991,11 @@ function goalForPhase(phase: Phase, skyYaw: number): { pos: THREE.Vector3; look:
     }
   }
   if (phase === 'reveal') {
-    // Settled on the slow pull-out (path into the drawer is staged in CameraRig)
-    return { pos: REVEAL_OUT.pos.clone(), look: REVEAL_OUT.look.clone() }
+    // Hold on the empty glowing drawer — aisle pull waits for cabinets
+    return { pos: REVEAL_IN.pos.clone(), look: REVEAL_IN.look.clone() }
   }
   if (phase === 'cabinets') {
-    return {
-      pos: new THREE.Vector3(0.2, 2.6, 25.5),
-      look: new THREE.Vector3(0, 1.15, 14.5),
-    }
+    return { pos: CABINETS_AISLE.pos.clone(), look: CABINETS_AISLE.look.clone() }
   }
   if (phase === 'instrument') {
     return { pos: WALK_END.pos.clone(), look: WALK_END.look.clone() }
@@ -1106,11 +1102,11 @@ function CameraRig({
         toLook.current.copy(DIVE_PLUNGE.look)
         easeDur.current = CAM_EASE_SEC
       } else if (phase === 'reveal' && prevPhase.current === 'sky') {
-        // Continuity from sky orbit — no snap; path morphs into the tray then looks up
+        // Continuity from sky orbit — plunge into void, then hard-cut to drawer
         revealEnter.current = true
         revealBlend = reduced ? 1 : 0
-        toPos.current.copy(REVEAL_OUT.pos)
-        toLook.current.copy(REVEAL_OUT.look)
+        toPos.current.copy(REVEAL_IN.pos)
+        toLook.current.copy(REVEAL_IN.look)
         easeDur.current = REVEAL_ENTER_SEC
       } else if (phase === 'instrument') {
         // Continue from the cabinets entry view and walk right to the dive drawer
@@ -1148,8 +1144,8 @@ function CameraRig({
         onSettle?.(true)
       }
       if (reduced && revealEnter.current) {
-        camera.position.copy(REVEAL_OUT.pos)
-        look.current.copy(REVEAL_OUT.look)
+        camera.position.copy(REVEAL_IN.pos)
+        look.current.copy(REVEAL_IN.look)
         revealEnter.current = false
         revealBlend = 1
         progress.current = 1
@@ -1206,29 +1202,26 @@ function CameraRig({
       revealBlend = t
 
       if (t <= REVEAL_ZOOM_FRAC) {
-        // Plunge through the constellation into nothing
+        // Plunge through the constellation into nothing — one direction only
         const v = t / REVEAL_ZOOM_FRAC
         const e = easeInOutCubic(v)
         const skyCenter = new THREE.Vector3(0, 0.2, 0)
-        // Aim past the origin so the field rushes through the lens
         const plunge = fromPos.current.clone().lerp(skyCenter, 1.12)
         camera.position.lerpVectors(fromPos.current, plunge, e)
         look.current.lerpVectors(fromLook.current, skyCenter, Math.min(1, e * 1.15))
         persp.fov = THREE.MathUtils.lerp(baseFov.current, 92, e)
       } else if (t <= REVEAL_VOID_FRAC) {
-        // Brief black void — camera frozen deep in the plunge
+        // Brief black void — hold deep in the plunge
         const skyCenter = new THREE.Vector3(0, 0.2, 0)
         const plunge = fromPos.current.clone().lerp(skyCenter, 1.12)
         camera.position.copy(plunge)
         look.current.copy(skyCenter)
         persp.fov = 92
       } else {
-        // Cut to drawer mouth, then pull out into the hall
-        const v = (t - REVEAL_VOID_FRAC) / (1 - REVEAL_VOID_FRAC)
-        const e = easeInOutCubic(v)
-        camera.position.lerpVectors(REVEAL_IN.pos, REVEAL_OUT.pos, e)
-        look.current.lerpVectors(REVEAL_IN.look, REVEAL_OUT.look, e)
-        persp.fov = THREE.MathUtils.lerp(48, 36, e)
+        // Hard cut to the empty glowing drawer and hold (aisle pull is cabinets)
+        camera.position.copy(REVEAL_IN.pos)
+        look.current.copy(REVEAL_IN.look)
+        persp.fov = THREE.MathUtils.damp(persp.fov, 42, 6, dt)
       }
       persp.updateProjectionMatrix()
       progress.current = t
@@ -1286,7 +1279,7 @@ function CameraRig({
       camera.position.lerpVectors(fromPos.current, toPos.current, u)
       look.current.lerpVectors(fromLook.current, toLook.current, u)
       if (phase === 'instrument') hallWalkX = camera.position.x
-      const goalFov = phase === 'reveal' ? 36 : phase === 'turn' ? 38 : 42
+      const goalFov = phase === 'reveal' ? 42 : phase === 'turn' ? 38 : 42
       if (persp.fov !== goalFov) {
         persp.fov = THREE.MathUtils.lerp(baseFov.current, goalFov, u)
         persp.updateProjectionMatrix()
@@ -1329,12 +1322,14 @@ function Atmosphere({ phase, reduced }: { phase: Phase; reduced: boolean }) {
         near = THREE.MathUtils.lerp(14, 2, Math.min(1, b / REVEAL_ZOOM_FRAC))
         far = THREE.MathUtils.lerp(44, 12, Math.min(1, b / REVEAL_ZOOM_FRAC))
       } else {
-        // Warm into the hall as we pull out of the drawer
-        const u = easeInOutCubic((b - REVEAL_VOID_FRAC) / (1 - REVEAL_VOID_FRAC))
+        // Snap hall lighting with the drawer cut
+        const u = easeInOutCubic(
+          Math.min(1, (b - REVEAL_VOID_FRAC) / Math.max(0.001, 1 - REVEAL_VOID_FRAC)),
+        )
         COL_BG.copy(COL_SKY).lerp(COL_HALL, u)
         COL_FOG.copy(COL_SKY).lerp(COL_FOG_HALL, u)
-        near = THREE.MathUtils.lerp(6, 22, u)
-        far = THREE.MathUtils.lerp(18, 55, u)
+        near = THREE.MathUtils.lerp(6, 18, u)
+        far = THREE.MathUtils.lerp(18, 48, u)
       }
     } else if (phase === 'dive') {
       COL_BG.copy(COL_DIVE)
@@ -1572,7 +1567,7 @@ export function MineralConstellation({ active, label }: { active: boolean; label
       )}
       {phase === 'reveal' && (
         <div className={styles.constellationHint} data-idle="">
-          Zoom into void · pull out of drawer
+          Zoom into void · cut to drawer
         </div>
       )}
       {phase === 'cabinets' && (

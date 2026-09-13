@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Plunge through the constellation until the field rushes into black void — no fade. Hard cut to one open glowing drawer (empty tray, light only), then pull out until the cabinet face reads. That whole sky lived in one NHMLA tray.',
+          'Plunge through the constellation into black void — one direction, no zoom-out. Hard cut to one open glowing drawer (empty tray, light only) and hold. Aisle pull waits for the next beat.',
       },
       {
         id: 'cabinets',
@@ -262,7 +262,7 @@ export const slides: Slide[] = [
         title: 'Not a warehouse.',
         layers: ['sky'],
         notes:
-          'Pull further into the aisle. One tray still glowing and empty — light without specimens yet. A wall of closed drawers beyond it. Cabinets. Specimens with provenance. This is where the names still have rocks attached — not a slide of jargon, a physical instrument.',
+          'Now pull back into the aisle from that glowing empty tray. A wall of closed drawers beyond it. Cabinets. Specimens with provenance. This is where the names still have rocks attached — not a slide of jargon, a physical instrument.',
       },
       {
         id: 'instrument',
