@@ -6,10 +6,10 @@ import data from '../../data/frameworkLineage.json'
 import styles from './Motifs.module.css'
 
 const W = 920
-const H = 500
-const PAD = { t: 48, r: 220, b: 56, l: 64 }
+const H = 560
+const PAD = { t: 36, r: 220, b: 48, l: 64 }
 /** Title + subtitle block height; keep this ≥ the two <text> baselines span. */
-const LABEL_GAP = 48
+const LABEL_GAP = 52
 
 function catmullRom(points: [number, number][]) {
   if (points.length < 2) return ''

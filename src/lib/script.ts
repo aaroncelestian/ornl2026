@@ -137,13 +137,13 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: Li⁺ selectivity plume versus ionic radius'
   }
   if (slide.motif === 'pore-gate') {
-    return 'Motif: crystal core vs hydrated shell against the ~3 Å hydrated filter'
+    return 'Motif: hydrated cations with H₂O shells — color by hydration energy'
   }
   if (slide.motif === 'framework-lineage') {
     return 'Motif: OpenAlex literature mentions versus year'
   }
   if (slide.motif === 'void-fit') {
-    return 'Motif: guest orbs sized against the rowleyite cage'
+    return 'Motif: rowleyite cage — hydration, exchange, and delivery sequence'
   }
   if (slide.motif === 'raman-exchange') {
     return 'Motif: LMO XRD vs Raman story — as-synth / H-blank / Li returns'
@@ -205,7 +205,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         } else if (beat?.id === 'lock') {
           lines.push('Motif: ZS-9 — H bends and exchanges out; K locks in')
         } else if (beat?.id === 'patients') {
-          lines.push('Motif: ZS-9 — K locked in the 7-ring (drag to orbit)')
+          lines.push('Motif: ZS-9 — hydration filter; Cs paradox (drag to orbit)')
         } else {
           lines.push('Motif: ZS-9 crystal structure — K⁺ in the channels (drag to orbit)')
         }
@@ -252,7 +252,9 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'pore-gate') {
-        lines.push('Motif: ion aperture — crystal core vs hydrated shell against the ~3 Å hydrated filter')
+        lines.push(
+          'Motif: hydrated cations with H₂O shells — color by hydration energy vs ~3 Å filter',
+        )
       }
       if (layer?.kind === 'motif' && layer.motif === 'crystal-viewer') {
         lines.push(
@@ -265,8 +267,15 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
                 : beat?.id === 'lock'
                   ? 'Motif: ZS-9 CIF — H leaves; K locks'
                   : beat?.id === 'patients'
-                    ? 'Motif: ZS-9 CIF — K locked; geometry as drug'
+                    ? 'Motif: ZS-9 CIF — Cs paradox; hydration as the drug filter'
                     : 'Motif: ZS-9 structure from CIF — drag to orbit',
+        )
+      }
+      if (layer?.kind === 'motif' && layer.motif === 'void-fit') {
+        lines.push(
+          beat?.id === 'scaffold'
+            ? 'Motif: delivery as reverse exchange — load → hold → trigger → release'
+            : 'Motif: hydration → strip → exchange → delivery for the rowleyite cage',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-lineage') {
@@ -274,12 +283,9 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
           beat?.id === 'sitinakite' || beat?.id === 'split'
             ? 'Motif: OpenAlex mentions/year — sitinakite vs CST / ETS-10 split'
             : beat?.id === 'precedents'
-              ? 'Motif: OpenAlex mentions/year — mineral teachers vs industrial names'
+              ? 'Motif: OpenAlex mentions/year — mineral names vs industrial names'
               : 'Motif: OpenAlex mentions/year — mineral names on the floor · SZC / ZS-9 / Lokelma',
         )
-      }
-      if (layer?.kind === 'motif' && layer.motif === 'void-fit') {
-        lines.push('Motif: guest orbs sized against the rowleyite cage void')
       }
       if (layer?.kind === 'motif' && layer.motif === 'raman-exchange') {
         lines.push(

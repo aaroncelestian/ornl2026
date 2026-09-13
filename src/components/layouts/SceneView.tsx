@@ -178,7 +178,7 @@ export function SceneView({ slide, active }: { slide: Slide; active: boolean }) 
           data-facts={beat?.bullets?.length ? '' : undefined}
           initial={reduced ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={reduced ? { opacity: 1 } : { opacity: 0 }}
+          exit={reduced ? undefined : { opacity: 0, transition: { duration: 0 } }}
           transition={{ duration, ease: [0.16, 1, 0.3, 1] }}
         >
           {beat?.kicker && <div className="kicker">{beat.kicker}</div>}

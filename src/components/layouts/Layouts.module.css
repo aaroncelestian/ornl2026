@@ -273,12 +273,18 @@
 
 .scene[data-motif='selectivity-plume'] .stageCopy {
   left: auto;
-  right: var(--pad-x);
+  right: calc(var(--pad-x) + 1.25rem);
+  max-width: min(26ch, 32vw);
   text-align: right;
+  overflow: visible;
 }
 
-.scene[data-motif='raman-exchange'] .stageCopy {
-  max-width: min(16ch, 38vw);
+.scene[data-motif='selectivity-plume'] .stageCopy h2 {
+  overflow: visible;
+}
+
+.scene[data-motif='selectivity-plume'] .stageCopy h2 span {
+  white-space: nowrap;
 }
 
 .scene[data-motif='raman-exchange'] .stageCopy h2 span {

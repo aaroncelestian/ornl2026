@@ -43,7 +43,7 @@ const CAPTION: Record<CrystalPhase, string> = {
   pore: 'ZS-9 from CIF · 7-ring windows lit · drag to orbit',
   'h-point': 'H in · protons point at the empty site',
   exchange: 'H out · the cell opens · K locks',
-  locked: 'K locked · size-selective exchange as a drug',
+  locked: 'Cs packs in · hydration — not Shannon size — as the drug filter',
 }
 
 const PORE_COLOR = '#f3cc7a'

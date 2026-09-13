@@ -4,8 +4,8 @@ import { useScene } from '../../hooks/useSceneBeats'
 import data from '../../data/frameworkDensity.json'
 import styles from './Motifs.module.css'
 
-const CX = 640
-const CY = 235
+const CX = 580
+const CY = 250
 
 type Phase = 'density' | 'rings' | 'both'
 
@@ -34,13 +34,13 @@ export function FrameworkDensity({ active, label }: { active: boolean; label?: s
   const heroR = voidRadius(hero.density) * 1.2
 
   const orbit = peers.map((mat, i) => {
-    const angle = -Math.PI * 0.85 + (i / Math.max(1, peers.length - 1)) * Math.PI * 1.55
-    const dist = 195
+    const angle = -Math.PI * 0.92 + (i / Math.max(1, peers.length - 1)) * Math.PI * 1.65
+    const dist = 210
     return {
       ...mat,
-      r: voidRadius(mat.density) * 0.68,
+      r: voidRadius(mat.density) * 0.62,
       x: CX + Math.cos(angle) * dist,
-      y: CY + Math.sin(angle) * dist * 0.78,
+      y: CY + Math.sin(angle) * dist * 0.82,
     }
   })
 
@@ -141,10 +141,10 @@ export function FrameworkDensity({ active, label }: { active: boolean; label?: s
             strokeDasharray="4 6"
           />
           <circle cx={CX} cy={CY} r={38} fill="none" stroke="rgba(243,204,122,0.65)" strokeWidth={1.75} />
-          <text x={CX + 118} y={CY - 78} className={styles.theaterMark}>
+          <text x={CX - 148} y={CY - 72} textAnchor="end" className={styles.theaterMark}>
             12MR · {data.rings.large.value} Å
           </text>
-          <text x={CX + 118} y={CY - 58} className={styles.theaterMark}>
+          <text x={CX - 62} y={CY + 6} textAnchor="end" className={styles.theaterMark}>
             salt cage · {data.rings.small.value} Å
           </text>
         </motion.g>

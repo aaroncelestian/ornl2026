@@ -927,8 +927,12 @@
   bottom: var(--pad-y);
 }
 
+.ramanHud[data-raised] {
+  bottom: calc(var(--pad-y) + 7.5rem);
+}
+
 .ramanHud[data-tight] {
-  width: min(380px, 40vw);
+  width: min(420px, 44vw);
 }
 
 .ramanHud[data-bare] {

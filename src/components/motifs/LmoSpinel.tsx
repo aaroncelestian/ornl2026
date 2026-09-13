@@ -752,10 +752,10 @@ function RamanTrack({
   const tight = phase === 'framework' || phase === 'voids' || phase === 'hydrogen' || phase === 'lithium'
   const w0 = tight ? 600 : 500
   const w1 = tight ? 700 : 780
-  const vbH = tight ? 108 : 64
-  const baseY = tight ? 88 : 52
+  const vbH = tight ? 148 : 64
+  const baseY = tight ? 122 : 52
   // Fixed scale so track.amp is a true intensity multiplier (H-form = 50% of as-synth).
-  const peakScale = tight ? 80 : 40
+  const peakScale = tight ? 110 : 40
   const path = lorentzPath(track.w, track.fwhm, track.amp, w0, w1, baseY, peakScale)
   const collapsed = track.amp < 0.2
   const peakX = 8 + ((track.w - w0) / (w1 - w0)) * 284
@@ -765,6 +765,7 @@ function RamanTrack({
       className={styles.ramanHud}
       data-dock={tight ? 'left' : undefined}
       data-tight={tight || undefined}
+      data-raised={tight || undefined}
       data-bare={phase === 'hydrogen' || phase === 'lithium' ? '' : undefined}
       aria-hidden
     >

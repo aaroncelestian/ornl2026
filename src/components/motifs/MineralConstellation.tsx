@@ -963,7 +963,8 @@ const DIVE_MOUTH = backWallDrawerMouth(DIVE_CABINET, DIVE_DRAWER)
  * Camera arrives here as the sky finishes nesting — drawer must already be open.
  */
 const SKY_NEST = new THREE.Vector3(ENTRY_MOUTH.x, ENTRY_MOUTH.y + 0.06, ENTRY_MOUTH.z - 0.48)
-const SKY_NEST_SCALE = 0.058
+/** Tray is ~2.1 × 0.88; keep nested disc inside the drawer lip. */
+const SKY_NEST_SCALE = 0.028
 const REVEAL_OVER = {
   pos: new THREE.Vector3(ENTRY_MOUTH.x + 0.02, ENTRY_MOUTH.y + 2.65, ENTRY_MOUTH.z + 0.95),
   look: SKY_NEST.clone(),

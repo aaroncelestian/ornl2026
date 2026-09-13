@@ -2,11 +2,57 @@
   "poreA": 3.0,
   "caption": "~3 Å hydrated filter — crystallographic 7MR is the next beat",
   "structureNote": "CZS 7MR ~6.5×5 Å O–O; protonated O3···H ~4.2 Å; cage ~207 Å³ (Lively & Celestian 2024)",
+  "hydrationNote": "ΔHhyd more negative → warmer color → harder to shed waters",
   "ions": [
-    { "id": "Na", "label": "Na⁺", "hydrated": 2.76, "crystal": 1.02, "pass": true, "note": "Fits hydrated filter" },
-    { "id": "Ca", "label": "Ca²⁺", "hydrated": 2.72, "crystal": 1.0, "pass": true, "note": "Fits hydrated filter" },
-    { "id": "Mg", "label": "Mg²⁺", "hydrated": 2.0, "crystal": 0.72, "pass": true, "note": "Fits hydrated filter" },
-    { "id": "K", "label": "K⁺", "hydrated": 3.31, "crystal": 1.38, "pass": false, "note": "Above hydrated filter" },
-    { "id": "Cs", "label": "Cs⁺", "hydrated": 3.29, "crystal": 1.67, "pass": false, "note": "Above hydrated filter · CST cousin" }
+    {
+      "id": "Mg",
+      "label": "Mg²⁺",
+      "hydrated": 2.0,
+      "crystal": 0.72,
+      "hydration": -1922,
+      "waters": 6,
+      "pass": true,
+      "note": "Hardest to strip"
+    },
+    {
+      "id": "Ca",
+      "label": "Ca²⁺",
+      "hydrated": 2.72,
+      "crystal": 1.0,
+      "hydration": -1577,
+      "waters": 6,
+      "pass": true,
+      "note": "High hydration cost"
+    },
+    {
+      "id": "Na",
+      "label": "Na⁺",
+      "hydrated": 2.76,
+      "crystal": 1.02,
+      "hydration": -405,
+      "waters": 5,
+      "pass": true,
+      "note": "Fits hydrated filter"
+    },
+    {
+      "id": "K",
+      "label": "K⁺",
+      "hydrated": 3.31,
+      "crystal": 1.38,
+      "hydration": -321,
+      "waters": 6,
+      "pass": false,
+      "note": "Easier to desolvate"
+    },
+    {
+      "id": "Cs",
+      "label": "Cs⁺",
+      "hydrated": 3.29,
+      "crystal": 1.67,
+      "hydration": -263,
+      "waters": 8,
+      "pass": false,
+      "note": "Softest shell · CST cousin"
+    }
   ]
 }

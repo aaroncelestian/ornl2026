@@ -396,7 +396,7 @@ export const slides: Slide[] = [
         id: 'cloud',
         label: 'Selectivity cloud',
         kicker: 'Why λ-MnO₂ wins',
-        title: 'Why spinel wins.\nWhy LiMn specifically?',
+        title: 'Why spinel wins.\nWhy LiMn?',
         layers: ['plume'],
         notes:
           'The question this plot answers. Spinel is not a brand preference — it is a geometry that can enforce three filters at once: interstitial size, charge density, and hydration-shell stripping. Among candidate sorbents, soft lattices fail that trio. Lithium manganese oxide — Li₄Mn₅O₁₂ / λ-MnO₂ — is the engineered answer because its tetrahedral 8a sites can host Li⁺ only after those filters fire.',
@@ -563,8 +563,8 @@ export const slides: Slide[] = [
       {
         id: 'precedents',
         label: 'Precedents',
-        kicker: 'Natural teachers',
-        title: 'Teachers without\na product name stay quiet.',
+        kicker: 'Natural minerals',
+        title: 'Minerals without\na product name stay quiet.',
         layers: ['lineage'],
         notes:
           'Georgechaoite taught the Zr–Si 3MR (DFT analog in the Lokelma Raman paper) but never got a product name. Umbite is the other natural Zr teacher — industrial alias unknown. Where the mapping is known, mineral and industry diverge in the literature: sitinakite vs CST / ETS-10; zorite vs ETS-4. The product that did get named is SZC / ZS-9 / Lokelma. Paper: Lively & Celestian, PLoS ONE 19(3): e0298661, 2024.',
@@ -576,7 +576,7 @@ export const slides: Slide[] = [
         title: 'Crystal radii mislead.\nHydrated sizes decide.',
         layers: ['gate'],
         notes:
-          'One job: throw out Shannon radii. Each ion shows a small crystal core inside a hydrated shell — Na⁺ ~2.8 Å, Ca²⁺ ~2.7 Å, K⁺ ~3.3 Å — against a ~3 Å effective hydrated filter. This is not the crystallographic window and not the capture story. CIF 7MR (~6.5 × 5 Å O–O) is next; protons and the lock come after.',
+          'Throw out Shannon radii as the decision rule. Each cation sits inside an H₂O shell — color is hydration energy, warmer where more energy is needed to shed waters. Mg²⁺ and Ca²⁺ are expensive to desolvate; K⁺ and Cs⁺ are cheaper. Against a ~3 Å hydrated filter that is the real size story. Crystallographic 7MR comes next.',
       },
       {
         id: 'k',
@@ -626,12 +626,12 @@ export const slides: Slide[] = [
       {
         id: 'patients',
         label: '3 million',
-        kicker: 'Consequence of geometry',
-        title: 'Size-selective exchange\nbecomes a drug.',
-        subtitle: 'On the order of 3 million patients.',
+        kicker: 'Consequence of hydration',
+        title: 'Cs should be too big.\nIt goes in anyway.',
+        subtitle: 'Hydration — not Shannon radius — writes the drug.',
         layers: ['structure'],
         notes:
-          'Three million patients is what happens when a channel minerals already invented is rebuilt to pharmaceutical specification. Same family as cesium cleanup frameworks. One geometry. Two deployments.',
+          'Size-selective was the wrong punchline after the H₂O story. Unpublished loading work: Cs⁺ packs into this framework even though Shannon says it should not. Soft hydration enthalpy (−263 kJ/mol) lets it shed waters and enter. Same geometry family as cesium cleanup media; Lokelma is the K⁺-selective clinical rebuild — on the order of 3 million patients. The filter is desolvation cost, not a hard sphere diameter.',
       },
     ],
   },
@@ -717,31 +717,21 @@ export const slides: Slide[] = [
       },
       {
         id: 'mismatch',
-        label: 'Fit test',
-        kicker: 'Volumes as a filter',
-        title: 'Match is a filter.\nNot a finished medicine.',
+        label: 'Release gate',
+        kicker: 'Mechanism, not volume',
+        title: 'Hydration writes\nthe release rate.',
         layers: ['fit'],
         notes:
-          'Cage ~420 Å³. Cisplatin and temozolomide fit. Doxorubicin is near the edge. Vincristine overflows — useful tension. Void matching generates candidates; it does not ship a vial.',
+          'Skip the overlapping guest orbs — cargo size was the last beat. Here the question is mechanism: the guest arrives hydrated, desolvation cost gates entry into the salt cage, framework ions exchange, and channel chemistry sets how fast it leaves. Controlled release is a hydration-and-exchange problem before it is a pharmacy problem.',
       },
       {
         id: 'scaffold',
         label: 'Synthetic analog',
         kicker: 'Blueprint → build',
-        title: 'Natural geometry.\nPharmaceutical-grade analog.',
+        title: 'Delivery is\nreverse exchange.',
         layers: ['fit'],
         notes:
-          'You will not put Arizona hand-specimen into an oncology ward. You synthesize a clean analog of the cage–channel architecture. Same pattern as Lokelma and λ-MnO₂.',
-      },
-      {
-        id: 'lead',
-        label: 'Design template',
-        title: 'Rowleyite as design template',
-        subtitle: 'Controlled-release scaffold candidate — geometry first.',
-        layers: ['voids'],
-        guests: true,
-        notes:
-          'Seventeen new mineral species with my name on them. Each one is a door. Most discoverers stop at the catalogue entry. The scientific obligation is the next question: does this geometry solve a problem anyone has? For rowleyite — lowest natural framework density, salt-templated channels, 9.7 Å cage windows — that problem may be targeted, controlled-release delivery. The channel is the lead, not the trophy.',
+          'Load → hold in the salt-templated cage → trigger by ion exchange or pH → release into the 12MR channel. You will not put an Arizona hand-specimen into a ward. You synthesize a clean analog of that cage–channel sequence — same pattern as Lokelma and λ-MnO₂. The mineral is the mechanism sketch.',
       },
     ],
   },
@@ -777,13 +767,12 @@ export const slides: Slide[] = [
     layout: 'litany',
     kicker: 'Outside the research group',
     bullets: [
-      'Framework diversity that is slow and expensive to generate synthetically from scratch',
-      'Provenance: named locality, paragenesis, comparable series across deposits',
-      'Time depth: topologies waiting decades for the right analytical question',
-      'A prior for Materials Genome and inverse-design searches — not a blank composition space',
+      'Topologies that are slow and expensive to invent from scratch',
+      'Provenance as experimental metadata — locality, paragenesis, series',
+      'A prior for Materials Genome searches — not blank composition space',
     ],
     notes:
-      'This is the practical offer to a national lab. You are not asking for display loans. You are asking for a topology library with metadata. Comparative series beat one-off curiosities. Provenance is experimental reproducibility for geology.',
+      'Practical offer to a national lab: a topology library with metadata. Comparative series beat one-off curiosities. Provenance is reproducibility for geology.',
   },
   {
     id: 'working',
@@ -798,9 +787,10 @@ export const slides: Slide[] = [
       fit: 'contain',
     },
     kicker: 'Already running',
-    title: 'Museum collection\n+\nORNL characterization\n=\none pipeline',
+    title: 'The measurement loop\nis already closed.',
+    subtitle: 'Collections name the geometry. ORNL finishes the mechanism.',
     notes:
-      'This is not aspirational theater. DOE AMO DE-EE0009442 lithium extraction research already couples museum-informed geometric priors to national-lab synthesis and characterization — Raman, diffraction, XPS on LMO; synchrotron XRD + Raman on CZS at APS 17-BM; neutron follow-ups planned for H sites in zirconium silicates. R&D 100 with ORNL and Element3 is the public receipt. The pipeline works when both ends stay honest: collections as blueprints, labs as builders and validators.',
+      'DOE AMO DE-EE0009442 already couples museum-informed geometric priors to national-lab synthesis and characterization — Raman, diffraction, XPS on LMO; synchrotron XRD + Raman on CZS at APS 17-BM; neutron follow-ups for H sites in zirconium silicates. R&D 100 with ORNL and Element3 is the public receipt. Collections as blueprints; labs as builders and validators.',
   },
   {
     id: 'next',
@@ -809,13 +799,13 @@ export const slides: Slide[] = [
     layout: 'litany',
     kicker: 'For this room',
     bullets: [
-      'Operando Raman/XRD under real brine — and cycle protocols that avoid full-load Mn loss',
-      'Neutron / PDF on CZS hydroxyl networks (H positions still inferred from bond valence)',
-      'Systematic screen of collection framework topologies against critical-ion selectivity maps',
-      'Synthetic SIS analogs of rowleyite cages (9.7 Å windows, FD ~9.8) with release specs',
+      'Operando Raman/XRD under real brine — avoid full-load Mn loss',
+      'Neutron / PDF on CZS hydroxyl networks',
+      'Screen collection frameworks against critical-ion maps',
+      'SIS analogs of rowleyite cages with release specs',
     ],
     notes:
-      'Concrete next steps grounded in the papers. LMO: partial-load cycling preserves the lattice; full load costs Mn. Lokelma: neutron diffraction for the H/OH network the double-lever model needs. Rowleyite: salt-templated POV synthesis at mild conditions, then pharmaceutical impurity and release kinetics. A shared workflow from CIF to deployable media. That is the collaboration ask.',
+      'Concrete next steps from the papers. LMO: partial-load cycling. Lokelma: neutron for the H/OH network. Rowleyite: salt-templated POV synthesis, then release kinetics. Shared workflow from structure to deployable media.',
   },
 
   // ── Close ─────────────────────────────────────────────
@@ -825,12 +815,12 @@ export const slides: Slide[] = [
     chapter: 'close',
     layout: 'void',
     camera: 'drift',
-    title: 'Keep the geometry.\nBuild what regulation requires.',
+    title: 'Unfinished problems\nalready crystallized.',
     exitHold: 1.5,
     enterBlack: true,
     copySnap: true,
     notes:
-      'Collections are not where science goes to be preserved. They are where unfinished materials problems wait with answers already crystallized. Your instruments finish the sentence.',
+      'Collections hold geometries that still need mechanism work. Instruments finish the sentence — they do not invent the topology from nothing.',
   },
   {
     id: 'close',
@@ -843,9 +833,9 @@ export const slides: Slide[] = [
       alt: 'Spinel octahedron',
       fit: 'contain',
     },
-    kicker: 'Aaron Celestian · NHMLAC',
-    title: 'Let’s build the next\nframework together.',
+    kicker: 'Aaron Celestian · NHMLAC Mineral Sciences',
+    title: 'What the collection\nalready knows.',
     notes:
-      'Thank you. Happy to talk spinel operando work, zirconium silicate neutrons, rowleyite analogs, or how to query the collection against a selectivity target. aaroncelestian.github.io/MineralSciences — CV, papers, and contact.',
+      'Thank you. Happy to talk the museum science — spinel operando work, zirconium silicate neutrons, rowleyite analogs, or querying the collection against a selectivity target. aaroncelestian.github.io/MineralSciences',
   },
 ]
