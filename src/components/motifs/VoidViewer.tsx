@@ -4,11 +4,39 @@ import { ContactShadows, Line, OrbitControls } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import mesh from '../../data/rowleyiteVoid.json'
+// Fetch as a static asset — inlining 1.7MB JSON into the lazy chunk stalls Vite/iCloud.
+import meshUrl from '../../data/rowleyiteVoid.json?url'
 import guests from '../../data/rowleyiteGuests.json'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { STRUCTURE_DPR, STRUCTURE_GL } from '../../lib/structureCanvas'
 import styles from './Motifs.module.css'
+
+type VoidMesh = {
+  cell: { a: number; b: number; c: number }
+  positions: number[]
+  normals: number[]
+  index: number[]
+}
+
+let meshPromise: Promise<VoidMesh> | null = null
+
+function loadVoidMesh() {
+  if (!meshPromise) {
+    meshPromise = fetch(meshUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Rowleyite void mesh HTTP ${res.status}`)
+        return res.json() as Promise<VoidMesh>
+      })
+      .catch((err) => {
+        meshPromise = null
+        throw err
+      })
+  }
+  return meshPromise
+}
+
+// Warm the fetch as soon as this lazy chunk evaluates.
+void loadVoidMesh()
 
 const VOID_IN = '#e0b15c'
 const VOID_OUT = '#5aa8b8'
@@ -207,10 +235,12 @@ function Scene({
   active,
   showGuests,
   focus,
+  mesh,
 }: {
   active: boolean
   showGuests: boolean
   focus: GuestLabel | null
+  mesh: VoidMesh
 }) {
   const group = useRef<THREE.Group>(null)
   const innerMat = useRef<THREE.MeshPhysicalMaterial>(null)
@@ -242,7 +272,9 @@ function Scene({
     geo.setAttribute('normal', new THREE.Float32BufferAttribute(mesh.normals, 3))
     geo.setIndex(mesh.index)
     return geo
-  }, [])
+  }, [mesh])
+
+  useEffect(() => () => geometry.dispose(), [geometry])
 
   useFrame((_, dt) => {
     const root = group.current
@@ -374,10 +406,28 @@ export function VoidViewer({
   label?: string
 }) {
   const [focus, setFocus] = useState<GuestLabel | null>(null)
+  const [mesh, setMesh] = useState<VoidMesh | null>(null)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     if (!showGuests || !active) setFocus(null)
   }, [active, showGuests])
+
+  useEffect(() => {
+    let alive = true
+    loadVoidMesh()
+      .then((data) => {
+        if (alive) setMesh(data)
+      })
+      .catch((err) => {
+        if (alive) setError(err instanceof Error ? err : new Error(String(err)))
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  if (error) throw error
 
   return (
     <div
@@ -418,17 +468,19 @@ export function VoidViewer({
           </div>
         </div>
       </div>
-      <Canvas
-        dpr={STRUCTURE_DPR}
-        shadows
-        camera={{ position: [5.4, 3.2, 12.2], fov: 40 }}
-        gl={STRUCTURE_GL}
-        style={{ width: '100%', height: '100%' }}
-      >
-        <Suspense fallback={null}>
-          <Scene active={active} showGuests={showGuests} focus={focus} />
-        </Suspense>
-      </Canvas>
+      {mesh ? (
+        <Canvas
+          dpr={STRUCTURE_DPR}
+          shadows
+          camera={{ position: [5.4, 3.2, 12.2], fov: 40 }}
+          gl={STRUCTURE_GL}
+          style={{ width: '100%', height: '100%' }}
+        >
+          <Suspense fallback={null}>
+            <Scene active={active} showGuests={showGuests} focus={focus} mesh={mesh} />
+          </Suspense>
+        </Canvas>
+      ) : null}
       <div className={styles.crystalCaption}>
         <span className={styles.captionSizer} aria-hidden>
           Rowleyite · temozolomide in the cage · click again to pull back
