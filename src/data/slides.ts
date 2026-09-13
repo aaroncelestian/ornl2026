@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Background warms to the hall. Constellation fades out — gone from here on. Camera arrives at one open glowing drawer (empty tray, light only), then pulls back until the cabinet face reads. That whole sky lived in one NHMLA tray.',
+          'Plunge through the constellation until the field rushes into black void — no fade. Hard cut to one open glowing drawer (empty tray, light only), then pull out until the cabinet face reads. That whole sky lived in one NHMLA tray.',
       },
       {
         id: 'cabinets',
@@ -270,7 +270,7 @@ export const slides: Slide[] = [
         title: '150,000 specimens. A materials library.',
         layers: ['sky'],
         notes:
-          'Walk the row from the left. Drawers open and close as we pass. Stop at the glowing featured drawer — looking in. Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented. Comparative depth is the point: when a channel geometry shows up in one place, ask whether related topologies elsewhere already solved a neighboring problem.',
+          'Walk the aisle from where we entered — rightward along the row. Drawers open and close as we pass. Stop at a different glowing drawer — looking in. Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented. Comparative depth is the point: when a channel geometry shows up in one place, ask whether related topologies elsewhere already solved a neighboring problem.',
       },
       {
         id: 'turn',
