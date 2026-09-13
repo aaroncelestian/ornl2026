@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Hold the sky. The whole constellation shrinks until it is gone — no plunge, no fade. Then pull back to one open glowing drawer (empty tray, light only) and hold.',
+          'Constellation and starfield shrink until gone. Background warms from black to the drawer-tray wood. Hard cut to the open glowing drawer (empty, light only), then pull out of that drawer — not the full hall yet.',
       },
       {
         id: 'cabinets',
@@ -262,7 +262,7 @@ export const slides: Slide[] = [
         title: 'Not a warehouse.',
         layers: ['sky'],
         notes:
-          'Now pull back into the aisle from that glowing empty tray. A wall of closed drawers beyond it. Cabinets. Specimens with provenance. This is where the names still have rocks attached — not a slide of jargon, a physical instrument.',
+          'Now pull further into the aisle / full room from that glowing empty tray. A wall of closed drawers beyond it. Cabinets. Specimens with provenance.',
       },
       {
         id: 'instrument',
