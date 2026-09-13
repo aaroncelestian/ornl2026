@@ -427,7 +427,35 @@ export function VoidViewer({
     }
   }, [])
 
-  if (error) throw error
+  if (error) {
+    return (
+      <div className={styles.crystal} aria-label="Void mesh failed to load">
+        <button
+          type="button"
+          className={styles.crystalCaption}
+          style={{
+            appearance: 'none',
+            border: '1px solid rgba(243,238,228,0.25)',
+            background: 'transparent',
+            color: 'rgba(243,238,228,0.7)',
+            font: '13px/1.4 ui-monospace, Menlo, monospace',
+            padding: '10px 14px',
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+          }}
+          onClick={() => {
+            setError(null)
+            setMesh(null)
+            loadVoidMesh()
+              .then(setMesh)
+              .catch((err) => setError(err instanceof Error ? err : new Error(String(err))))
+          }}
+        >
+          Void mesh failed to load — click to retry
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div

@@ -28,7 +28,7 @@ import styles from './Motifs.module.css'
 const K_COLOR = '#f0c878'
 const H_COLOR = '#e8f2f6'
 const SCALE = 0.4
-const PHASES: CrystalPhase[] = ['k', 'h-point', 'exchange', 'locked']
+const PHASES: CrystalPhase[] = ['k', 'pore', 'h-point', 'exchange', 'locked']
 
 const LEGEND = [
   { color: '#8a9aa8', label: 'Zr' },
