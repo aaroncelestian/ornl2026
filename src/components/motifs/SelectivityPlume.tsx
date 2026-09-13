@@ -267,7 +267,7 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
                     textAnchor={side < 0 ? 'end' : 'start'}
                     className={styles.plotTick}
                   >
-                    smaller than Li⁺ · charge blocks
+                    smaller · charge + hydration
                   </text>
                 )}
               </motion.g>

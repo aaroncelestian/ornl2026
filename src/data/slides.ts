@@ -395,38 +395,38 @@ export const slides: Slide[] = [
       {
         id: 'cloud',
         label: 'Selectivity cloud',
-        kicker: 'Why geometry wins',
+        kicker: 'Why λ-MnO₂ wins',
         title: 'Why spinel wins.\nWhy LiMn specifically?',
         layers: ['plume'],
         notes:
-          'The question this plot answers. Spinel is not a brand preference — it is a geometry. Among candidate sorbents, only a lattice with the right interstitial size pulls Li⁺ out of brine. Lithium manganese oxide — Li₄Mn₅O₁₂ / λ-MnO₂ — is the engineered answer because its tetrahedral 8a sites sit in that window.',
+          'The question this plot answers. Spinel is not a brand preference — it is a geometry that can enforce three filters at once: interstitial size, charge density, and hydration-shell stripping. Among candidate sorbents, soft lattices fail that trio. Lithium manganese oxide — Li₄Mn₅O₁₂ / λ-MnO₂ — is the engineered answer because its tetrahedral 8a sites can host Li⁺ only after those filters fire.',
       },
       {
         id: 'gate',
         label: 'Li gate',
-        kicker: 'Why geometry wins',
-        title: 'Most pores are\ntoo big for Li.',
+        kicker: 'Why λ-MnO₂ wins',
+        title: 'Size alone\ndoes not pick Li.',
         layers: ['plume'],
         notes:
-          'Most porous materials — zeolites, MOFs, soft ion exchangers — open channels wider than Li⁺ needs. Selectivity collapses. The cloud is noisy: soft peaks, weak discrimination. That is what you get when pores admit Na⁺, Ca²⁺, Mg²⁺ as easily as lithium. Watch the dashed gate at 0.76 Å — everything useful has to peak there.',
+          'Most porous materials — zeolites, MOFs, soft ion exchangers — open channels that admit Na⁺, Ca²⁺, Mg²⁺ as easily as lithium. Selectivity collapses. The cloud is noisy: soft peaks, weak discrimination. Watch the dashed mark at 0.76 Å — that is Li⁺’s Shannon radius, not a claim that radius matching is enough. Size is one filter. Charge and hydration stripping still have to work.',
       },
       {
         id: 'spinel-peak',
         label: 'λ-MnO₂',
         kicker: 'ORNL · Element3 · NHMLAC',
-        title: 'A narrow pore\nselects for Li.',
+        title: 'Size, charge,\nhydration stripping.',
         layers: ['plume'],
         notes:
-          'There is a very narrow pore-size window that fits Li⁺ and rejects the rest — and λ-MnO₂ sits in it. Sharp Li⁺ selectivity. Na⁺, Ca²⁺, Mg²⁺ rejected. R&D 100, 2024 — High Lithium Capacity Sorbents for Direct Lithium Extraction — ORNL + Element3 Mineral Selective Technologies + museum mineralogy. DOE AMO Award DE-EE0009442. Loading tests: 10–15 mg Li per gram LMO, ~20% of stoichiometric Li₄Mn₅O₁₂ sites; elution recovers >95% of loaded Li in under two minutes. Mechanism: Celestian, Bourcier, Camiré, Kumar, Paranthaman — J. Raman Spectrosc. 2026, 57:131–139.',
+          'λ-MnO₂ sits where those three filters coincide. Interstitial geometry can host Li⁺; charge density and the cost of stripping the hydration shell reject the brine competitors. Sharp Li⁺ selectivity. Na⁺, Ca²⁺, Mg²⁺ rejected. R&D 100, 2024 — High Lithium Capacity Sorbents for Direct Lithium Extraction — ORNL + Element3 Mineral Selective Technologies + museum mineralogy. DOE AMO Award DE-EE0009442. Loading tests: 10–15 mg Li per gram LMO, ~20% of stoichiometric Li₄Mn₅O₁₂ sites; elution recovers >95% of loaded Li in under two minutes. Mechanism: Celestian, Bourcier, Camiré, Kumar, Paranthaman — J. Raman Spectrosc. 2026, 57:131–139.',
       },
       {
         id: 'ions',
         label: 'Competitors',
         kicker: 'Brine reality',
-        title: 'That window leaves\nLi⁺ almost alone.',
+        title: 'That trio leaves\nLi⁺ almost alone.',
         layers: ['plume'],
         notes:
-          'Same narrow gate against real brine competitors. Shannon effective ionic radii (CN=6): Li⁺ 0.76 Å, Mg²⁺ 0.72, Na⁺ 1.02, Ca²⁺ 1.00, K⁺ 1.38. Yes — Mg²⁺ is slightly smaller than Li⁺; that is real Shannon data, not a typo. Size alone would let Mg in. Charge density and hydration shell are what λ-MnO₂ uses to reject it. Size-selective interstitial chemistry plus that charge/hydration filter is why a spinel can still pull Li out of desalination reject and geothermal brine — Na and Mg dominate the soup; the pore does not care.',
+          'Same three filters against real brine competitors. Shannon ionic radii (CN=6, Abulafia / Shannon 1976 Ionic Radius column): Li⁺ 0.76 Å, Mg²⁺ 0.72, Na⁺ 1.02, Ca²⁺ 1.00, K⁺ 1.38. Yes — Mg²⁺ is slightly smaller than Li⁺; that is the table, not a typo. Crystal radii on that page are larger by ~0.14 Å but keep the same order. Size alone would let Mg in. Charge density and hydration-shell stripping are what reject it at the 8a gate. That is why a spinel can still pull Li out of desalination reject and geothermal brine — Na and Mg dominate the soup; size, charge, and desolvation decide who enters.',
       },
       {
         id: 'brine',
@@ -444,7 +444,7 @@ export const slides: Slide[] = [
         title: 'The spinel takes\nthe lithium.',
         layers: ['cycle'],
         notes:
-          'Li₄Mn₅O₁₂ — size-selective uptake. Characterization punchline from the 2026 paper: as-synthesized LMO has good XRD and good Raman; H-exchanged keeps good XRD but Raman is basically gone; as Li goes back in, XRD stays good and the Raman pattern returns — changed. Larger seawater cations do not fit the interstitial gate.',
+          'Li₄Mn₅O₁₂ — selective uptake by size, charge, and hydration-shell stripping. Characterization punchline from the 2026 paper: as-synthesized LMO has good XRD and good Raman; H-exchanged keeps good XRD but Raman is basically gone; as Li goes back in, XRD stays good and the Raman pattern returns — changed. Larger or more tightly hydrated seawater cations do not clear the 8a gate.',
       },
       {
         id: 'air',

@@ -212,18 +212,25 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
   const liveRamW0 = 540
   const liveRamW1 = 700
-  const liveBaseY = 118
+  const liveVbH = 200
+  const liveBaseY = 168
   const liveSx = (w: number) => 18 + ((w - liveRamW0) / (liveRamW1 - liveRamW0)) * 264
-  const liveSy = (h: number) => liveBaseY - h * 92
+  const liveSy = (h: number) => liveBaseY - h * 140
+  // Al-doped: fixed A₁g — scrubbing time must not rewrite the spectrum.
+  const staticAlBands = useMemo(
+    () => [
+      { w: 578, h: 0.1, sig: 7, label: 'F₂g', kind: 'f2g' as const },
+      { w: 657, h: 1, sig: 8, label: 'A₁g', kind: 'a1g' as const },
+    ],
+    [],
+  )
+  const liveBands = alMode ? staticAlBands : exchange.bands
   const livePath = useMemo(
-    () => spectrumPath(exchange.bands, liveSx, liveSy, liveRamW0, liveRamW1, 1),
+    () => spectrumPath(liveBands, liveSx, liveSy, liveRamW0, liveRamW1, 1),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [exchange.bands],
+    [liveBands],
   )
-  const liveMarks = useMemo(
-    () => exchange.bands.filter((b) => b.h > 0.12),
-    [exchange.bands],
-  )
+  const liveMarks = useMemo(() => liveBands.filter((b) => b.h > 0.12), [liveBands])
 
   const pathD = useMemo(() => linePath(aPts), [aPts])
   const fillD = useMemo(
@@ -317,42 +324,40 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 <span>Li</span>
               </div>
             </div>
-            {!alMode && (
-              <svg viewBox="0 0 300 140" className={styles.liveRaman} aria-hidden>
-                <text x="18" y="16" className={styles.plotAnnotate} fontSize={13} fill="currentColor">
-                  Raman · live
-                </text>
-                <line x1="18" y1={liveBaseY} x2="282" y2={liveBaseY} stroke={C_AXIS} />
-                <path d={livePath} fill="none" stroke={C_LIVE} strokeWidth="2.8" strokeLinecap="round" />
-                {liveMarks.map((b) => (
-                  <g key={b.kind}>
-                    <line
-                      x1={liveSx(b.w)}
-                      y1={22}
-                      x2={liveSx(b.w)}
-                      y2={liveBaseY}
-                      stroke={BAND_COLOR[b.kind]}
-                      strokeOpacity={0.55}
-                    />
-                    <text
-                      x={liveSx(b.w)}
-                      y={34}
-                      textAnchor="middle"
-                      fill={BAND_COLOR[b.kind]}
-                      fontSize={11}
-                    >
-                      {b.label}
-                    </text>
-                  </g>
-                ))}
-                <text x="18" y="134" className={styles.plotTick} fontSize={10} fill="currentColor">
-                  540
-                </text>
-                <text x="268" y="134" className={styles.plotTick} fontSize={10} fill="currentColor">
-                  700
-                </text>
-              </svg>
-            )}
+            <svg viewBox={`0 0 300 ${liveVbH}`} className={styles.liveRaman} aria-hidden>
+              <text x="18" y="18" className={styles.plotAnnotate} fontSize={14} fill="currentColor">
+                {alMode ? 'Raman · A₁g holds' : 'Raman · live'}
+              </text>
+              <line x1="18" y1={liveBaseY} x2="282" y2={liveBaseY} stroke={C_AXIS} />
+              <path d={livePath} fill="none" stroke={C_LIVE} strokeWidth="3" strokeLinecap="round" />
+              {liveMarks.map((b) => (
+                <g key={b.kind}>
+                  <line
+                    x1={liveSx(b.w)}
+                    y1={26}
+                    x2={liveSx(b.w)}
+                    y2={liveBaseY}
+                    stroke={BAND_COLOR[b.kind]}
+                    strokeOpacity={0.55}
+                  />
+                  <text
+                    x={liveSx(b.w)}
+                    y={40}
+                    textAnchor="middle"
+                    fill={BAND_COLOR[b.kind]}
+                    fontSize={12}
+                  >
+                    {b.label}
+                  </text>
+                </g>
+              ))}
+              <text x="18" y={liveVbH - 6} className={styles.plotTick} fontSize={11} fill="currentColor">
+                540
+              </text>
+              <text x="268" y={liveVbH - 6} className={styles.plotTick} fontSize={11} fill="currentColor">
+                700
+              </text>
+            </svg>
           </div>
           <CubaneInset active={active} vibe={vibe} vibeRef={vibeRef} open alSite={alMode ? 0 : -1} />
           {alMode && (

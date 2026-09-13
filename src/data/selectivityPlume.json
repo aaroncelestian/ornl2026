@@ -1,6 +1,7 @@
 {
   "xLabel": "Shannon ionic radius, CN=6 (Å)",
   "yLabel": "Relative Li⁺ selectivity",
+  "source": "http://abulafia.mt.ic.ac.uk/shannon/radius.php — Ionic Radius column, CN=VI",
   "gate": 0.76,
   "series": [
     { "id": "bg-01", "r": 0.55, "vals": [0.12, 0.18, 0.22, 0.19, 0.14] },
@@ -35,9 +36,9 @@
     { "id": "bg-30", "r": 1.0, "vals": [0.22, 0.28, 0.3, 0.25, 0.18] }
   ],
   "ions": [
-    { "id": "Li", "label": "Li⁺", "r": 0.76, "note": "Shannon VI · fits 8a" },
-    { "id": "Mg", "label": "Mg²⁺", "r": 0.72, "note": "Smaller than Li⁺ · charge/hydration blocks" },
-    { "id": "Na", "label": "Na⁺", "r": 1.02, "note": "Too large for λ site" },
+    { "id": "Li", "label": "Li⁺", "r": 0.76, "note": "Shannon IR VI · gate" },
+    { "id": "Mg", "label": "Mg²⁺", "r": 0.72, "note": "Smaller than Li⁺ · charge + hydration strip block" },
+    { "id": "Na", "label": "Na⁺", "r": 1.02, "note": "Size + hydration exclude" },
     { "id": "Ca", "label": "Ca²⁺", "r": 1.0, "note": "Excluded" },
     { "id": "K", "label": "K⁺", "r": 1.38, "note": "Excluded" }
   ],

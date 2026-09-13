@@ -137,7 +137,7 @@
   top: auto;
   bottom: auto;
   flex: 0 0 auto;
-  width: min(86%, 340px);
+  width: min(94%, 440px);
 }
 
 .cubaneStack .cubaneDock,
@@ -163,12 +163,12 @@
 }
 
 .plot[data-al] .cubaneStack {
-  top: 18%;
-  width: min(42%, 560px);
+  top: 4%;
+  width: min(48%, 640px);
 }
 
 .plot[data-al] .cubaneStack .exchangeDock[data-compact] {
-  width: min(78%, 280px);
+  width: min(94%, 440px);
 }
 
 .alBadge {
@@ -319,7 +319,7 @@
   display: block;
   width: 100%;
   height: auto;
-  max-height: 200px;
+  max-height: 320px;
   color: var(--color-text);
 }
 
