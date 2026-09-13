@@ -137,7 +137,7 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: Li⁺ selectivity plume versus ionic radius'
   }
   if (slide.motif === 'pore-gate') {
-    return 'Motif: hydrated ions sized against the ~3 Å aperture'
+    return 'Motif: crystal core vs hydrated shell against the ~3 Å hydrated filter'
   }
   if (slide.motif === 'framework-lineage') {
     return 'Motif: OpenAlex literature mentions versus year'
@@ -252,7 +252,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'pore-gate') {
-        lines.push('Motif: ion aperture — hydrated spheres sized against the ~3 Å window')
+        lines.push('Motif: ion aperture — crystal core vs hydrated shell against the ~3 Å hydrated filter')
       }
       if (layer?.kind === 'motif' && layer.motif === 'crystal-viewer') {
         lines.push(

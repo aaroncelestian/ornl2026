@@ -572,11 +572,11 @@ export const slides: Slide[] = [
       {
         id: 'scale',
         label: 'Hydrated sizes',
-        kicker: 'Pore physics',
-        title: 'Hydrated diameters\nare the real players.',
+        kicker: 'Wrong ruler',
+        title: 'Crystal radii mislead.\nHydrated sizes decide.',
         layers: ['gate'],
         notes:
-          'Crystal radii mislead in water. Watch the spheres: Na⁺ ~2.8 Å, Ca²⁺ ~2.7 Å, K⁺ ~3.3 Å. The channel sees solvated cations shedding water at the window — not bare Shannon radii.',
+          'One job: throw out Shannon radii. Each ion shows a small crystal core inside a hydrated shell — Na⁺ ~2.8 Å, Ca²⁺ ~2.7 Å, K⁺ ~3.3 Å — against a ~3 Å effective hydrated filter. This is not the crystallographic window and not the capture story. CIF 7MR (~6.5 × 5 Å O–O) is next; protons and the lock come after.',
       },
       {
         id: 'k',
@@ -594,7 +594,7 @@ export const slides: Slide[] = [
         title: 'A 7-ring window.\nBuilt like a K⁺ channel.',
         layers: ['structure'],
         notes:
-          'Now the aperture. Seven-membered rings — four SiO₄ and three ZrO₆ — light up as the free window. Same geometric idea as a biological K⁺ channel. Effective hydrated cutoff ~3 Å; crystallographic O–O axes ~6.5 × 5 Å. Partial protonation opens the 7MR and locks K⁺ in.',
+          'Now the crystallographic aperture — the previous beat was only the hydrated filter. Seven-membered rings — four SiO₄ and three ZrO₆ — light up as the free window. Same geometric idea as a biological K⁺ channel. O–O axes ~6.5 × 5 Å; effective hydrated cutoff stays ~3 Å. Partial protonation opens the 7MR and locks K⁺ in.',
       },
       {
         id: 'gut',
