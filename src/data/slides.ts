@@ -254,7 +254,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Constellation and starfield shrink until gone. Background warms from black to the drawer-tray wood. Hard cut to the open glowing drawer (empty, light only), then pull out of that drawer — not the full hall yet.',
+          'Constellation and starfield dissolve (fade out at full scale — no collapse into a ball). Background warms from black to the drawer-tray wood. Hard cut to the open glowing drawer (empty, light only), then pull out of that drawer — not the full hall yet.',
       },
       {
         id: 'cabinets',
@@ -267,7 +267,7 @@ export const slides: Slide[] = [
       {
         id: 'instrument',
         label: 'Instrument',
-        title: '150,000 specimens. A materials library.',
+        title: '150,000 specimens.\nA materials library.',
         layers: ['sky'],
         notes:
           'Walk the aisle from where we entered — rightward along the row. Drawers open and close as we pass. Stop at a different glowing drawer — looking in. Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented. Comparative depth is the point: when a channel geometry shows up in one place, ask whether related topologies elsewhere already solved a neighboring problem.',

@@ -419,7 +419,7 @@ function MineralBody({
   const showCrystal = inSky && (focused || isHero || isPeer || phase === 'sky')
 
   useFrame((_, dt) => {
-    if (!root.current || reduced) return
+    if (!root.current || reduced || !visible) return
     root.current.rotation.y += dt * (isHero ? 0.15 : isPeer ? 0.1 : 0.05)
   })
 
@@ -638,6 +638,15 @@ function CabinetUnit({
   )
 }
 
+const COL_TRAY_CLOSED = new THREE.Color('#524536')
+const COL_TRAY_OPEN = new THREE.Color('#5c4c3a')
+const COL_TRAY_HI = new THREE.Color('#7a6548')
+const COL_FRONT = new THREE.Color('#5f5140')
+const COL_FRONT_HI = new THREE.Color('#8a7354')
+const COL_EMISSIVE = new THREE.Color('#c4a06a')
+const COL_EMISSIVE_HI = new THREE.Color('#e8b86a')
+const COL_BLACK = new THREE.Color('#000000')
+
 function Drawer({
   y,
   drawerIndex,
@@ -662,8 +671,20 @@ function Drawer({
   seed: number
 }) {
   const ref = useRef<THREE.Group>(null)
+  const fillRef = useRef<THREE.Group>(null)
   const pull = useRef(0)
-  const [open, setOpen] = useState(false)
+  const trayMat = useRef<THREE.MeshStandardMaterial>(null)
+  const sideMatL = useRef<THREE.MeshStandardMaterial>(null)
+  const sideMatR = useRef<THREE.MeshStandardMaterial>(null)
+  const backMat = useRef<THREE.MeshStandardMaterial>(null)
+  const frontMat = useRef<THREE.MeshStandardMaterial>(null)
+  const glowMat = useRef<THREE.MeshBasicMaterial>(null)
+  const hiLightA = useRef<THREE.PointLight>(null)
+  const hiLightB = useRef<THREE.PointLight>(null)
+  const hiLightC = useRef<THREE.PointLight>(null)
+  const surgeLight = useRef<THREE.PointLight>(null)
+  const gemLight = useRef<THREE.PointLight>(null)
+  const idle = useRef(false)
 
   const highlight =
     (isEntry && (phase === 'reveal' || phase === 'cabinets')) ||
@@ -672,6 +693,8 @@ function Drawer({
   const emptyGlow = isEntry && (phase === 'reveal' || phase === 'cabinets')
   const surge = phase === 'dive' && isDive
   const glow = surge ? 1.7 : emptyGlow ? 1.45 : highlight && isDive ? 1.35 : 1
+  /** Feature drawers keep crystals + lights; aisle-walk drawers stay emissive-only. */
+  const featureFill = highlight
 
   useFrame((_, dt) => {
     if (!ref.current) return
@@ -682,14 +705,14 @@ function Drawer({
       } else if (phase === 'instrument') {
         if (isDive) want = true
         else if (isBackRow && hallWalkActive) {
-          const near = Math.abs(cabinetX - hallWalkX) < 3.2
-          want = near && (drawerIndex === 1 || drawerIndex === 3 || drawerIndex === 4)
+          // One drawer per nearby cabinet — avoids a cascade of lights/meshes mid-walk
+          const near = Math.abs(cabinetX - hallWalkX) < 2.6
+          want = near && drawerIndex === 2
         }
       } else if (phase === 'turn' || phase === 'dive') {
         want = isDive
       }
     }
-    if (want !== open) setOpen(want)
     let target = want ? (highlight ? (spill ? 1.15 : 1.05) : 0.72) : 0
     if (spill) {
       const openAmt = reduced
@@ -697,11 +720,73 @@ function Drawer({
         : THREE.MathUtils.smoothstep(revealBlend, REVEAL_SHRINK_FRAC, REVEAL_SHRINK_FRAC + 0.22)
       target = 1.15 * openAmt
     }
+
+    // Silhouette / closed drawers: skip material + light work once settled
+    if (!want && pull.current < 0.001 && target < 0.001) {
+      if (!idle.current) {
+        pull.current = 0
+        ref.current.position.z = 0.08
+        if (fillRef.current) fillRef.current.visible = false
+        idle.current = true
+      }
+      return
+    }
+    idle.current = false
+
     pull.current = reduced ? target : THREE.MathUtils.damp(pull.current, target, spill ? 2.8 : 2.6, dt)
     ref.current.position.z = 0.08 + pull.current
+
+    const opened = pull.current > 0.06
+    const amt = Math.min(1, pull.current / 0.72)
+
+    if (trayMat.current) {
+      trayMat.current.color.copy(highlight ? COL_TRAY_HI : opened ? COL_TRAY_OPEN : COL_TRAY_CLOSED)
+      trayMat.current.emissive.copy(
+        highlight ? COL_EMISSIVE_HI : opened ? COL_EMISSIVE : COL_BLACK,
+      )
+      trayMat.current.emissiveIntensity = (highlight ? 0.28 : opened ? 0.12 * amt : 0) * glow
+    }
+    const sideColor = highlight ? COL_TRAY_HI : opened ? COL_TRAY_OPEN : COL_TRAY_CLOSED
+    sideMatL.current?.color.copy(sideColor)
+    sideMatR.current?.color.copy(sideColor)
+    backMat.current?.color.copy(sideColor)
+    if (frontMat.current) {
+      frontMat.current.color.copy(highlight ? COL_FRONT_HI : COL_FRONT)
+      frontMat.current.emissive.copy(
+        highlight ? COL_EMISSIVE_HI : opened ? COL_EMISSIVE : COL_BLACK,
+      )
+      frontMat.current.emissiveIntensity = (highlight ? 0.2 : opened ? 0.08 * amt : 0) * glow
+    }
+
+    if (fillRef.current) fillRef.current.visible = opened
+    if (glowMat.current) {
+      glowMat.current.opacity = (highlight ? 0.28 : 0.12) * Math.min(1.4, glow) * amt
+    }
+    // Walk drawers: no PointLights — emissive tray + plane only (instrument fps)
+    if (hiLightA.current) {
+      hiLightA.current.intensity = featureFill && opened ? 3.2 * glow * amt : 0
+      hiLightA.current.visible = featureFill && opened
+    }
+    if (hiLightB.current) {
+      hiLightB.current.intensity = featureFill && opened ? (emptyGlow ? 3.6 : 2.4) * glow * amt : 0
+      hiLightB.current.visible = featureFill && opened
+    }
+    if (hiLightC.current) {
+      hiLightC.current.intensity = emptyGlow && opened ? 4.2 * amt : 0
+      hiLightC.current.visible = emptyGlow && opened
+    }
+    if (surgeLight.current) {
+      surgeLight.current.intensity = surge && opened ? 5.5 * amt : 0
+      surgeLight.current.visible = surge && opened
+    }
+    if (gemLight.current) {
+      gemLight.current.intensity = featureFill && !emptyGlow && opened ? 2.8 * glow * amt : 0
+      gemLight.current.visible = featureFill && !emptyGlow && opened
+    }
   })
 
   const specimens = useMemo(() => {
+    if (!featureFill || emptyGlow) return []
     return Array.from({ length: 5 }, (_, i) => {
       const u = hash01(`d${seed}-${i}`)
       const colors = ['#e8b86a', '#7ec4a8', '#8eb4d8', '#d4a574', '#9bc48a']
@@ -714,10 +799,8 @@ function Drawer({
         s: 0.08 + u * 0.045,
       }
     })
-  }, [seed])
+  }, [seed, featureFill, emptyGlow])
 
-  const tray = highlight ? '#7a6548' : open ? '#5c4c3a' : '#524536'
-  const front = highlight ? '#8a7354' : '#5f5140'
   const W = 2.12
   const D = 0.88
   const H = 0.36
@@ -728,36 +811,31 @@ function Drawer({
       {/* tray bottom */}
       <mesh position={[0, -H / 2 + T / 2, 0]}>
         <boxGeometry args={[W, T, D]} />
-        <meshStandardMaterial
-          color={tray}
-          roughness={0.7}
-          emissive={highlight ? '#e8b86a' : open ? '#c4a06a' : '#000000'}
-          emissiveIntensity={(highlight ? 0.28 : open ? 0.1 : 0) * glow}
-        />
+        <meshStandardMaterial ref={trayMat} color="#524536" roughness={0.7} emissive="#000000" />
       </mesh>
       {/* left / right sides */}
       <mesh position={[-(W / 2 - T / 2), 0, 0]}>
         <boxGeometry args={[T, H, D]} />
-        <meshStandardMaterial color={tray} roughness={0.68} />
+        <meshStandardMaterial ref={sideMatL} color="#524536" roughness={0.68} />
       </mesh>
       <mesh position={[W / 2 - T / 2, 0, 0]}>
         <boxGeometry args={[T, H, D]} />
-        <meshStandardMaterial color={tray} roughness={0.68} />
+        <meshStandardMaterial ref={sideMatR} color="#524536" roughness={0.68} />
       </mesh>
       {/* back wall */}
       <mesh position={[0, 0, -(D / 2 - T / 2)]}>
         <boxGeometry args={[W - T * 2, H, T]} />
-        <meshStandardMaterial color={tray} roughness={0.68} />
+        <meshStandardMaterial ref={backMat} color="#524536" roughness={0.68} />
       </mesh>
       {/* front face — taller lip like a real drawer front */}
       <mesh position={[0, 0.02, D / 2 - T / 2]}>
         <boxGeometry args={[W + 0.04, H + 0.06, T * 1.2]} />
         <meshStandardMaterial
-          color={front}
+          ref={frontMat}
+          color="#5f5140"
           roughness={0.55}
           metalness={0.08}
-          emissive={highlight ? '#e8b86a' : open ? '#c4a06a' : '#000000'}
-          emissiveIntensity={(highlight ? 0.2 : open ? 0.06 : 0) * glow}
+          emissive="#000000"
         />
       </mesh>
       {/* handle */}
@@ -766,73 +844,78 @@ function Drawer({
         <meshStandardMaterial color="#f0e2c0" metalness={0.55} roughness={0.28} />
       </mesh>
 
-      {(open || pull.current > 0.08) && (
-        <>
-          <mesh position={[0, H / 2 - 0.02, 0.1]} rotation={[Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[W * 0.88, D * 0.7]} />
-            <meshBasicMaterial
-              color={highlight ? '#f0c878' : '#e8b86a'}
-              transparent
-              opacity={(highlight ? 0.28 : 0.1) * Math.min(1.4, glow)}
-              depthWrite={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-          <pointLight
-            position={[0, 0.12, 0.15]}
-            color="#f0c878"
-            intensity={(highlight ? 3.2 : 0.9) * glow}
-            distance={highlight ? 6.5 : 3.2}
-            decay={1.4}
+      {/* Always mounted; visibility toggled in useFrame — no React remounts mid-walk */}
+      <group ref={fillRef} visible={false}>
+        <mesh position={[0, H / 2 - 0.02, 0.1]} rotation={[Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[W * 0.88, D * 0.7]} />
+          <meshBasicMaterial
+            ref={glowMat}
+            color={highlight ? '#f0c878' : '#e8b86a'}
+            transparent
+            opacity={0}
+            depthWrite={false}
+            side={THREE.DoubleSide}
           />
-          {highlight && (
+        </mesh>
+        {featureFill && (
+          <>
             <pointLight
+              ref={hiLightA}
+              position={[0, 0.12, 0.15]}
+              color="#f0c878"
+              intensity={0}
+              distance={6.5}
+              decay={1.4}
+            />
+            <pointLight
+              ref={hiLightB}
               position={[0, 0.35, 0.55]}
               color="#ffe6a8"
-              intensity={(emptyGlow ? 3.6 : 2.4) * glow}
+              intensity={0}
               distance={emptyGlow ? 12 : 8}
               decay={1.2}
             />
-          )}
-          {emptyGlow && (
-            <pointLight
-              position={[0, 0.25, 1.1]}
-              color="#fff3c8"
-              intensity={4.2}
-              distance={16}
-              decay={1.05}
-            />
-          )}
-          {surge && (
-            <pointLight
-              position={[0, 0.2, 0.9]}
-              color="#fff3c8"
-              intensity={5.5}
-              distance={14}
-              decay={1.05}
-            />
-          )}
-          {/* Empty glowing tray on reveal/cabinets — specimens wait for the aisle walk */}
-          {!emptyGlow &&
-            specimens.map((s, i) => (
+            {emptyGlow && (
+              <pointLight
+                ref={hiLightC}
+                position={[0, 0.25, 1.1]}
+                color="#fff3c8"
+                intensity={0}
+                distance={16}
+                decay={1.05}
+              />
+            )}
+            {isDive && (
+              <pointLight
+                ref={surgeLight}
+                position={[0, 0.2, 0.9]}
+                color="#fff3c8"
+                intensity={0}
+                distance={14}
+                decay={1.05}
+              />
+            )}
+            {specimens.map((s, i) => (
               <group key={i} position={[s.x, s.y, s.z]} scale={s.s}>
                 <CrystalMesh
                   habit={s.habit}
                   color={s.color}
                   emissive={(highlight ? 1.55 : 0.85) * (surge ? 1.35 : 1)}
                 />
-                {highlight && i === 2 && (
+                {i === 2 && (
                   <pointLight
+                    ref={gemLight}
                     color={s.color}
-                    intensity={2.8 * glow}
+                    intensity={0}
                     distance={4.5}
                     decay={1.3}
                   />
                 )}
               </group>
             ))}
-        </>
-      )}
+          </>
+        )}
+      </group>
     </group>
   )
 }
@@ -911,14 +994,14 @@ const WALK_END = {
 /** Shared aisle walk X so cabinets can open as the camera passes. */
 let hallWalkX = 0
 let hallWalkActive = false
-/** sky→reveal: shrink constellation to nothing, then pull back to the open drawer. */
+/** sky→reveal: dissolve constellation (no scale collapse), then pull back to the open drawer. */
 const REVEAL_ENTER_SEC = 4.8
-/** 0→this: constellation scales down until invisible (camera holds). */
+/** 0→this: sky fades out at full scale (camera holds). */
 const REVEAL_SHRINK_FRAC = 0.55
-/** After shrink: pull camera back to the open glowing drawer. */
+/** After dissolve: pull camera back to the open glowing drawer. */
 
 /**
- * Shared 0–1 progress for sky→reveal (shrink → drawer pull-back).
+ * Shared 0–1 progress for sky→reveal (dissolve → drawer pull-back).
  * Driven by CameraRig during the enter path; held at 1 while reveal is settled.
  */
 let revealBlend = 0
@@ -932,7 +1015,33 @@ const COL_DIVE = new THREE.Color('#1a1408')
 const COL_BG = new THREE.Color()
 const COL_FOG = new THREE.Color()
 
-/** Shrink constellation + starfield together until gone. */
+/**
+ * Fade materials in a group. Avoids scale-to-zero, which collapses the starfield
+ * into a dense “pixel ball” during sky→reveal.
+ */
+function setGroupFade(root: THREE.Object3D, fade: number) {
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh | THREE.Points
+    if (!mesh.material) return
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+    for (const mat of mats) {
+      if (!('opacity' in mat)) continue
+      const m = mat as THREE.Material & { opacity: number; transparent: boolean; depthWrite: boolean }
+      if (m.userData._baseOpacity == null) {
+        m.userData._baseOpacity = m.opacity
+        m.userData._baseDepthWrite = m.depthWrite
+        m.userData._baseTransparent = m.transparent
+      }
+      const base = m.userData._baseOpacity as number
+      m.transparent = fade < 0.999 ? true : Boolean(m.userData._baseTransparent)
+      m.opacity = base * fade
+      m.depthWrite = fade > 0.92 ? Boolean(m.userData._baseDepthWrite) : false
+      m.needsUpdate = true
+    }
+  })
+}
+
+/** Dissolve constellation at full scale until gone (no shrink-to-ball). */
 function ConstellationSky({
   phase,
   reduced,
@@ -951,6 +1060,7 @@ function ConstellationSky({
       ref.current.position.set(0, 0, 0)
       ref.current.scale.setScalar(1)
       ref.current.visible = true
+      setGroupFade(ref.current, 1)
       return
     }
 
@@ -958,10 +1068,11 @@ function ConstellationSky({
       const b = reduced ? 1 : revealBlend
       const u = Math.min(1, b / REVEAL_SHRINK_FRAC)
       const e = easeInOutCubic(u)
-      const s = THREE.MathUtils.lerp(1, 0.001, e)
+      const fade = 1 - e
       ref.current.position.set(0, 0, 0)
-      ref.current.scale.setScalar(Math.max(0.001, s))
-      ref.current.visible = s > 0.012
+      ref.current.scale.setScalar(1)
+      ref.current.visible = fade > 0.02
+      setGroupFade(ref.current, fade)
       return
     }
 
@@ -975,33 +1086,35 @@ function ConstellationSky({
   )
 }
 
-/** Starfield follows the same shrink/hide as the mineral constellation. */
+/** Starfield dissolves with the constellation — fade only, never scale-collapse. */
 function SkyStars({ phase, reduced }: { phase: Phase; reduced: boolean }) {
   const ref = useRef<THREE.Group>(null)
   const inSky = phase === 'peri' || phase === 'peers' || phase === 'sky'
-  const shrinking = phase === 'reveal'
+  const dissolving = phase === 'reveal'
 
   useFrame(() => {
     if (!ref.current) return
     if (inSky) {
       ref.current.scale.setScalar(1)
       ref.current.visible = true
+      setGroupFade(ref.current, 1)
       return
     }
-    if (shrinking) {
+    if (dissolving) {
       const b = reduced ? 1 : revealBlend
       const u = Math.min(1, b / REVEAL_SHRINK_FRAC)
       const e = easeInOutCubic(u)
-      const s = THREE.MathUtils.lerp(1, 0.001, e)
-      ref.current.scale.setScalar(Math.max(0.001, s))
-      ref.current.visible = s > 0.012
+      const fade = 1 - e
+      ref.current.scale.setScalar(1)
+      ref.current.visible = fade > 0.02
+      setGroupFade(ref.current, fade)
       return
     }
     ref.current.visible = false
   })
 
   return (
-    <group ref={ref} visible={inSky || shrinking}>
+    <group ref={ref} visible={inSky || dissolving}>
       <Stars
         radius={80}
         depth={40}
@@ -1149,7 +1262,7 @@ function CameraRig({
         toLook.current.copy(DIVE_PLUNGE.look)
         easeDur.current = CAM_EASE_SEC
       } else if (phase === 'reveal' && prevPhase.current === 'sky') {
-        // Shrink sky, then start on the open drawer and pull out
+        // Dissolve sky, then start on the open drawer and pull out
         revealEnter.current = true
         revealBlend = reduced ? 1 : 0
         fromLook.current.set(0, 0.2, 0)
@@ -1249,7 +1362,7 @@ function CameraRig({
       revealBlend = t
 
       if (t <= REVEAL_SHRINK_FRAC) {
-        // Hold the sky view — constellation + stars shrink to nothing
+        // Hold the sky view — constellation + stars dissolve (no scale-to-ball)
         camera.position.copy(fromPos.current)
         look.current.set(0, 0.2, 0)
         persp.fov = baseFov.current
@@ -1354,7 +1467,7 @@ function Atmosphere({ phase, reduced }: { phase: Phase; reduced: boolean }) {
     if (phase === 'reveal') {
       const b = reduced ? 1 : revealBlend
       if (b <= REVEAL_SHRINK_FRAC) {
-        // Black → drawer-tray wood as the sky disappears
+        // Black → drawer-tray wood as the sky dissolves
         const u = easeInOutCubic(b / REVEAL_SHRINK_FRAC)
         COL_BG.copy(COL_SKY).lerp(COL_TRAY, u)
         COL_FOG.copy(COL_SKY).lerp(COL_TRAY, u * 0.92)
@@ -1450,7 +1563,7 @@ function Scene({
         />
       )}
 
-      <SkyStars phase={phase} reduced={reduced} />
+      {skyVisiblePhase(phase) && <SkyStars phase={phase} reduced={reduced} />}
 
       <CameraRig
         phase={phase}
@@ -1461,18 +1574,21 @@ function Scene({
         onDiveProgress={onDiveProgress}
       />
 
-      <ConstellationSky phase={phase} reduced={reduced}>
-        {BODIES.map((body) => (
-          <MineralBody
-            key={body.id}
-            body={body}
-            phase={phase}
-            focused={focusId === body.id}
-            reduced={reduced}
-            onSelect={(id) => setFocusId(focusId === id ? null : id)}
-          />
-        ))}
-      </ConstellationSky>
+      {/* Unmount sky after dissolve so instrument/hall isn't paying for ~100 crystals */}
+      {skyVisiblePhase(phase) && (
+        <ConstellationSky phase={phase} reduced={reduced}>
+          {BODIES.map((body) => (
+            <MineralBody
+              key={body.id}
+              body={body}
+              phase={phase}
+              focused={focusId === body.id}
+              reduced={reduced}
+              onSelect={(id) => setFocusId(focusId === id ? null : id)}
+            />
+          ))}
+        </ConstellationSky>
+      )}
 
       <CabinetsRoom phase={phase} reduced={reduced} />
 
@@ -1595,7 +1711,7 @@ export function MineralConstellation({ active, label }: { active: boolean; label
       )}
       {phase === 'reveal' && (
         <div className={styles.constellationHint} data-idle="">
-          Shrink sky · open drawer · pull out
+          Dissolve sky · open drawer · pull out
         </div>
       )}
       {phase === 'cabinets' && (

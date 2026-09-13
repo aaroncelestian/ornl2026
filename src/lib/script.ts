@@ -317,7 +317,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
             : beat?.id === 'sky'
               ? 'Motif: night-sky constellation — ~100 crystals; drag to orbit, click to zoom'
               : beat?.id === 'reveal'
-                ? 'Motif: sky shrinks away; black→tray wood; start on open drawer, pull out'
+                ? 'Motif: sky dissolves; black→tray wood; start on open drawer, pull out'
                 : beat?.id === 'cabinets'
                   ? 'Motif: pull further into the aisle / full collection hall'
                   : beat?.id === 'instrument'
