@@ -572,11 +572,27 @@ function applyPhase(
   return sampleExchange(progress)
 }
 
-function Scene({ active, phase }: { active: boolean; phase: CrystalPhase }) {
+const PORE_DUR = 1.85
+
+function Scene({
+  active,
+  phase,
+  onDisplayPhase,
+}: {
+  active: boolean
+  phase: CrystalPhase
+  onDisplayPhase?: (phase: CrystalPhase) => void
+}) {
   const group = useRef<THREE.Group>(null)
+  const ambientRef = useRef<THREE.AmbientLight>(null)
+  const keyRef = useRef<THREE.DirectionalLight>(null)
+  const fillRef = useRef<THREE.DirectionalLight>(null)
+  const pointRef = useRef<THREE.PointLight>(null)
   const prevPhase = useRef(phase)
   const kStart = useRef(1)
   const progress = useRef(phase === 'locked' || phase === 'k' ? 1 : 0)
+  /** pore → k (Capture / Gut): play samplePore backward instead of snapping. */
+  const reversingPore = useRef(false)
   const anim = useRef<ExchangeAnim>(applyPhase(phase, progress.current, false))
   const reduced = usePrefersReducedMotion()
   const atoms = structure.atoms
@@ -587,36 +603,79 @@ function Scene({ active, phase }: { active: boolean; phase: CrystalPhase }) {
   const pores = useMemo(() => buildPoreWindows(atoms, bonds), [atoms, bonds])
 
   useEffect(() => {
-    kStart.current = phase === 'h-point' && prevPhase.current === 'pore' ? 0.12 : 1
-    const live = (phase === 'pore' || phase === 'h-point' || phase === 'exchange') && !reduced
-    progress.current = live ? 0 : 1
-    anim.current = applyPhase(phase, progress.current, reduced, kStart.current)
+    const from = prevPhase.current
+    kStart.current = phase === 'h-point' && from === 'pore' ? 0.12 : 1
+
+    if (phase === 'k' && from === 'pore' && !reduced) {
+      reversingPore.current = true
+      progress.current = 1
+      anim.current = samplePore(1)
+      onDisplayPhase?.('pore')
+    } else {
+      reversingPore.current = false
+      const live = (phase === 'pore' || phase === 'h-point' || phase === 'exchange') && !reduced
+      progress.current = live ? 0 : 1
+      anim.current = applyPhase(phase, progress.current, reduced, kStart.current)
+      onDisplayPhase?.(phase)
+    }
     prevPhase.current = phase
-  }, [phase, reduced])
+  }, [phase, reduced, onDisplayPhase])
 
   useFrame((_, dt) => {
     const root = group.current
     if (root && !reduced && active) {
       root.rotation.y += dt * 0.1
     }
-    const live = (phase === 'pore' || phase === 'h-point' || phase === 'exchange') && !reduced
-    if (live && progress.current < 1) {
-      const dur = phase === 'exchange' ? 5.2 : phase === 'pore' ? 1.85 : 1.65
-      progress.current = Math.min(1, progress.current + dt / dur)
+
+    if (reversingPore.current && !reduced) {
+      progress.current = Math.max(0, progress.current - dt / PORE_DUR)
+      anim.current = samplePore(progress.current)
+      if (progress.current <= 0) {
+        reversingPore.current = false
+        anim.current = REST
+        onDisplayPhase?.('k')
+      }
+    } else {
+      const live = (phase === 'pore' || phase === 'h-point' || phase === 'exchange') && !reduced
+      if (live && progress.current < 1) {
+        const dur = phase === 'exchange' ? 5.2 : phase === 'pore' ? PORE_DUR : 1.65
+        progress.current = Math.min(1, progress.current + dt / dur)
+      }
+      anim.current = applyPhase(phase, progress.current, reduced, kStart.current)
     }
-    anim.current = applyPhase(phase, progress.current, reduced, kStart.current)
+
     if (root) {
-      const s = anim.current.cellScale
-      root.scale.setScalar(s)
+      root.scale.setScalar(anim.current.cellScale)
+    }
+
+    // Keep lighting tied to pore amount so reverse fade matches the forward reveal.
+    const poreAmt = anim.current.poreOp
+    const hLit = phase === 'h-point' || phase === 'exchange'
+    if (ambientRef.current) ambientRef.current.intensity = 0.55 + (0.16 - 0.55) * poreAmt
+    if (keyRef.current) keyRef.current.intensity = 1.15 + (0.28 - 1.15) * poreAmt
+    if (fillRef.current) fillRef.current.intensity = 0.32 + (0.06 - 0.32) * poreAmt
+    if (pointRef.current) {
+      pointRef.current.intensity = hLit ? 0.85 : 1.15 + (2.1 - 1.15) * poreAmt
+      pointRef.current.distance = 14 + (18 - 14) * poreAmt
+      pointRef.current.color.set(hLit ? H_COLOR : PORE_HOT)
     }
   })
 
   return (
     <>
-      <ambientLight intensity={phase === 'pore' ? 0.16 : 0.55} />
-      <directionalLight position={[6, 8, 4]} intensity={phase === 'pore' ? 0.28 : 1.15} />
-      <directionalLight position={[-4, -2, -6]} intensity={phase === 'pore' ? 0.06 : 0.32} />
+      <ambientLight ref={ambientRef} intensity={phase === 'pore' ? 0.16 : 0.55} />
+      <directionalLight
+        ref={keyRef}
+        position={[6, 8, 4]}
+        intensity={phase === 'pore' ? 0.28 : 1.15}
+      />
+      <directionalLight
+        ref={fillRef}
+        position={[-4, -2, -6]}
+        intensity={phase === 'pore' ? 0.06 : 0.32}
+      />
       <pointLight
+        ref={pointRef}
         position={[0, 0.4, 2.2]}
         intensity={phase === 'h-point' || phase === 'exchange' ? 0.85 : phase === 'pore' ? 2.1 : 1.15}
         color={phase === 'h-point' || phase === 'exchange' ? H_COLOR : PORE_HOT}
@@ -652,6 +711,7 @@ export function CrystalViewer({ active, label }: { active: boolean; label?: stri
   const scene = useScene()
   const beatPhase = phaseForBeat(scene.beat?.id)
   const [override, setOverride] = useState<CrystalPhase | null>(null)
+  const [displayPhase, setDisplayPhase] = useState<CrystalPhase>(beatPhase)
 
   useEffect(() => {
     setOverride(null)
@@ -678,16 +738,16 @@ export function CrystalViewer({ active, label }: { active: boolean; label?: stri
   }, [active, beatPhase])
 
   const phase = override ?? beatPhase
-  const showH = phase === 'h-point' || phase === 'exchange'
+  const showH = displayPhase === 'h-point' || displayPhase === 'exchange'
   const legend =
-    phase === 'pore'
+    displayPhase === 'pore'
       ? [{ color: PORE_HOT, label: '7MR' }, { color: PORE_COLOR, label: '~3 Å free' }]
       : showH
         ? LEGEND
         : LEGEND.filter((row) => row.label !== 'H')
 
   return (
-    <div className={styles.crystal} aria-label={label || CAPTION[phase]}>
+    <div className={styles.crystal} aria-label={label || CAPTION[displayPhase]}>
       <div className={styles.legend}>
         {legend.map((row) => (
           <div key={row.label} className={styles.legendRow}>
@@ -703,10 +763,10 @@ export function CrystalViewer({ active, label }: { active: boolean; label?: stri
         style={{ width: '100%', height: '100%' }}
       >
         <Suspense fallback={null}>
-          <Scene active={active} phase={phase} />
+          <Scene active={active} phase={phase} onDisplayPhase={setDisplayPhase} />
         </Suspense>
       </Canvas>
-      <div className={styles.crystalCaption}>{CAPTION[phase]}</div>
+      <div className={styles.crystalCaption}>{CAPTION[displayPhase]}</div>
     </div>
   )
 }

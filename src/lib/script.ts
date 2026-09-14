@@ -200,6 +200,8 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'crystal-viewer') {
         if (beat?.id === 'pore') {
           lines.push('Motif: ZS-9 — K fades, then the ~3 Å 7-ring pore (drag to orbit)')
+        } else if (beat?.id === 'gut') {
+          lines.push('Motif: ZS-9 — pore reveal reverses; framework and K⁺ return (drag to orbit)')
         } else if (beat?.id === 'protons') {
           lines.push('Motif: ZS-9 — K removed, H pointing at the vacant site (H to step)')
         } else if (beat?.id === 'lock') {
