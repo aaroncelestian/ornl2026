@@ -440,6 +440,16 @@
   letter-spacing: 0.04em;
 }
 
+.theaterCallout {
+  fill: color-mix(in srgb, var(--color-text) 82%, transparent);
+  font-family: var(--font-body);
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  paint-order: stroke fill;
+  stroke: color-mix(in srgb, var(--color-bg) 72%, transparent);
+  stroke-width: 3px;
+}
+
 .theaterIon {
   fill: var(--color-text);
   font-family: var(--font-heading);
