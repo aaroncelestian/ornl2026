@@ -576,7 +576,7 @@ export const slides: Slide[] = [
         title: 'Crystal radii mislead.\nHydrated sizes decide.',
         layers: ['gate'],
         notes:
-          'Throw out Shannon radii as the decision rule. Each cation sits inside an H₂O shell — color is hydration energy, warmer where more energy is needed to shed waters. Mg²⁺ and Ca²⁺ are expensive to desolvate; K⁺ and Cs⁺ are cheaper. Against a ~3 Å hydrated filter that is the real size story. Crystallographic 7MR comes next.',
+          'Throw out Shannon radii as the decision rule. Each cation sits inside an H₂O shell — color is hydration energy, warmer where more energy is needed to shed waters. Li⁺ is the contrast: crystal core 0.76 Å, hydrated radius ~3.40 Å. Mg²⁺ and Ca²⁺ are expensive to desolvate; K⁺ and Cs⁺ are cheaper. Against a ~3 Å hydrated filter that is the real size story. Crystallographic 7MR comes next.',
       },
       {
         id: 'k',
@@ -594,7 +594,7 @@ export const slides: Slide[] = [
         title: 'A 7-ring window.\nBuilt like a K⁺ channel.',
         layers: ['structure'],
         notes:
-          'Now the crystallographic aperture — the previous beat was only the hydrated filter. Seven-membered rings — four SiO₄ and three ZrO₆ — light up as the free window. Same geometric idea as a biological K⁺ channel. O–O axes ~6.5 × 5 Å; effective hydrated cutoff stays ~3 Å. Partial protonation opens the 7MR and locks K⁺ in.',
+          'Now the crystallographic aperture — the previous beat was only the hydrated filter. Everything else dims: seven-membered rings — four SiO₄ and three ZrO₆ — own the stage as the free window. Same geometric idea as a biological K⁺ channel. O–O axes ~6.5 × 5 Å; effective hydrated cutoff stays ~3 Å. Partial protonation opens the 7MR and locks K⁺ in.',
       },
       {
         id: 'gut',
@@ -626,12 +626,12 @@ export const slides: Slide[] = [
       {
         id: 'patients',
         label: '3 million',
-        kicker: 'Consequence of hydration',
-        title: 'Cs should be too big.\nIt goes in anyway.',
-        subtitle: 'Hydration — not Shannon radius — writes the drug.',
+        kicker: 'Consequence of geometry',
+        title: 'K stays.\nThat is the drug.',
+        subtitle: 'On the order of 3 million patients.',
         layers: ['structure'],
         notes:
-          'Size-selective was the wrong punchline after the H₂O story. Unpublished loading work: Cs⁺ packs into this framework even though Shannon says it should not. Soft hydration enthalpy (−263 kJ/mol) lets it shed waters and enter. Same geometry family as cesium cleanup media; Lokelma is the K⁺-selective clinical rebuild — on the order of 3 million patients. The filter is desolvation cost, not a hard sphere diameter.',
+          'Close the Act II loop. Hydration energy already favored K over Na (−321 vs −405 kJ/mol); the lock is crystallography. Rebuild that channel under pharmaceutical control and the clinic sees it as Lokelma — gut lumen only, never blood or kidney. On the order of 3 million patients. The mineral invented the selectivity; the drug is the controlled rebuild.',
       },
     ],
   },
@@ -694,7 +694,7 @@ export const slides: Slide[] = [
         title: 'The useful part\nis the hole.',
         layers: ['density'],
         notes:
-          'Bigger glow means more empty. Rowleyite at FD 9.8 — lowest natural crystalline framework. 12MR windows 9.7 Å; salt-cage access 4.1 Å. The empty volume is the scientific object.',
+          'Bigger glow means more empty. Rowleyite at FD 9.8 — lowest natural crystalline framework. The empty volume is the scientific object; window geometry comes next when we orbit the void map.',
       },
       {
         id: 'voids-view',
@@ -703,7 +703,7 @@ export const slides: Slide[] = [
         title: 'Cages you can\norbit.',
         layers: ['voids'],
         notes:
-          'Drag the void map. Salt-templated small cages and open large cages — the geometry the glow just named.',
+          'Drag the void map. Salt-templated small cages (~4.1 Å access) and open large cages through 12MR windows (~9.7 Å) — the geometry the glow just named as empty volume.',
       },
       {
         id: 'cargo',
@@ -719,10 +719,10 @@ export const slides: Slide[] = [
         id: 'mismatch',
         label: 'Release gate',
         kicker: 'Mechanism, not volume',
-        title: 'Hydration writes\nthe release rate.',
+        title: 'Acid opens\nthe cage.',
         layers: ['fit'],
         notes:
-          'Skip the overlapping guest orbs — cargo size was the last beat. Here the question is mechanism: the guest arrives hydrated, desolvation cost gates entry into the salt cage, framework ions exchange, and channel chemistry sets how fast it leaves. Controlled release is a hydration-and-exchange problem before it is a pharmacy problem.',
+          'Skip cargo size — that was the last beat. Mechanism hypothesis: hydration holds the guest in the cage; low pH at a tumor site can hit the V–P polyoxovanadate framework; vanadium groups leach and soften the cage; drug and V leave through the 12MR channel. The drugs themselves do not need acid to work — acid is a scaffold trigger, not a requirement for doxorubicin, vincristine, cisplatin, or temozolomide activity. Natural rowleyite is the sketch; any ward-facing media is synthetic.',
       },
       {
         id: 'scaffold',

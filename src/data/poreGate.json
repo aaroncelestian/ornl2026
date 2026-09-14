@@ -25,6 +25,16 @@
       "note": "High hydration cost"
     },
     {
+      "id": "Li",
+      "label": "Li⁺",
+      "hydrated": 3.40,
+      "crystal": 0.76,
+      "hydration": -520,
+      "waters": 4,
+      "pass": false,
+      "note": "Small core · large hydration shell"
+    },
+    {
       "id": "Na",
       "label": "Na⁺",
       "hydrated": 2.76,

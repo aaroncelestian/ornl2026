@@ -142,6 +142,7 @@ export function PoreGate({ active, label }: { active: boolean; label?: string })
           const waters = Array.from({ length: ion.waters }, (_, wi) => {
             return -Math.PI / 2 + (wi / ion.waters) * Math.PI * 2
           })
+          const energyRight = ion.id === 'Cs'
           return (
             <motion.g
               key={ion.id}
@@ -182,7 +183,22 @@ export function PoreGate({ active, label }: { active: boolean; label?: string })
               >
                 {ion.label}
               </text>
-              <text x={ion.x} y={ion.y + ion.rHyd + 16} textAnchor="middle" className={styles.theaterMark}>
+              {ion.id === 'Li' && (
+                <text
+                  x={ion.x}
+                  y={ion.y + ion.rHyd + 16}
+                  textAnchor="middle"
+                  className={styles.theaterMark}
+                >
+                  {ion.hydrated.toFixed(2)} Å hyd
+                </text>
+              )}
+              <text
+                x={energyRight ? ion.x + ion.rHyd * 0.55 : ion.x}
+                y={energyRight ? ion.y + ion.rHyd * 0.72 + 14 : ion.y + ion.rHyd + (ion.id === 'Li' ? 32 : 16)}
+                textAnchor={energyRight ? 'start' : 'middle'}
+                className={styles.theaterMark}
+              >
                 {ion.hydration} kJ/mol
               </text>
             </motion.g>

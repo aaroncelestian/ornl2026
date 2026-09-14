@@ -143,7 +143,7 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: OpenAlex literature mentions versus year'
   }
   if (slide.motif === 'void-fit') {
-    return 'Motif: rowleyite cage — hydration, exchange, and delivery sequence'
+    return 'Motif: rowleyite cage — hydration, acid cue, and dual delivery sequence'
   }
   if (slide.motif === 'raman-exchange') {
     return 'Motif: LMO XRD vs Raman story — as-synth / H-blank / Li returns'
@@ -155,7 +155,7 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: CZS double-lever K⁺ exchange mechanism'
   }
   if (slide.motif === 'framework-density') {
-    return 'Motif: porosity as luminous voids — rowleyite as the hero hole'
+    return 'Motif: porosity voids — bigger glow means more empty; rowleyite as the luminous hole'
   }
   if (slide.motif === 'mineral-constellation') {
     return 'Motif: mineral constellation — perovskite → sky → drawer reveal → cabinets'
@@ -205,7 +205,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         } else if (beat?.id === 'lock') {
           lines.push('Motif: ZS-9 — H bends and exchanges out; K locks in')
         } else if (beat?.id === 'patients') {
-          lines.push('Motif: ZS-9 — hydration filter; Cs paradox (drag to orbit)')
+          lines.push('Motif: ZS-9 — K locked in the 7-ring; clinical rebuild (drag to orbit)')
         } else {
           lines.push('Motif: ZS-9 crystal structure — K⁺ in the channels (drag to orbit)')
         }
@@ -267,7 +267,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
                 : beat?.id === 'lock'
                   ? 'Motif: ZS-9 CIF — H leaves; K locks'
                   : beat?.id === 'patients'
-                    ? 'Motif: ZS-9 CIF — Cs paradox; hydration as the drug filter'
+                    ? 'Motif: ZS-9 CIF — K locked; the channel as a drug'
                     : 'Motif: ZS-9 structure from CIF — drag to orbit',
         )
       }
@@ -275,7 +275,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         lines.push(
           beat?.id === 'scaffold'
             ? 'Motif: delivery as reverse exchange — load → hold → trigger → release'
-            : 'Motif: hydration → strip → exchange → delivery for the rowleyite cage',
+            : 'Motif: hydration → acid cue → V open → dual delivery for the rowleyite cage',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-lineage') {
@@ -313,7 +313,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-density') {
         lines.push(
-          'Motif: porosity voids — rowleyite as the luminous hole · 12MR 9.7 Å / 4.1 Å',
+          'Motif: porosity voids — bigger glow means more empty; rowleyite as the luminous hole',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'mineral-constellation') {

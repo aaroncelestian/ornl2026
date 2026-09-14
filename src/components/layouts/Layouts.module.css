@@ -273,18 +273,19 @@
 
 .scene[data-motif='selectivity-plume'] .stageCopy {
   left: auto;
-  right: calc(var(--pad-x) + 1.25rem);
-  max-width: min(26ch, 32vw);
+  /* Keep clear of the slide edge — large serif titles were clipping */
+  right: calc(var(--pad-x) + 3.5rem);
+  max-width: min(20rem, 30vw);
   text-align: right;
   overflow: visible;
 }
 
 .scene[data-motif='selectivity-plume'] .stageCopy h2 {
+  font-size: clamp(1.9rem, 3.6vw, 3rem);
+  line-height: 1.08;
   overflow: visible;
-}
-
-.scene[data-motif='selectivity-plume'] .stageCopy h2 span {
-  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .scene[data-motif='raman-exchange'] .stageCopy h2 span {

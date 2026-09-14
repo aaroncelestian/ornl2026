@@ -18,6 +18,21 @@ function holdsCopy(slide?: Slide) {
 
 const RESOURCES = [
   {
+    href: 'https://doi.org/10.1002/jrs.70013',
+    title: 'LMO · J. Raman Spectrosc. 2026',
+    detail: 'Mechanism of Li⁺ exchange into spinel manganese oxide',
+  },
+  {
+    href: 'https://doi.org/10.1371/journal.pone.0298661',
+    title: 'K exchange · PLoS ONE 2024',
+    detail: 'In situ K⁺/H⁺ exchange into cubic zirconium silicate',
+  },
+  {
+    href: 'https://doi.org/10.2138/am-2017-5977',
+    title: 'Rowleyite · Am. Mineral. 2017',
+    detail: 'New mineral with a microporous framework structure',
+  },
+  {
     href: 'https://aaroncelestian.github.io/MineralSciences/',
     title: 'Mineral Sciences',
     detail: 'Research site · NHMLAC',
@@ -617,7 +632,7 @@ export function Shell() {
             aria-haspopup="menu"
             aria-expanded={resourcesOpen}
             aria-label="Open resources"
-            title="SpecimenPro, site, and related work"
+            title="Papers, site, and related work"
             onClick={() => {
               setPickerOpen(false)
               setResourcesOpen((open) => !open)

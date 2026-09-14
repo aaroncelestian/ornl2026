@@ -242,6 +242,8 @@ export type ExchangeAnim = {
   cellScale: number
   cellGlow: number
   poreOp: number
+  /** Framework atom/bond opacity — drops on the pore beat so 7MR windows own the stage. */
+  frameOp: number
   flash: number
 }
 
@@ -274,20 +276,23 @@ export function sampleHEntry(progress: number, kStart = 1): ExchangeAnim {
     cellScale: shrinkScale(p),
     cellGlow: t,
     poreOp: 0,
+    frameOp: 1,
     flash: 0,
   }
 }
 
 export function samplePore(progress: number): ExchangeAnim {
   const p = Math.max(0, Math.min(1, progress))
+  const dim = smooth((p - 0.05) / 0.38)
   return {
     hMix: 0,
     hOp: 0,
-    kOp: 1 - 0.88 * smooth(p / 0.4),
+    kOp: 1 - 0.98 * smooth(p / 0.3),
     kLock: 0,
     cellScale: 1,
-    cellGlow: 0.22 * smooth((p - 0.36) / 0.4),
-    poreOp: smooth((p - 0.38) / 0.48),
+    cellGlow: 0.04 * (1 - dim),
+    poreOp: smooth((p - 0.18) / 0.48),
+    frameOp: 1 - 0.95 * dim,
     flash: 0,
   }
 }
@@ -338,6 +343,7 @@ export function sampleExchange(progress: number): ExchangeAnim {
     cellScale: openScale(opening),
     cellGlow: 1 - opening,
     poreOp: 0,
+    frameOp: 1,
     flash,
   }
 }
