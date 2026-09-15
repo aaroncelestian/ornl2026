@@ -2,136 +2,109 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
-import data from '../../data/voidFit.json'
 import styles from './Motifs.module.css'
 
-const CX = 460
-const CY = 220
-const STEP_MS = 2200
-const HOLD_LAST_MS = 3200
+const CX = 560
+const CY = 230
+const R = 118
+const STEP_MS = 2400
 const EASE = [0.16, 1, 0.3, 1] as const
 
-type Phase = 'cage' | 'guests' | 'mismatch' | 'synthetic'
+type Phase = 'mismatch' | 'synthetic' | 'other'
 
-type Step = {
-  id: string
-  label: string
-  detail: string
-}
+type Step = { id: string; label: string; detail: string }
 
-const MISMATCH_STEPS: Step[] = [
-  { id: 'shell', label: 'Hydration', detail: 'Cargo held with its H₂O shell' },
-  { id: 'acid', label: 'Acid cue', detail: 'Tumor pH hits the V–P framework' },
-  { id: 'open', label: 'Open', detail: 'V groups leach; cage softens' },
-  { id: 'egress', label: 'Delivery', detail: 'Drug + V exit the 12MR channel' },
+/** 8.5 — hand-sketch sequence: hold → acid → V first → cargo. */
+const ACID_STEPS: Step[] = [
+  { id: 'hold', label: 'Hold', detail: 'Cargo in the large cage' },
+  { id: 'acid', label: 'Acid', detail: 'H⁺ docks on the framework' },
+  { id: 'v', label: 'V first', detail: 'Vanadium groups leave; cage opens' },
+  { id: 'cargo', label: 'Cargo', detail: 'Only at acidic sites' },
 ]
 
-const SYNTHETIC_STEPS: Step[] = [
-  { id: 'load', label: 'Load', detail: 'Guest + waters enter the cage' },
-  { id: 'hold', label: 'Hold', detail: 'Templated in the 4.1 Å cage' },
-  { id: 'trigger', label: 'Trigger', detail: 'Ion exchange / pH shift' },
-  { id: 'release', label: 'Release', detail: 'Controlled egress into the channel' },
+/** 8.6 — same geometry, engineered as reverse exchange. */
+const SYNTH_STEPS: Step[] = [
+  { id: 'load', label: 'Load', detail: 'Guest enters the large cage' },
+  { id: 'hold', label: 'Hold', detail: 'Templated until the trigger' },
+  { id: 'trigger', label: 'Trigger', detail: 'pH / exchange at the site' },
+  { id: 'release', label: 'Release', detail: 'V first, then cargo' },
 ]
 
 function phaseForBeat(id?: string): Phase {
-  if (id === 'cargo' || id === 'guests') return 'guests'
   if (id === 'fit' || id === 'mismatch') return 'mismatch'
   if (id === 'synthetic' || id === 'scaffold') return 'synthetic'
-  return 'cage'
+  return 'other'
 }
 
-function WaterShell({
-  radius,
-  opacity,
-  reduced,
-  visible,
-}: {
-  radius: number
-  opacity: number
-  reduced: boolean
-  visible: boolean
-}) {
-  return (
-    <>
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const a = -Math.PI / 2 + (i / 6) * Math.PI * 2
-        const ox = CX + Math.cos(a) * radius
-        const oy = CY + Math.sin(a) * radius
-        return (
-          <motion.g
-            key={i}
-            initial={false}
-            animate={{ opacity: visible ? opacity : 0 }}
-            transition={{ delay: reduced ? 0 : 0.04 * i, duration: reduced ? 0 : 0.35 }}
-          >
-            <circle cx={ox} cy={oy} r={5} fill="#7ec4d4" fillOpacity={0.85} />
-            <circle
-              cx={ox + Math.cos(a) * 7 + Math.cos(a + 1.2) * 4}
-              cy={oy + Math.sin(a) * 7 + Math.sin(a + 1.2) * 4}
-              r={2.2}
-              fill="rgba(243,238,228,0.9)"
-            />
-            <circle
-              cx={ox + Math.cos(a) * 7 + Math.cos(a - 1.2) * 4}
-              cy={oy + Math.sin(a) * 7 + Math.sin(a - 1.2) * 4}
-              r={2.2}
-              fill="rgba(243,238,228,0.9)"
-            />
-          </motion.g>
-        )
-      })}
-    </>
-  )
+/** Open C-ring with the gap on the right (matches the sketch). */
+function openRingPath(cx: number, cy: number, r: number) {
+  const start = (55 * Math.PI) / 180
+  const end = (305 * Math.PI) / 180
+  const x1 = cx + r * Math.cos(start)
+  const y1 = cy + r * Math.sin(start)
+  const x2 = cx + r * Math.cos(end)
+  const y2 = cy + r * Math.sin(end)
+  return `M ${x1} ${y1} A ${r} ${r} 0 1 1 ${x2} ${y2}`
 }
 
-/** Animated cage mechanism — 8.5 acid open, 8.6 reverse-exchange load path. */
+const H_SITES = [
+  { a: -40, r: R + 22 },
+  { a: 8, r: R + 22 },
+  { a: 55, r: R + 22 },
+  { a: 200, r: R + 22 },
+]
+
+const V_BITS = [
+  { a: 10, dist: 46 },
+  { a: -15, dist: 58 },
+  { a: 35, dist: 64 },
+  { a: -40, dist: 52 },
+]
+
 export function VoidFit({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
   const phase = phaseForBeat(scene.beat?.id)
   const synthetic = phase === 'synthetic'
-  const steps = synthetic ? SYNTHETIC_STEPS : MISMATCH_STEPS
+  const steps = synthetic ? SYNTH_STEPS : ACID_STEPS
   const [step, setStep] = useState(0)
+  const [played, setPlayed] = useState(false)
 
   useEffect(() => {
     setStep(reduced ? steps.length - 1 : 0)
+    setPlayed(false)
   }, [phase, active, reduced, steps.length])
 
+  // Autoplay once through, then hold on the last frame (no loop).
   useEffect(() => {
-    if (!active || reduced) return
-    const last = step >= steps.length - 1
-    const id = window.setTimeout(
-      () => setStep((s) => (s >= steps.length - 1 ? 0 : s + 1)),
-      last ? HOLD_LAST_MS : STEP_MS,
-    )
+    if (!active || reduced || played) return
+    if (step >= steps.length - 1) {
+      setPlayed(true)
+      return
+    }
+    const id = window.setTimeout(() => setStep((s) => s + 1), STEP_MS)
     return () => window.clearTimeout(id)
-  }, [active, reduced, step, steps.length])
+  }, [active, reduced, step, steps.length, played])
 
-  const title = synthetic ? 'Delivery is reverse exchange' : 'Acid opens the cage'
-  const sub = synthetic
-    ? `Salt-templated cages · ${data.structureNote.split('·')[2]?.trim() ?? '12MR 9.7 Å'}`
-    : 'Hydration holds · tumor pH can write the release'
   const current = steps[step]
 
-  const showLoadApproach = synthetic && step === 0
-  const shellOn = synthetic ? step <= 2 : step < 3
-  const shellLoose = !synthetic && step === 2
-  const acidOn = synthetic ? step === 2 : step >= 1 && step < 3
-  const cageSoft = !synthetic && step >= 2
-  const vLeach = !synthetic && step >= 2
-  const egress = synthetic ? step >= 3 : step >= 3
+  // Shared stage logic mapped from the sketch
+  const loading = synthetic && step === 0
+  const acidOn = synthetic ? step >= 2 : step >= 1
+  const opened = synthetic ? step >= 3 : step >= 2
+  const vOut = synthetic ? step >= 3 : step >= 2
+  const cargoOut = synthetic ? step >= 3 : step >= 3
+  // On acid step of 8.5 / trigger of 8.6, V has not left yet — wait one beat
+  const vFlying = vOut && (synthetic || step >= 2)
+  const cargoFlying = cargoOut
 
-  const cargoX = showLoadApproach ? CX - 210 : egress ? CX + 210 : CX
-  const cageDash = cageSoft ? '4 6' : '9 8'
-  const cageStroke = cageSoft ? 'rgba(224,112,64,0.85)' : '#7ec4d4'
-  const cageFill = cageSoft ? 'rgba(224,112,64,0.08)' : 'rgba(126,196,212,0.05)'
+  const cargoX = loading ? CX - 200 : cargoFlying ? CX + 168 : CX
+  const cargoY = cargoFlying ? CY + 36 : CY
 
-  const vBits = [
-    { x: 28, y: -55 },
-    { x: 48, y: -10 },
-    { x: 36, y: 42 },
-    { x: -40, y: -48 },
-  ]
+  const go = (i: number) => {
+    setStep(i)
+    setPlayed(i >= steps.length - 1)
+  }
 
   return (
     <div
@@ -139,189 +112,216 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
       aria-label={
         label ||
         (synthetic
-          ? 'Animated reverse-exchange delivery: load, hold, trigger, release'
-          : 'Animated acid-open delivery: hydration, acid cue, vanadium open, dual release')
+          ? 'Synthetic analog: load, hold, acid trigger, V then cargo release'
+          : 'Acid opens the large cage: H⁺ docks, vanadium leaves first, then cargo')
       }
     >
       <svg viewBox="0 0 920 500" className={styles.theaterSvg} role="img">
         <defs>
-          <radialGradient id="cageWash" cx="50%" cy="45%" r="55%">
-            <stop offset="0%" stopColor="rgba(126,196,212,0.14)" />
-            <stop offset="70%" stopColor="rgba(126,196,212,0.03)" />
+          <radialGradient id="vfWash" cx="50%" cy="45%" r="55%">
+            <stop offset="0%" stopColor="rgba(126,196,212,0.12)" />
             <stop offset="100%" stopColor="rgba(126,196,212,0)" />
           </radialGradient>
-          <radialGradient id="cargoGlow" cx="40%" cy="35%" r="65%">
-            <stop offset="0%" stopColor="rgba(224,112,64,0.32)" />
-            <stop offset="100%" stopColor="rgba(224,112,64,0)" />
-          </radialGradient>
-          <radialGradient id="acidGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(240,200,120,0.45)" />
-            <stop offset="100%" stopColor="rgba(240,200,120,0)" />
-          </radialGradient>
-          <radialGradient id="vGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(126,196,212,0.55)" />
-            <stop offset="100%" stopColor="rgba(126,196,212,0)" />
-          </radialGradient>
+          <marker
+            id="vfArrow"
+            viewBox="0 0 10 10"
+            refX="8"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <path d="M 0 1.5 L 8 5 L 0 8.5 Z" fill="rgba(243,238,228,0.7)" />
+          </marker>
         </defs>
 
+        <motion.circle
+          cx={CX}
+          cy={CY}
+          r={170}
+          fill="url(#vfWash)"
+          initial={false}
+          animate={{ opacity: active ? 1 : 0 }}
+        />
+
+        {/* Intact ring */}
+        <motion.circle
+          cx={CX}
+          cy={CY}
+          r={R}
+          fill="rgba(126,196,212,0.04)"
+          stroke="#7ec4d4"
+          strokeWidth={3.5}
+          initial={false}
+          animate={{ opacity: active && !opened ? 1 : 0 }}
+          transition={{ duration: reduced ? 0 : 0.45 }}
+        />
+
+        {/* Open C-ring after acid attack */}
+        <motion.path
+          d={openRingPath(CX, CY, R)}
+          fill="none"
+          stroke="#e07040"
+          strokeWidth={3.5}
+          strokeLinecap="round"
+          initial={false}
+          animate={{ opacity: active && opened ? 1 : 0 }}
+          transition={{ duration: reduced ? 0 : 0.55, ease: EASE }}
+        />
+
+        <text x={CX} y={CY - R - 28} textAnchor="middle" className={styles.theaterMark}>
+          Large cage · 12MR access
+        </text>
+
+        {/* Acid label during transition into H⁺ docking */}
         <motion.text
-          x={40}
-          y={42}
+          x={CX + R + 70}
+          y={CY - 40}
           className={styles.theaterCall}
           initial={false}
-          animate={{ opacity: active ? 1 : 0 }}
+          animate={{ opacity: active && acidOn && !opened ? 1 : 0 }}
         >
-          {title}
+          acid
         </motion.text>
-        <motion.text
-          x={40}
-          y={64}
-          className={styles.theaterMark}
+        <motion.line
+          x1={CX + R + 48}
+          y1={CY - 28}
+          x2={CX + R + 8}
+          y2={CY - 8}
+          stroke="rgba(240,200,120,0.7)"
+          strokeWidth={1.5}
+          markerEnd="url(#vfArrow)"
           initial={false}
-          animate={{ opacity: active ? 1 : 0 }}
-        >
-          {sub}
-        </motion.text>
-
-        <motion.circle
-          cx={CX}
-          cy={CY}
-          r={168}
-          fill="url(#cageWash)"
-          initial={false}
-          animate={{ opacity: active ? 1 : 0 }}
+          animate={{ opacity: active && acidOn && !opened ? 1 : 0 }}
         />
 
-        <motion.circle
-          cx={CX}
-          cy={CY}
-          r={128}
-          fill={cageFill}
-          stroke={cageStroke}
-          strokeWidth={2.25}
-          strokeDasharray={cageDash}
-          initial={false}
-          animate={{
-            opacity: active ? 1 : 0,
-            r: active ? (cageSoft ? 138 : 128) : 40,
-          }}
-          transition={{ duration: reduced ? 0 : 0.7, ease: EASE }}
-        />
-        <text x={CX} y={CY - 148} textAnchor="middle" className={styles.theaterMark}>
-          12MR channel · 9.7 Å
-        </text>
-        <text x={CX} y={CY + 158} textAnchor="middle" className={styles.theaterMark}>
-          {synthetic ? 'Synthetic cage–channel analog' : 'V–P polyoxovanadate framework'}
-        </text>
-
-        {[
-          { x: CX + 108, y: CY - 78 },
-          { x: CX + 132, y: CY - 18 },
-          { x: CX + 118, y: CY + 52 },
-        ].map((h, i) => (
-          <motion.g
-            key={`h${i}`}
-            initial={false}
-            animate={{
-              opacity: active && acidOn ? 1 : 0,
-              x: acidOn && !reduced ? [0, -8, 0] : 0,
-            }}
-            transition={{
-              opacity: { duration: reduced ? 0 : 0.35, delay: reduced ? 0 : i * 0.06 },
-              x: { duration: 1.4, repeat: acidOn && !reduced ? Infinity : 0, ease: 'easeInOut' },
-            }}
-          >
-            <circle cx={h.x} cy={h.y} r={14} fill="url(#acidGlow)" />
-            <circle
-              cx={h.x}
-              cy={h.y}
-              r={11}
-              fill="rgba(240,200,120,0.18)"
-              stroke="#f0c878"
-              strokeWidth={1.5}
-            />
-            <text
-              x={h.x}
-              y={h.y + 4}
-              textAnchor="middle"
-              className={styles.theaterIon}
-              style={{ fontSize: 11 }}
+        {/* H⁺ on the rim */}
+        {H_SITES.map((h, i) => {
+          const rad = (h.a * Math.PI) / 180
+          const x = CX + Math.cos(rad) * h.r
+          const y = CY + Math.sin(rad) * h.r
+          return (
+            <motion.g
+              key={`h${i}`}
+              initial={false}
+              animate={{ opacity: active && acidOn ? 1 : 0 }}
+              transition={{ delay: reduced ? 0 : 0.05 * i, duration: reduced ? 0 : 0.35 }}
             >
-              H⁺
-            </text>
-          </motion.g>
-        ))}
+              <circle
+                cx={x}
+                cy={y}
+                r={13}
+                fill="rgba(240,200,120,0.16)"
+                stroke="#f0c878"
+                strokeWidth={1.5}
+              />
+              <text
+                x={x}
+                y={y + 4}
+                textAnchor="middle"
+                className={styles.theaterIon}
+                style={{ fontSize: 12 }}
+              >
+                H
+              </text>
+            </motion.g>
+          )
+        })}
 
-        {vBits.map((v, i) => (
-          <motion.g
-            key={`v${i}`}
-            initial={false}
-            animate={{
-              opacity: active && vLeach ? (egress ? 0.4 : 0.95) : 0,
-              x: active && vLeach ? (egress ? v.x + 110 : v.x * 0.55) : 0,
-              y: active && vLeach ? (egress ? v.y * 0.35 : v.y * 0.35) : 0,
-            }}
-            transition={{ duration: reduced ? 0 : 0.85, ease: EASE, delay: reduced ? 0 : i * 0.05 }}
-          >
-            <circle cx={CX} cy={CY} r={16} fill="url(#vGlow)" />
-            <circle
-              cx={CX}
-              cy={CY}
-              r={9}
-              fill="rgba(126,196,212,0.55)"
-              stroke="#7ec4d4"
-              strokeWidth={1.25}
-            />
-            <text
-              x={CX}
-              y={CY + 4}
-              textAnchor="middle"
-              className={styles.theaterIon}
-              style={{ fontSize: 10 }}
+        {/* Vanadium leaves first through the opening */}
+        {V_BITS.map((v, i) => {
+          const rad = (v.a * Math.PI) / 180
+          const parked = { x: CX + Math.cos(rad) * (R - 18), y: CY + Math.sin(rad) * (R - 18) }
+          const flown = {
+            x: CX + Math.cos(rad) * (R + v.dist + 36),
+            y: CY + Math.sin(rad) * (R + v.dist * 0.55),
+          }
+          const pos = vFlying ? flown : parked
+          return (
+            <motion.g
+              key={`v${i}`}
+              initial={false}
+              animate={{
+                opacity: active && vFlying ? 1 : 0,
+                x: pos.x - parked.x,
+                y: pos.y - parked.y,
+              }}
+              transition={{
+                duration: reduced ? 0 : 0.7,
+                ease: EASE,
+                delay: reduced ? 0 : 0.08 * i,
+              }}
             >
-              V
-            </text>
-          </motion.g>
-        ))}
+              <text
+                x={parked.x}
+                y={parked.y + 5}
+                textAnchor="middle"
+                className={styles.theaterIon}
+                style={{ fontSize: 16, fill: '#7ec4d4' }}
+              >
+                V
+              </text>
+              {vFlying && (
+                <line
+                  x1={parked.x + Math.cos(rad) * 10}
+                  y1={parked.y + Math.sin(rad) * 10}
+                  x2={parked.x + Math.cos(rad) * 28}
+                  y2={parked.y + Math.sin(rad) * 28}
+                  stroke="rgba(126,196,212,0.55)"
+                  strokeWidth={1.25}
+                  markerEnd="url(#vfArrow)"
+                />
+              )}
+            </motion.g>
+          )
+        })}
 
+        {/* Dashed cargo — sketch style */}
         <motion.g
           initial={false}
           animate={{
             opacity: active ? 1 : 0,
             x: cargoX - CX,
+            y: cargoY - CY,
           }}
-          transition={{ duration: reduced ? 0 : 0.85, ease: EASE }}
+          transition={{
+            duration: reduced ? 0 : cargoFlying ? 0.9 : 0.75,
+            ease: EASE,
+            delay: reduced || !cargoFlying ? 0 : 0.35,
+          }}
         >
-          <WaterShell
-            radius={shellLoose ? 78 : showLoadApproach ? 52 : 62}
-            opacity={shellLoose ? 0.45 : 0.9}
-            reduced={reduced}
-            visible={shellOn}
+          <circle
+            cx={CX}
+            cy={CY}
+            r={44}
+            fill="rgba(224,112,64,0.1)"
+            stroke="#e07040"
+            strokeWidth={2}
+            strokeDasharray="5 5"
           />
-          <circle cx={CX} cy={CY} r={42} fill="url(#cargoGlow)" stroke="#e07040" strokeWidth={2} />
-          <text x={CX} y={CY + 5} textAnchor="middle" className={styles.theaterIon}>
-            {synthetic ? 'guest' : 'cargo'}
+          <text x={CX} y={CY + 6} textAnchor="middle" className={styles.theaterIon}>
+            Cargo
           </text>
         </motion.g>
 
-        {!egress && !showLoadApproach && (
-          <motion.text
-            x={CX}
-            y={CY + 72}
-            textAnchor="middle"
-            className={styles.theaterMark}
-            initial={false}
-            animate={{ opacity: active ? 0.85 : 0 }}
-          >
-            4.1 Å cage
-          </motion.text>
-        )}
+        {/* Exit arrow once cargo moves */}
+        <motion.path
+          d={`M ${CX + 36} ${CY + 10} Q ${CX + 100} ${CY + 70} ${CX + 150} ${CY + 48}`}
+          fill="none"
+          stroke="rgba(224,112,64,0.65)"
+          strokeWidth={2}
+          markerEnd="url(#vfArrow)"
+          initial={false}
+          animate={{ opacity: active && cargoFlying ? 1 : 0 }}
+          transition={{ delay: reduced ? 0 : 0.4 }}
+        />
 
+        {/* Live caption only — layout owns the slide title */}
         <motion.g
           key={`${phase}-${current.id}`}
-          initial={reduced ? false : { opacity: 0, y: 8 }}
+          initial={reduced ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: active ? 1 : 0, y: 0 }}
-          transition={{ duration: reduced ? 0 : 0.35 }}
+          transition={{ duration: reduced ? 0 : 0.3 }}
         >
           <text x={CX} y={420} textAnchor="middle" className={styles.theaterCall}>
             {step + 1} · {current.label}
@@ -331,16 +331,23 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
           </text>
         </motion.g>
 
+        {/* Clickable progress — scrub without re-looping */}
         {steps.map((s, i) => (
-          <motion.circle
-            key={s.id}
-            cx={CX - ((steps.length - 1) * 18) / 2 + i * 18}
-            cy={472}
-            r={i === step ? 5 : 3.5}
-            fill={i === step ? (synthetic ? '#e07040' : '#7ec4d4') : 'rgba(243,238,228,0.28)'}
-            initial={false}
-            animate={{ opacity: active ? 1 : 0 }}
-          />
+          <g key={s.id} style={{ cursor: 'pointer' }} onClick={() => go(i)}>
+            <circle
+              cx={CX - ((steps.length - 1) * 20) / 2 + i * 20}
+              cy={472}
+              r={10}
+              fill="transparent"
+            />
+            <circle
+              cx={CX - ((steps.length - 1) * 20) / 2 + i * 20}
+              cy={472}
+              r={i === step ? 5 : 3.5}
+              fill={i === step ? '#e07040' : 'rgba(243,238,228,0.28)'}
+              opacity={active ? 1 : 0}
+            />
+          </g>
         ))}
       </svg>
     </div>

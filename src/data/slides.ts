@@ -721,7 +721,7 @@ export const slides: Slide[] = [
         title: 'Acid opens\nthe cage.',
         layers: ['fit'],
         notes:
-          'Skip cargo size — that was the last beat. Mechanism hypothesis: hydration holds the guest in the cage; low pH at a tumor site can hit the V–P polyoxovanadate framework; vanadium groups leach and soften the cage; drug and V leave through the 12MR channel. The drugs themselves do not need acid to work — acid is a scaffold trigger, not a requirement for doxorubicin, vincristine, cisplatin, or temozolomide activity. Natural rowleyite is the sketch; any ward-facing media is synthetic.',
+          'Hypothesis, not the 2017 mineral paper. Cargo sits in the large cage. Acid docks H⁺ on the V–P framework. Vanadium groups leave first and the cage opens; cargo follows — only at acidic sites (e.g. a tumor microenvironment). The drugs do not need acid to be pharmacologically active; acid is the scaffold trigger. 4.1 Å is the salt-template window, not the drug host.',
       },
       {
         id: 'scaffold',
@@ -730,7 +730,7 @@ export const slides: Slide[] = [
         title: 'Delivery is\nreverse exchange.',
         layers: ['fit'],
         notes:
-          'Load → hold in the salt-templated cage → trigger by ion exchange or pH → release into the 12MR channel. You will not put an Arizona hand-specimen into a ward. You synthesize a clean analog of that cage–channel sequence — same pattern as Lokelma and λ-MnO₂. The mineral is the mechanism sketch.',
+          'Same geometry, engineered. Load the guest into a synthetic large-cage analog → hold → trigger by pH / ion exchange → V first, then cargo. You will not put an Arizona hand-specimen into a ward. Same pattern as Lokelma and λ-MnO₂: mineral is the mechanism sketch.',
       },
     ],
   },

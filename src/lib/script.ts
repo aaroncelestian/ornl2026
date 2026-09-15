@@ -142,7 +142,7 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: OpenAlex literature mentions versus year'
   }
   if (slide.motif === 'void-fit') {
-    return 'Motif: rowleyite cage — hydration, acid cue, and dual delivery sequence'
+    return 'Motif: rowleyite large cage — acid opens; V first, then cargo'
   }
   if (slide.motif === 'raman-exchange') {
     return 'Motif: LMO XRD vs Raman story — as-synth / H-blank / Li returns'
@@ -275,8 +275,8 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'void-fit') {
         lines.push(
           beat?.id === 'scaffold'
-            ? 'Motif: animated reverse exchange — load → hold → trigger → release'
-            : 'Motif: animated acid open — hydration → acid cue → V open → dual delivery',
+            ? 'Motif: synthetic analog — load → hold → acid trigger → V then cargo'
+            : 'Motif: acid sketch — hold → H⁺ → V first → cargo (large cage)',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-lineage') {
