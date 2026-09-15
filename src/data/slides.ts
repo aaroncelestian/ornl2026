@@ -789,7 +789,7 @@ export const slides: Slide[] = [
         id: 'thanks',
         label: 'Thanks',
         kicker: 'Aaron Celestian · NHMLAC Mineral Sciences',
-        title: 'What the collection\nalready knows.',
+        title: 'Still in the drawers.',
         layers: ['sky'],
         notes:
           'Thank you. Happy to talk museum science — spinel operando work, zirconium silicate neutrons, rowleyite analogs, or querying the collection against a selectivity target. aaroncelestian.github.io/MineralSciences',

@@ -7,7 +7,6 @@ import styles from './Motifs.module.css'
 const CX = 560
 const CY = 230
 const R = 118
-const STEP_MS = 2400
 const EASE = [0.16, 1, 0.3, 1] as const
 
 type Phase = 'mismatch' | 'synthetic' | 'other'
@@ -68,23 +67,43 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
   const synthetic = phase === 'synthetic'
   const steps = synthetic ? SYNTH_STEPS : ACID_STEPS
   const [step, setStep] = useState(0)
-  const [played, setPlayed] = useState(false)
 
   useEffect(() => {
-    setStep(reduced ? steps.length - 1 : 0)
-    setPlayed(false)
-  }, [phase, active, reduced, steps.length])
+    setStep(0)
+  }, [phase, active, steps.length])
 
-  // Autoplay once through, then hold on the last frame (no loop).
+  // Manual advance: arrows / space step the animation before leaving the beat.
   useEffect(() => {
-    if (!active || reduced || played) return
-    if (step >= steps.length - 1) {
-      setPlayed(true)
-      return
+    if (!active) return
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      const editable =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        tag === 'BUTTON' ||
+        (e.target as HTMLElement)?.isContentEditable ||
+        Boolean((e.target as HTMLElement)?.closest?.('[data-playhead]'))
+      if (editable) return
+      if (document.documentElement.hasAttribute('data-resource')) return
+
+      const forward = ['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)
+      const back = ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)
+      if (forward && step < steps.length - 1) {
+        e.preventDefault()
+        e.stopPropagation()
+        setStep((s) => s + 1)
+        return
+      }
+      if (back && step > 0) {
+        e.preventDefault()
+        e.stopPropagation()
+        setStep((s) => s - 1)
+      }
     }
-    const id = window.setTimeout(() => setStep((s) => s + 1), STEP_MS)
-    return () => window.clearTimeout(id)
-  }, [active, reduced, step, steps.length, played])
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [active, step, steps.length])
 
   const current = steps[step]
 
@@ -94,26 +113,32 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
   const opened = synthetic ? step >= 3 : step >= 2
   const vOut = synthetic ? step >= 3 : step >= 2
   const cargoOut = synthetic ? step >= 3 : step >= 3
-  // On acid step of 8.5 / trigger of 8.6, V has not left yet — wait one beat
   const vFlying = vOut && (synthetic || step >= 2)
   const cargoFlying = cargoOut
 
   const cargoX = loading ? CX - 200 : cargoFlying ? CX + 168 : CX
   const cargoY = cargoFlying ? CY + 36 : CY
 
-  const go = (i: number) => {
-    setStep(i)
-    setPlayed(i >= steps.length - 1)
+  const go = (i: number) => setStep(Math.max(0, Math.min(steps.length - 1, i)))
+
+  const advance = () => {
+    if (step < steps.length - 1) setStep((s) => s + 1)
   }
 
   return (
     <div
       className={styles.theater}
+      role="button"
+      tabIndex={active ? 0 : -1}
+      onClick={(e) => {
+        if ((e.target as Element).closest?.('[data-step-dot]')) return
+        advance()
+      }}
       aria-label={
         label ||
         (synthetic
-          ? 'Synthetic analog: load, hold, acid trigger, V then cargo release'
-          : 'Acid opens the large cage: H⁺ docks, vanadium leaves first, then cargo')
+          ? 'Synthetic analog: load, hold, acid trigger, V then cargo release. Click or press right to advance.'
+          : 'Acid opens the large cage: H⁺ docks, vanadium leaves first, then cargo. Click or press right to advance.')
       }
     >
       <svg viewBox="0 0 920 500" className={styles.theaterSvg} role="img">
@@ -331,9 +356,16 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
           </text>
         </motion.g>
 
-        {/* Clickable progress — scrub without re-looping */}
         {steps.map((s, i) => (
-          <g key={s.id} style={{ cursor: 'pointer' }} onClick={() => go(i)}>
+          <g
+            key={s.id}
+            data-step-dot=""
+            style={{ cursor: 'pointer' }}
+            onClick={(e) => {
+              e.stopPropagation()
+              go(i)
+            }}
+          >
             <circle
               cx={CX - ((steps.length - 1) * 20) / 2 + i * 20}
               cy={472}
