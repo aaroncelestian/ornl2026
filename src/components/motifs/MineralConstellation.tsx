@@ -1904,9 +1904,7 @@ export function MineralConstellation({ active, label }: { active: boolean; label
       <Canvas
         dpr={STRUCTURE_DPR}
         camera={{
-          position: closeSkyPhase(phase)
-            ? goalForPhase(phase, Math.atan2(-9.6, 10.8)).pos.toArray()
-            : [HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35],
+          position: [HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35],
           fov: 42,
           near: 0.05,
           far: 220,

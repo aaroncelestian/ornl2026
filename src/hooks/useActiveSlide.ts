@@ -16,7 +16,9 @@ export function useActiveSlide(
   const goTo = useCallback(
     (index: number, _behavior?: ScrollBehavior, force = false) => {
       const clamped = Math.max(0, Math.min(count - 1, index))
-      if (!force && interceptRef?.current?.(activeIndexRef.current, clamped)) return
+      // Pass the raw requested index so scene-beat intercept still sees a forward
+      // step on the last slide (clamping last+1 → last would look like a no-op).
+      if (!force && interceptRef?.current?.(activeIndexRef.current, index)) return
       setIndex(clamped)
     },
     [count, setIndex, interceptRef],

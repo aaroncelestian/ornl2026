@@ -228,29 +228,31 @@ export function Shell() {
     interceptRef.current = (from, to) => {
       if (leavingRef.current) return true
       const currentScene = sceneRef.current
-      if (to === from + 1 && currentScene.hasScene && !currentScene.atEnd) {
+      // `to` may be unclamped (e.g. lastSlide+1) so beats still advance on the final scene.
+      if (to > from && currentScene.hasScene && !currentScene.atEnd) {
         currentScene.next()
         return true
       }
-      if (to === from - 1 && currentScene.hasScene && !currentScene.atStart) {
+      if (to < from && currentScene.hasScene && !currentScene.atStart) {
         currentScene.prev()
         return true
       }
       if (to <= from) return false
       const current = slides[from]
       if (!current?.exitHold || reduced) return false
+      const dest = Math.max(0, Math.min(slides.length - 1, to))
       leavingRef.current = true
       setCopyOn(false)
       setBlackoutCut(true)
       setBlackout(true)
       window.setTimeout(() => {
         leavingRef.current = false
-        const next = slides[to]
+        const next = slides[dest]
         if (!next?.enterBlack && !next?.enterHit) {
           setBlackoutCut(true)
           setBlackout(false)
         }
-        goTo(to, 'auto', true)
+        goTo(dest, 'auto', true)
       }, current.exitHold * 1000)
       return true
     }
