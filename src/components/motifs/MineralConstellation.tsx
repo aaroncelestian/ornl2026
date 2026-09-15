@@ -35,7 +35,20 @@ type Mineral = {
   afterlife?: string
 }
 
-type Phase = 'peri' | 'peers' | 'sky' | 'reveal' | 'cabinets' | 'instrument' | 'turn' | 'dive'
+type Phase =
+  | 'peri'
+  | 'peers'
+  | 'sky'
+  | 'reveal'
+  | 'cabinets'
+  | 'instrument'
+  | 'turn'
+  | 'dive'
+  | 'return'
+  | 'case-spinel'
+  | 'case-fringe'
+  | 'beyond'
+  | 'thanks'
 
 type Body = Mineral & {
   pos: THREE.Vector3
@@ -47,6 +60,28 @@ type Body = Mineral & {
 const minerals = data.minerals as Mineral[]
 const WORLD_UP = new THREE.Vector3(0, 1, 0)
 const TMP = new THREE.Vector3()
+
+/** Lokelma teachers + rowleyite — rim of the known materials sky. */
+const FRINGE_IDS = new Set(['rowleyite', 'sitinakite', 'georgechaoite', 'umbite', 'zorite'])
+
+function closeSkyPhase(phase: Phase) {
+  return (
+    phase === 'return' ||
+    phase === 'case-spinel' ||
+    phase === 'case-fringe' ||
+    phase === 'beyond' ||
+    phase === 'thanks'
+  )
+}
+
+function litIdsForPhase(phase: Phase): Set<string> | null {
+  if (phase === 'case-spinel') return new Set(['spinel'])
+  if (phase === 'case-fringe') return FRINGE_IDS
+  if (phase === 'beyond' || phase === 'thanks') {
+    return new Set(['spinel', ...FRINGE_IDS])
+  }
+  return null
+}
 
 const HABIT_BY_ID: Record<string, Habit> = {
   perovskite: 'cube',
@@ -94,6 +129,11 @@ function phaseForBeat(id?: string): Phase {
   if (id === 'instrument') return 'instrument'
   if (id === 'turn') return 'turn'
   if (id === 'dive') return 'dive'
+  if (id === 'return') return 'return'
+  if (id === 'spinel') return 'case-spinel'
+  if (id === 'fringe') return 'case-fringe'
+  if (id === 'beyond') return 'beyond'
+  if (id === 'thanks') return 'thanks'
   return 'peri'
 }
 
@@ -108,8 +148,14 @@ function inHallPhase(phase: Phase) {
 }
 
 function skyVisiblePhase(phase: Phase) {
-  // Constellation through sky + reveal nest; gone once we leave the open-drawer beat
-  return phase === 'peri' || phase === 'peers' || phase === 'sky' || phase === 'reveal'
+  // Open: constellation through sky + reveal nest. Close: full sky bookend.
+  return (
+    phase === 'peri' ||
+    phase === 'peers' ||
+    phase === 'sky' ||
+    phase === 'reveal' ||
+    closeSkyPhase(phase)
+  )
 }
 
 function hash01(s: string) {
@@ -149,6 +195,19 @@ function buildBodies(): Body[] {
 const BODIES = buildBodies()
 const HERO = BODIES.find((b) => b.tier === 'hero') ?? BODIES[0]
 const PEERS = BODIES.filter((b) => b.tier === 'peer' || b.tier === 'hero')
+const SPINEL_BODY = BODIES.find((b) => b.id === 'spinel') ?? BODIES[0]
+const FRINGE_BODIES = BODIES.filter((b) => FRINGE_IDS.has(b.id))
+const FRINGE_CENTER = (() => {
+  if (!FRINGE_BODIES.length) return new THREE.Vector3(12, 0.2, 7)
+  const c = FRINGE_BODIES.reduce((acc, b) => acc.add(TMP.copy(b.pos)), new THREE.Vector3())
+  return c.multiplyScalar(1 / FRINGE_BODIES.length)
+})()
+const FRINGE_OUT = (() => {
+  const o = FRINGE_CENTER.clone()
+  o.y = 0
+  if (o.lengthSq() < 0.01) o.set(1, 0, 0.35)
+  return o.normalize()
+})()
 
 function CrystalMesh({
   habit,
@@ -282,6 +341,7 @@ function labelDistanceFactor(phase: Phase, focused: boolean) {
   if (focused) return 2.8
   if (phase === 'peri') return 1.9
   if (phase === 'peers') return 5.4
+  if (closeSkyPhase(phase)) return 6.2
   return 9
 }
 
@@ -373,18 +433,23 @@ function MineralBody({
   phase,
   focused,
   reduced,
+  lit,
+  dimField,
   onSelect,
 }: {
   body: Body
   phase: Phase
   focused: boolean
   reduced: boolean
+  lit: boolean
+  dimField: boolean
   onSelect: (id: string) => void
 }) {
   const root = useRef<THREE.Group>(null)
   const isHero = body.tier === 'hero'
   const isPeer = body.tier === 'peer'
-  const inSky = phase === 'peri' || phase === 'peers' || phase === 'sky'
+  const close = closeSkyPhase(phase)
+  const inSky = phase === 'peri' || phase === 'peers' || phase === 'sky' || close
   const nesting = phase === 'reveal'
 
   // Keep crystals alive during reveal so they can nest into the open drawer
@@ -392,20 +457,24 @@ function MineralBody({
     nesting ||
     (inSky &&
       (focused ||
+        lit ||
         isHero ||
         (isPeer && phase !== 'peri') ||
         phase === 'sky' ||
-        phase === 'peers'))
+        phase === 'peers' ||
+        close))
 
   const showMoons =
     inSky &&
     (focused ||
+      lit ||
       (phase === 'peri' && isHero) ||
       (phase === 'peers' && (isHero || isPeer)) ||
-      phase === 'sky')
+      (phase === 'sky' && (isHero || isPeer)) ||
+      (phase === 'return' && (isHero || isPeer)))
 
   const moonCount =
-    focused || isHero
+    focused || isHero || lit
       ? Math.max(5, body.apps.length + 2)
       : isPeer
         ? Math.max(3, body.apps.length)
@@ -414,16 +483,34 @@ function MineralBody({
   const showLabel =
     inSky &&
     (focused ||
+      lit ||
       (phase === 'peri' && isHero) ||
       (phase === 'peers' && (isHero || isPeer)) ||
-      (phase === 'sky' && (isHero || isPeer)))
+      (phase === 'sky' && (isHero || isPeer)) ||
+      (phase === 'return' && (isHero || isPeer)))
 
   const showCrystal =
-    nesting || (inSky && (focused || isHero || isPeer || phase === 'sky'))
+    nesting ||
+    (inSky && (focused || lit || isHero || isPeer || phase === 'sky' || close))
+
+  const scaleMul = focused ? 1.35 : lit ? 1.28 : dimField && !lit ? 0.82 : 1
+  const emissive = focused
+    ? 0.95
+    : lit
+      ? phase === 'beyond' || phase === 'thanks'
+        ? 0.55
+        : 1.05
+      : dimField
+        ? 0.06
+        : isHero
+          ? 0.7
+          : isPeer
+            ? 0.55
+            : 0.28
 
   useFrame((_, dt) => {
     if (!root.current || reduced || !visible) return
-    root.current.rotation.y += dt * (isHero ? 0.15 : isPeer ? 0.1 : 0.05)
+    root.current.rotation.y += dt * (isHero || lit ? 0.15 : isPeer ? 0.1 : 0.05)
   })
 
   if (!visible && body.tier === 'field' && phase === 'peri') return null
@@ -432,7 +519,7 @@ function MineralBody({
     <group
       ref={root}
       position={body.pos}
-      scale={body.scale * (focused ? 1.35 : 1)}
+      scale={body.scale * scaleMul}
       visible={visible}
       onClick={(e) => {
         e.stopPropagation()
@@ -446,18 +533,19 @@ function MineralBody({
         document.body.style.cursor = 'auto'
       }}
     >
-      {(isHero || isPeer || focused) && (
+      {(isHero || isPeer || focused || lit) && (
         <mesh>
           <sphereGeometry args={[1.55, 16, 16]} />
-          <meshBasicMaterial color={body.color} transparent opacity={0.08} depthWrite={false} />
+          <meshBasicMaterial
+            color={body.color}
+            transparent
+            opacity={lit ? 0.14 : 0.08}
+            depthWrite={false}
+          />
         </mesh>
       )}
       {showCrystal ? (
-        <CrystalMesh
-          habit={body.habit}
-          color={body.color}
-          emissive={focused ? 0.95 : isHero ? 0.7 : isPeer ? 0.55 : 0.28}
-        />
+        <CrystalMesh habit={body.habit} color={body.color} emissive={emissive} />
       ) : (
         body.tier === 'field' &&
         phase === 'peers' && (
@@ -471,24 +559,25 @@ function MineralBody({
         <MoonSystem
           apps={body.apps}
           color={body.color}
-          radius={isHero || focused ? 2.1 : isPeer ? 1.55 : 1.1}
-          showLabels={Boolean(showMoons && (isHero || isPeer || focused))}
+          radius={isHero || focused || lit ? 2.1 : isPeer ? 1.55 : 1.1}
+          showLabels={Boolean(showMoons && (isHero || isPeer || focused || lit))}
           reduced={reduced}
           count={moonCount}
-          distanceFactor={labelDistanceFactor(phase, focused)}
+          distanceFactor={labelDistanceFactor(phase, focused || lit)}
         />
       )}
       {showLabel && (
         <Html
           position={[0, 1.55, 0]}
           center
-          distanceFactor={labelDistanceFactor(phase, focused)}
+          distanceFactor={labelDistanceFactor(phase, focused || lit)}
           style={{ pointerEvents: 'none' }}
           wrapperClass={styles.constellationNameLabel}
         >
-          <div data-hero={isHero || focused || undefined}>
+          <div data-hero={isHero || focused || lit || undefined}>
             {isHero && phase === 'peri' && body.named ? <em>{body.named}</em> : null}
             <strong>{body.name}</strong>
+            {lit && body.afterlife ? <em>{body.afterlife}</em> : null}
           </div>
         </Html>
       )}
@@ -1061,7 +1150,7 @@ function ConstellationSky({
   useFrame(() => {
     if (!ref.current) return
 
-    if (phase === 'peri' || phase === 'peers' || phase === 'sky') {
+    if (phase === 'peri' || phase === 'peers' || phase === 'sky' || closeSkyPhase(phase)) {
       ref.current.position.copy(SKY_ORIGIN)
       ref.current.scale.setScalar(1)
       ref.current.visible = true
@@ -1099,15 +1188,17 @@ function ConstellationSky({
 /** Stars fade out early — never scaled with the nest (avoids the pixel ball). */
 function SkyStars({ phase, reduced }: { phase: Phase; reduced: boolean }) {
   const ref = useRef<THREE.Group>(null)
-  const inSky = phase === 'peri' || phase === 'peers' || phase === 'sky'
+  const inSky =
+    phase === 'peri' || phase === 'peers' || phase === 'sky' || closeSkyPhase(phase)
   const nesting = phase === 'reveal'
+  const dimClose = phase === 'beyond' || phase === 'thanks'
 
   useFrame(() => {
     if (!ref.current) return
     if (inSky) {
       ref.current.scale.setScalar(1)
       ref.current.visible = true
-      setGroupFade(ref.current, 1)
+      setGroupFade(ref.current, dimClose ? 0.42 : 1)
       return
     }
     if (nesting) {
@@ -1132,8 +1223,83 @@ function SkyStars({ phase, reduced }: { phase: Phase; reduced: boolean }) {
         factor={3.2}
         saturation={0}
         fade
-        speed={reduced || !inSky ? 0 : 0.35}
+        speed={reduced || !inSky || dimClose ? 0 : 0.35}
       />
+    </group>
+  )
+}
+
+/** Distant galaxies beyond the fringe — visible on beyond / thanks. */
+function DistantGalaxies({ phase, reduced }: { phase: Phase; reduced: boolean }) {
+  const ref = useRef<THREE.Group>(null)
+  const show = phase === 'beyond' || phase === 'thanks'
+  const opacity = useRef(0)
+
+  const hubs = useMemo(() => {
+    const base = FRINGE_CENTER.clone().add(FRINGE_OUT.clone().multiplyScalar(28))
+    return [
+      { pos: base.clone().add(new THREE.Vector3(0, 1.2, 0)), count: reduced ? 400 : 1200, factor: 4.2 },
+      {
+        pos: base
+          .clone()
+          .add(FRINGE_OUT.clone().multiplyScalar(14))
+          .add(new THREE.Vector3(-8, -2.5, 6)),
+        count: reduced ? 280 : 900,
+        factor: 3.6,
+      },
+      {
+        pos: base
+          .clone()
+          .add(FRINGE_OUT.clone().multiplyScalar(22))
+          .add(new THREE.Vector3(10, 3.5, -4)),
+        count: reduced ? 220 : 700,
+        factor: 3.1,
+      },
+    ]
+  }, [reduced])
+
+  useFrame((_, dt) => {
+    if (!ref.current) return
+    const target = show ? 1 : 0
+    opacity.current = reduced
+      ? target
+      : THREE.MathUtils.damp(opacity.current, target, 1.4, dt)
+    const fade = opacity.current
+    ref.current.visible = fade > 0.02
+    setGroupFade(ref.current, fade)
+  })
+
+  return (
+    <group ref={ref} visible={false}>
+      {hubs.map((h, i) => (
+        <group key={i} position={h.pos.toArray()}>
+          <Stars
+            radius={36 + i * 8}
+            depth={22}
+            count={h.count}
+            factor={h.factor}
+            saturation={0.15}
+            fade
+            speed={reduced || !show ? 0 : 0.12}
+          />
+          {/* Sparse cool crystal dust — reads as another constellation, not labels */}
+          {Array.from({ length: reduced ? 4 : 9 }, (_, k) => {
+            const a = hash01(`gal-${i}-${k}`)
+            const b = hash01(`gal-b-${i}-${k}`)
+            const c = hash01(`gal-c-${i}-${k}`)
+            return (
+              <mesh
+                key={k}
+                position={[(a - 0.5) * 14, (b - 0.5) * 6, (c - 0.5) * 14]}
+                scale={0.04 + c * 0.06}
+              >
+                <octahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial color="#8eb4d8" transparent opacity={0.35} depthWrite={false} />
+              </mesh>
+            )
+          })}
+        </group>
+      ))}
     </group>
   )
 }
@@ -1154,10 +1320,35 @@ function goalForPhase(phase: Phase, skyYaw: number): { pos: THREE.Vector3; look:
       look: c,
     }
   }
-  if (phase === 'sky') {
+  if (phase === 'sky' || phase === 'return') {
     return {
       pos: new THREE.Vector3(Math.sin(skyYaw) * SKY_R, SKY_Y, Math.cos(skyYaw) * SKY_R),
       look: new THREE.Vector3(0, 0.2, 0),
+    }
+  }
+  if (phase === 'case-spinel') {
+    const s = SPINEL_BODY.pos
+    return {
+      pos: new THREE.Vector3(s.x + 2.4, s.y + 1.5, s.z + 5.2),
+      look: s.clone(),
+    }
+  }
+  if (phase === 'case-fringe') {
+    return {
+      pos: FRINGE_CENTER.clone()
+        .add(FRINGE_OUT.clone().multiplyScalar(9.5))
+        .add(new THREE.Vector3(0, 3.4, 0)),
+      look: FRINGE_CENTER.clone(),
+    }
+  }
+  if (phase === 'beyond' || phase === 'thanks') {
+    return {
+      pos: FRINGE_CENTER.clone()
+        .add(FRINGE_OUT.clone().multiplyScalar(17))
+        .add(new THREE.Vector3(0, 5.2, 0)),
+      look: FRINGE_CENTER.clone()
+        .add(FRINGE_OUT.clone().multiplyScalar(34))
+        .add(new THREE.Vector3(0, 1.5, 0)),
     }
   }
   if (phase === 'reveal') {
@@ -1191,6 +1382,9 @@ function camEaseSec(from: Phase, to: Phase) {
   }
   if ((from === 'reveal' && to === 'sky') || (from === 'cabinets' && to === 'reveal')) {
     return REVEAL_CAM_EASE_SEC
+  }
+  if (closeSkyPhase(from) || closeSkyPhase(to)) {
+    return 2.9
   }
   return CAM_EASE_SEC
 }
@@ -1232,9 +1426,30 @@ function CameraRig({
   const easeDur = useRef(CAM_EASE_SEC)
   const revealEnter = useRef(false)
   const walkActive = useRef(false)
+  const booted = useRef(false)
 
   useFrame((_, dt) => {
     const persp = camera as THREE.PerspectiveCamera
+
+    if (!booted.current) {
+      booted.current = true
+      if (closeSkyPhase(phase)) {
+        const g = goalForPhase(phase, skyYaw.current)
+        camera.position.copy(g.pos)
+        look.current.copy(g.look)
+        fromPos.current.copy(g.pos)
+        fromLook.current.copy(g.look)
+        toPos.current.copy(g.pos)
+        toLook.current.copy(g.look)
+        progress.current = 1
+        prevPhase.current = phase
+        camera.up.copy(WORLD_UP)
+        camera.lookAt(look.current)
+        settled.current = true
+        onSettle?.(true)
+        return
+      }
+    }
 
     if (!scripted) {
       if (phase === 'sky') look.current.set(0, 0.2, 0)
@@ -1414,10 +1629,10 @@ function CameraRig({
           onSettle?.(true)
         }
       }
-    } else if (!focus && phase === 'sky' && progress.current >= 1) {
+    } else if (!focus && (phase === 'sky' || phase === 'return') && progress.current >= 1) {
       hallWalkActive = false
       if (!reduced) skyYaw.current -= dt * SKY_SPIN_RAD_PER_SEC
-      const g = goalForPhase('sky', skyYaw.current)
+      const g = goalForPhase(phase === 'return' ? 'return' : 'sky', skyYaw.current)
       toPos.current.copy(g.pos)
       toLook.current.copy(g.look)
       camera.position.lerp(toPos.current, 1 - Math.exp(-1.6 * dt))
@@ -1428,9 +1643,9 @@ function CameraRig({
       }
     } else if (progress.current < 1) {
       hallWalkActive = phase === 'instrument'
-      if (!focus && phase === 'sky' && !reduced) {
+      if (!focus && (phase === 'sky' || phase === 'return') && !reduced) {
         skyYaw.current -= dt * SKY_SPIN_RAD_PER_SEC
-        const g = goalForPhase('sky', skyYaw.current)
+        const g = goalForPhase(phase === 'return' ? 'return' : 'sky', skyYaw.current)
         toPos.current.copy(g.pos)
         toLook.current.copy(g.look)
       }
@@ -1492,11 +1707,16 @@ function Atmosphere({ phase, reduced }: { phase: Phase; reduced: boolean }) {
       COL_FOG.copy(COL_FOG_HALL)
       near = 22
       far = 55
+    } else if (phase === 'beyond' || phase === 'thanks') {
+      COL_BG.copy(COL_SKY)
+      COL_FOG.copy(COL_SKY)
+      near = 18
+      far = 95
     } else {
       COL_BG.copy(COL_SKY)
       COL_FOG.copy(COL_SKY)
       near = 14
-      far = 44
+      far = closeSkyPhase(phase) ? 55 : 44
     }
 
     scene.background = COL_BG
@@ -1530,6 +1750,8 @@ function Scene({
   const canOrbit = phase === 'sky' || phase === 'peers'
   const orbit = active && canOrbit && !focusId && !reduced && camSettled
   const scripted = !orbit
+  const litIds = litIdsForPhase(phase)
+  const dimField = litIds != null
 
   useEffect(() => {
     setCamSettled(reduced)
@@ -1563,8 +1785,17 @@ function Scene({
           distance={16}
         />
       )}
+      {(phase === 'case-fringe' || phase === 'beyond' || phase === 'thanks') && (
+        <pointLight
+          position={FRINGE_CENTER.toArray()}
+          intensity={phase === 'case-fringe' ? 1.6 : 0.85}
+          color="#7ec4a8"
+          distance={22}
+        />
+      )}
 
       {skyVisiblePhase(phase) && <SkyStars phase={phase} reduced={reduced} />}
+      <DistantGalaxies phase={phase} reduced={reduced} />
 
       <CameraRig
         phase={phase}
@@ -1585,6 +1816,8 @@ function Scene({
               phase={phase}
               focused={focusId === body.id}
               reduced={reduced}
+              lit={Boolean(litIds?.has(body.id))}
+              dimField={dimField}
               onSelect={(id) => setFocusId(focusId === id ? null : id)}
             />
           ))}
@@ -1671,10 +1904,12 @@ export function MineralConstellation({ active, label }: { active: boolean; label
       <Canvas
         dpr={STRUCTURE_DPR}
         camera={{
-          position: [HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35],
+          position: closeSkyPhase(phase)
+            ? goalForPhase(phase, Math.atan2(-9.6, 10.8)).pos.toArray()
+            : [HERO.pos.x + 0.2, HERO.pos.y + 0.42, HERO.pos.z + 2.35],
           fov: 42,
           near: 0.05,
-          far: 120,
+          far: 220,
         }}
         gl={STRUCTURE_GL_OPAQUE}
         style={{ width: '100%', height: '100%' }}

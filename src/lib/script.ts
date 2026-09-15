@@ -8,8 +8,7 @@ const CHAPTER_HEAD: Record<ChapterId, string> = {
   spinel: '01  Spinel → DLE',
   lokelma: '02  Convergent pores',
   rowleyite: '03  Rowleyite',
-  pipeline: '04  Pipeline',
-  close: '05  Ask',
+  close: '04  Ask',
 }
 
 export interface ScriptBeat {
@@ -158,7 +157,7 @@ function motifLine(slide: Slide): string | undefined {
     return 'Motif: porosity voids — bigger glow means more empty; rowleyite as the luminous hole'
   }
   if (slide.motif === 'mineral-constellation') {
-    return 'Motif: mineral constellation — perovskite → sky → drawer reveal → cabinets'
+    return 'Motif: mineral constellation — open sky → drawer · close bookend → fringe → galaxies'
   }
   if (slide.motif === 'crystal-viewer') {
     return 'Motif: ZS-9 structure from CIF — 7MR windows and exchange'
@@ -334,7 +333,17 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
                       ? 'Motif: collection hall — re-center on glowing drawer; next sorbent'
                       : beat?.id === 'dive'
                         ? 'Motif: dive into the drawer light — soul of the museum into Act I'
-                        : 'Motif: mineral night-sky constellation',
+                        : beat?.id === 'return'
+                          ? 'Motif: constellation bookend — same sky after three cases'
+                          : beat?.id === 'spinel'
+                            ? 'Motif: constellation — spinel lit in the known interior (λ-MnO₂ / DLE)'
+                            : beat?.id === 'fringe'
+                              ? 'Motif: constellation — Lokelma teachers + rowleyite on the fringe'
+                              : beat?.id === 'beyond'
+                                ? 'Motif: look past the fringe — distant galaxies of unfinished topologies'
+                                : beat?.id === 'thanks'
+                                  ? 'Motif: hold beyond the edge — thank you'
+                                  : 'Motif: mineral night-sky constellation',
         )
       }
     }

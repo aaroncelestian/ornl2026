@@ -30,7 +30,7 @@ export type MotifKind =
   | 'lmo-spinel'
   | 'mineral-constellation'
 
-export type ChapterId = 'open' | 'spinel' | 'lokelma' | 'rowleyite' | 'pipeline' | 'close'
+export type ChapterId = 'open' | 'spinel' | 'lokelma' | 'rowleyite' | 'close'
 
 export type CameraKind =
   | 'push'
@@ -189,8 +189,7 @@ export const CHAPTERS: { id: ChapterId; num: string; title: string }[] = [
   { id: 'spinel', num: '01', title: 'Spinel → DLE' },
   { id: 'lokelma', num: '02', title: 'Convergent pores' },
   { id: 'rowleyite', num: '03', title: 'Rowleyite' },
-  { id: 'pipeline', num: '04', title: 'Pipeline' },
-  { id: 'close', num: '05', title: 'Ask' },
+  { id: 'close', num: '04', title: 'Ask' },
 ]
 
 export const slides: Slide[] = [
@@ -736,106 +735,67 @@ export const slides: Slide[] = [
     ],
   },
 
-  // ── 04 Pipeline ───────────────────────────────────────
+  // ── Close — constellation bookend ─────────────────────
   {
-    id: 'act-pipeline',
-    label: 'Act IV',
-    chapter: 'pipeline',
-    layout: 'divider',
-    ghostNum: '04',
-    title: 'One discovery pipeline.',
-    notes:
-      'Close the argument. What a curated collection concretely offers outside research groups — and how museum collections plus national-lab characterization already operate as a single materials-discovery loop.',
-  },
-  {
-    id: 'pattern',
-    label: 'The pattern',
-    chapter: 'pipeline',
-    layout: 'void',
-    camera: 'drift',
-    title: 'Geometry from nature.\nMechanism in the lab.\nSynthesis for deployment.',
-    exitHold: 1.5,
-    enterBlack: true,
-    copySnap: true,
-    notes:
-      'Say it plainly. Natural specimen → mechanism characterization → engineered or synthetic form that regulators and engineers can trust. Spinel (J. Raman 2026). Lokelma (PLoS ONE 2024). Rowleyite (Am. Mineral. 2017). Same sentence three times.',
-  },
-  {
-    id: 'offers',
-    label: 'What collections offer',
-    chapter: 'pipeline',
-    layout: 'litany',
-    kicker: 'Outside the research group',
-    bullets: [
-      'Topologies that are slow and expensive to invent from scratch',
-      'Provenance as experimental metadata — locality, paragenesis, series',
-      'A prior for Materials Genome searches — not blank composition space',
-    ],
-    notes:
-      'Practical offer to a national lab: a topology library with metadata. Comparative series beat one-off curiosities. Provenance is reproducibility for geology.',
-  },
-  {
-    id: 'working',
-    label: 'Working model',
-    chapter: 'pipeline',
+    id: 'sky-close',
+    label: 'Ask',
+    chapter: 'close',
     layout: 'stage',
     clearPlate: true,
     camera: 'hold',
-    image: {
-      src: asset('images/spinel.jpg'),
-      alt: 'Spinel octahedron',
-      fit: 'contain',
-    },
-    kicker: 'Already running',
-    title: 'The measurement loop\nis already closed.',
-    subtitle: 'Collections name the geometry. ORNL finishes the mechanism.',
-    notes:
-      'DOE AMO DE-EE0009442 already couples museum-informed geometric priors to national-lab synthesis and characterization — Raman, diffraction, XPS on LMO; synchrotron XRD + Raman on CZS at APS 17-BM; neutron follow-ups for H sites in zirconium silicates. R&D 100 with ORNL and Element3 is the public receipt. Collections as blueprints; labs as builders and validators.',
-  },
-  {
-    id: 'next',
-    label: 'What to try next',
-    chapter: 'pipeline',
-    layout: 'litany',
-    kicker: 'For this room',
-    bullets: [
-      'Operando Raman/XRD under real brine — avoid full-load Mn loss',
-      'Neutron / PDF on CZS hydroxyl networks',
-      'Screen collection frameworks against critical-ion maps',
-      'SIS analogs of rowleyite cages with release specs',
+    enterBlack: true,
+    layers: [
+      {
+        id: 'sky',
+        kind: 'motif',
+        motif: 'mineral-constellation',
+        alt: 'Return to the mineral constellation — three cases lit, fringe beyond into more galaxies',
+      },
+    ],
+    scene: [
+      {
+        id: 'return',
+        label: 'Same sky',
+        title: 'Same sky.',
+        layers: ['sky'],
+        notes:
+          'Bookend. We opened in this sky — minerals already underwriting advanced materials. Three cases later, the map means something. No bullet recap. Let the room see the field again.',
+      },
+      {
+        id: 'spinel',
+        label: 'Spinel',
+        title: 'Spinel → λ-MnO₂.',
+        layers: ['sky'],
+        notes:
+          'Interior of the known sky. Geometry we already walked — interstitial sites as a design brief; DLE as the engineered rebuild. One bright point among peers that industry already speaks.',
+      },
+      {
+        id: 'fringe',
+        label: 'Fringe',
+        title: 'We walked\nthe fringe.',
+        layers: ['sky'],
+        notes:
+          'Camera to the rim. Zirconosilicate teachers — sitinakite, georgechaoite, umbite, zorite — that became Lokelma under pharmaceutical control. Rowleyite — cage scaffold still unfinished. These are edge cases of the collection→materials idea, not the center of the catalog.',
+      },
+      {
+        id: 'beyond',
+        label: 'Beyond',
+        title: 'Unfinished problems\nalready crystallized.',
+        layers: ['sky'],
+        notes:
+          'Look past the edge. More galaxies — topologies the collection still holds that need mechanism work. Instruments finish the sentence; they do not invent the geometry from nothing. Concrete asks for this room live in conversation: operando brine on LMO, neutrons on CZS hydroxyls, synthetic rowleyite analogs with release specs.',
+      },
+      {
+        id: 'thanks',
+        label: 'Thanks',
+        kicker: 'Aaron Celestian · NHMLAC Mineral Sciences',
+        title: 'What the collection\nalready knows.',
+        layers: ['sky'],
+        notes:
+          'Thank you. Happy to talk museum science — spinel operando work, zirconium silicate neutrons, rowleyite analogs, or querying the collection against a selectivity target. aaroncelestian.github.io/MineralSciences',
+      },
     ],
     notes:
-      'Concrete next steps from the papers. LMO: partial-load cycling. Lokelma: neutron for the H/OH network. Rowleyite: salt-templated POV synthesis, then release kinetics. Shared workflow from structure to deployable media.',
-  },
-
-  // ── Close ─────────────────────────────────────────────
-  {
-    id: 'bet',
-    label: 'The bet',
-    chapter: 'close',
-    layout: 'void',
-    camera: 'drift',
-    title: 'Unfinished problems\nalready crystallized.',
-    exitHold: 1.5,
-    enterBlack: true,
-    copySnap: true,
-    notes:
-      'Collections hold geometries that still need mechanism work. Instruments finish the sentence — they do not invent the topology from nothing.',
-  },
-  {
-    id: 'close',
-    label: 'Close',
-    chapter: 'close',
-    layout: 'bleed',
-    camera: 'pull',
-    image: {
-      src: asset('images/spinel.jpg'),
-      alt: 'Spinel octahedron',
-      fit: 'contain',
-    },
-    kicker: 'Aaron Celestian · NHMLAC Mineral Sciences',
-    title: 'What the collection\nalready knows.',
-    notes:
-      'Thank you. Happy to talk the museum science — spinel operando work, zirconium silicate neutrons, rowleyite analogs, or querying the collection against a selectivity target. aaroncelestian.github.io/MineralSciences',
+      'Constellation bookend: same sky → spinel interior → Lokelma teachers + rowleyite on the fringe → galaxies beyond → thank you.',
   },
 ]

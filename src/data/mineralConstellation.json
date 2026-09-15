@@ -577,13 +577,15 @@
       "id": "spinel",
       "name": "Spinel",
       "apps": [
-        "Refractories",
-        "Gem optics"
+        "λ-MnO₂ DLE",
+        "Interstitial Li"
       ],
-      "domain": "optics",
-      "tier": "field",
-      "x": 705.9,
-      "y": 40
+      "domain": "energy",
+      "tier": "peer",
+      "named": 1557,
+      "afterlife": "λ-MnO₂ · DLE · 2024",
+      "x": 448,
+      "y": 372
     },
     {
       "id": "chromite",
@@ -1089,8 +1091,9 @@
       ],
       "domain": "sieves",
       "tier": "field",
-      "x": 102.1,
-      "y": 40
+      "afterlife": "Lokelma lineage",
+      "x": 918,
+      "y": 548
     },
     {
       "id": "sitinakite",
@@ -1100,8 +1103,9 @@
       ],
       "domain": "sieves",
       "tier": "field",
-      "x": 960,
-      "y": 422.4
+      "afterlife": "→ Lokelma class",
+      "x": 955,
+      "y": 510
     },
     {
       "id": "zorite",
@@ -1111,8 +1115,9 @@
       ],
       "domain": "sieves",
       "tier": "field",
-      "x": 40,
-      "y": 523.3
+      "afterlife": "Lokelma lineage",
+      "x": 880,
+      "y": 575
     },
     {
       "id": "georgechaoite",
@@ -1122,8 +1127,9 @@
       ],
       "domain": "sieves",
       "tier": "field",
-      "x": 610.8,
-      "y": 40
+      "afterlife": "Lokelma lineage",
+      "x": 940,
+      "y": 560
     },
     {
       "id": "rowleyite",
@@ -1133,8 +1139,10 @@
       ],
       "domain": "medicine",
       "tier": "field",
-      "x": 646.9,
-      "y": 560
+      "named": 2017,
+      "afterlife": "Cage scaffold · unfinished",
+      "x": 990,
+      "y": 545
     },
     {
       "id": "vanadinite",
