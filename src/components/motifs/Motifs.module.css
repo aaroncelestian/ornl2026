@@ -46,7 +46,7 @@
 .timeScrubLabel {
   margin-bottom: 4px;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 15px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-text) 52%, transparent);
@@ -80,7 +80,7 @@
   position: absolute;
   transform: translateX(-50%);
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 14px;
   color: color-mix(in srgb, var(--color-text) 48%, transparent);
 }
 
@@ -89,7 +89,7 @@
   right: 14px;
   top: 0;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 16px;
   letter-spacing: 0.04em;
   color: color-mix(in srgb, var(--color-text) 72%, transparent);
 }
@@ -342,13 +342,13 @@
 .plotTick {
   fill: color-mix(in srgb, var(--color-text) 48%, transparent);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 17px;
 }
 
 .plotAxis {
   fill: color-mix(in srgb, var(--color-text) 42%, transparent);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 16px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -356,21 +356,21 @@
 .plotAnnotate {
   fill: color-mix(in srgb, var(--color-text) 78%, transparent);
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 500;
 }
 
 .plotHiLabel {
   fill: var(--color-text);
   font-family: var(--font-heading);
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 600;
 }
 
 .plotHiSub {
   fill: color-mix(in srgb, var(--color-text) 58%, transparent);
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .a1gVibe {

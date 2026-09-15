@@ -325,7 +325,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
               </div>
             </div>
             <svg viewBox={`0 0 300 ${liveVbH}`} className={styles.liveRaman} aria-hidden>
-              <text x="18" y="18" className={styles.plotAnnotate} fontSize={14} fill="currentColor">
+              <text x="18" y="20" className={styles.plotAnnotate} fontSize={18} fill="currentColor">
                 {alMode ? 'Raman · A₁g holds' : 'Raman · live'}
               </text>
               <line x1="18" y1={liveBaseY} x2="282" y2={liveBaseY} stroke={C_AXIS} />
@@ -345,16 +345,16 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                     y={40}
                     textAnchor="middle"
                     fill={BAND_COLOR[b.kind]}
-                    fontSize={12}
+                    fontSize={16}
                   >
                     {b.label}
                   </text>
                 </g>
               ))}
-              <text x="18" y={liveVbH - 6} className={styles.plotTick} fontSize={11} fill="currentColor">
+              <text x="18" y={liveVbH - 6} className={styles.plotTick} fontSize={14} fill="currentColor">
                 540
               </text>
-              <text x="268" y={liveVbH - 6} className={styles.plotTick} fontSize={11} fill="currentColor">
+              <text x="268" y={liveVbH - 6} className={styles.plotTick} fontSize={14} fill="currentColor">
                 700
               </text>
             </svg>
@@ -396,7 +396,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
 
         {storyMode && (
           <g opacity={active ? 1 : 0.45}>
-            <text x={148} y={118} textAnchor="middle" className={styles.plotAnnotate} fontSize={15}>
+            <text x={148} y={118} textAnchor="middle" className={styles.plotAnnotate} fontSize={20}>
               {stateLabel}
             </text>
             <text x={148} y={140} textAnchor="middle" className={styles.plotTick}>
@@ -464,7 +464,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 y={PAD.t + 18}
                 textAnchor="end"
                 className={styles.plotHiLabel}
-                fontSize={22}
+                fontSize={28}
                 fill={C_XRD}
               >
                 good
@@ -505,7 +505,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 y={PAD.t + 18}
                 textAnchor="end"
                 className={styles.plotHiLabel}
-                fontSize={22}
+                fontSize={28}
                 fill={phase === 'h-ex' ? C_GONE : C_RAMAN}
               >
                 {phase === 'h-ex' ? 'gone' : 'good'}
@@ -560,7 +560,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                       y={syA(onCurve) + (nearEnd ? 16 : -10)}
                       textAnchor={nearEnd ? 'end' : 'start'}
                       className={styles.plotAnnotate}
-                      fontSize={12}
+                      fontSize={16}
                     >
                       {mk.label}
                     </text>
@@ -571,9 +571,9 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 <g pointerEvents="none">
                   <line x1={cursor.x} y1={aTop} x2={cursor.x} y2={aBot} stroke={C_PEAK} strokeOpacity={0.35} />
                   <circle cx={cursor.x} cy={cursor.y} r={6} fill={C_PEAK} />
-                  <text x={cursor.x + 10} y={cursor.y - 10} className={styles.plotHiLabel} fontSize={18}>
+                  <text x={cursor.x + 10} y={cursor.y - 10} className={styles.plotHiLabel} fontSize={24}>
                     {Math.round(liveW)}
-                    <tspan className={styles.plotTick} fontSize={11} dx={3}>
+                    <tspan className={styles.plotTick} fontSize={15} dx={3}>
                       cm⁻¹
                     </tspan>
                   </text>
@@ -619,7 +619,7 @@ export function RamanExchange({ active, label }: { active: boolean; label?: stri
                 <g pointerEvents="none">
                   <line x1={cursorF.x} y1={fTop} x2={cursorF.x} y2={fBot} stroke={C_FWHM} strokeOpacity={0.35} />
                   <circle cx={cursorF.x} cy={cursorF.y} r={5} fill={C_FWHM} />
-                  <text x={cursorF.x + 10} y={cursorF.y - 8} className={styles.plotAnnotate} fontSize={14}>
+                  <text x={cursorF.x + 10} y={cursorF.y - 8} className={styles.plotAnnotate} fontSize={18}>
                     {Math.round(liveFwhm)} cm⁻¹
                   </text>
                 </g>

@@ -156,6 +156,16 @@ function outwardLabel(
   ion: PlacedIon,
   distance: number,
 ): { x: number; y: number; anchor: 'start' | 'middle' | 'end' } {
+  // Ca sits between Mg and Li — radial outward lands on Li; pin to shell top-right.
+  if (ion.id === 'Ca') {
+    const a = -Math.PI / 4
+    return {
+      x: Math.min(VIEW_W - 12, ion.x + Math.cos(a) * (ion.rHyd + distance)),
+      y: Math.max(18, ion.y + Math.sin(a) * (ion.rHyd + distance)),
+      anchor: 'start',
+    }
+  }
+
   const dx = ion.x - CX
   const dy = ion.y - CY
   const len = Math.hypot(dx, dy) || 1
@@ -244,8 +254,7 @@ export function PoreGate({ active, label }: { active: boolean; label?: string })
           const waters = Array.from({ length: ion.waters }, (_, wi) => {
             return -Math.PI / 2 + (wi / ion.waters) * Math.PI * 2
           })
-          const energy = outwardLabel(ion, ion.id === 'Li' ? 30 : 15)
-          const hydSize = ion.id === 'Li' ? outwardLabel(ion, 14) : null
+          const energy = outwardLabel(ion, 15)
           return (
             <motion.g
               key={ion.id}
@@ -286,16 +295,6 @@ export function PoreGate({ active, label }: { active: boolean; label?: string })
               >
                 {ion.label}
               </text>
-              {hydSize && (
-                <text
-                  x={hydSize.x}
-                  y={hydSize.y}
-                  textAnchor={hydSize.anchor}
-                  className={styles.theaterCallout}
-                >
-                  {ion.hydrated.toFixed(2)} Å hyd
-                </text>
-              )}
               <text
                 x={energy.x}
                 y={energy.y}

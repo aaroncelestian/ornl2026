@@ -223,7 +223,7 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
           <text x={sx(0.9)} y={sy(4.2)} className={styles.plotAnnotate}>
             {data.highlight.label}
           </text>
-          <text x={sx(0.9)} y={sy(4.2) + 18} className={styles.plotTick}>
+          <text x={sx(0.9)} y={sy(4.2) + 24} className={styles.plotTick}>
             {data.highlight.subtitle}
           </text>
         </motion.g>
@@ -234,8 +234,8 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
             const y = sy(interp(data.radii, data.highlight.vals, ion.r))
             const x = sx(ion.r)
             const side = ion.id === 'Mg' || ion.id === 'Ca' ? -1 : 1
-            const labelX = x + side * 14
-            const labelY = y - 12 - (i % 2) * 14
+            const labelX = x + side * 16
+            const labelY = y - 14 - (i % 2) * 18
             return (
               <motion.g
                 key={ion.id}
@@ -263,7 +263,7 @@ export function SelectivityPlume({ active, label }: { active: boolean; label?: s
                 {ion.id === 'Mg' && (
                   <text
                     x={labelX}
-                    y={labelY + 14}
+                    y={labelY + 20}
                     textAnchor={side < 0 ? 'end' : 'start'}
                     className={styles.plotTick}
                   >
