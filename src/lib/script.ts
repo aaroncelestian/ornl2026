@@ -276,8 +276,8 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
       if (layer?.kind === 'motif' && layer.motif === 'void-fit') {
         lines.push(
           beat?.id === 'scaffold'
-            ? 'Motif: delivery as reverse exchange — load → hold → trigger → release'
-            : 'Motif: hydration → acid cue → V open → dual delivery for the rowleyite cage',
+            ? 'Motif: animated reverse exchange — load → hold → trigger → release'
+            : 'Motif: animated acid open — hydration → acid cue → V open → dual delivery',
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-lineage') {
