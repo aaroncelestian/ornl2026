@@ -1,6 +1,6 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Html, OrbitControls, Stars } from '@react-three/drei'
+import { Edges, Html, OrbitControls, Stars } from '@react-three/drei'
 import * as THREE from 'three'
 import { usePrefersReducedMotion } from '../../hooks/useActiveSlide'
 import { useScene } from '../../hooks/useSceneBeats'
@@ -234,6 +234,7 @@ function CrystalMesh({
       <mesh>
         <boxGeometry args={[1, 1, 1]} />
         {material}
+        <Edges color="#f3e2b8" threshold={15} lineWidth={1.35} />
       </mesh>
     )
   }
