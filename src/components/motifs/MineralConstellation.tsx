@@ -494,20 +494,38 @@ function MineralBody({
     nesting ||
     (inSky && (focused || lit || isHero || isPeer || phase === 'sky' || close))
 
-  const scaleMul = focused ? 1.35 : lit ? 1.28 : dimField && !lit ? 0.82 : 1
-  const emissive = focused
-    ? 0.95
-    : lit
-      ? phase === 'beyond' || phase === 'thanks'
-        ? 0.55
-        : 1.05
-      : dimField
-        ? 0.06
-        : isHero
-          ? 0.7
-          : isPeer
-            ? 0.55
-            : 0.28
+  const scaleMul = nesting
+    ? isHero
+      ? 1.9
+      : isPeer
+        ? 2.25
+        : 2.8
+    : focused
+      ? 1.35
+      : lit
+        ? 1.28
+        : dimField && !lit
+          ? 0.82
+          : 1
+  const emissive = nesting
+    ? isHero
+      ? 1.45
+      : isPeer
+        ? 1.25
+        : 0.95
+    : focused
+      ? 0.95
+      : lit
+        ? phase === 'beyond' || phase === 'thanks'
+          ? 0.55
+          : 1.05
+        : dimField
+          ? 0.06
+          : isHero
+            ? 0.7
+            : isPeer
+              ? 0.55
+              : 0.28
 
   useFrame((_, dt) => {
     if (!root.current || reduced || !visible) return
@@ -851,7 +869,14 @@ function Drawer({
 
     if (fillRef.current) fillRef.current.visible = opened
     if (glowMat.current) {
-      glowMat.current.opacity = (highlight ? 0.28 : 0.12) * Math.min(1.4, glow) * amt
+      let glowOp = (highlight ? 0.28 : 0.12) * Math.min(1.4, glow) * amt
+      if (spill) {
+        // Soften tray wash while the nested constellation is still the subject
+        const b = reduced ? 1 : revealBlend
+        const washIn = THREE.MathUtils.smoothstep(b, REVEAL_NEST_HOLD * 0.9, 1)
+        glowOp *= THREE.MathUtils.lerp(0.28, 1, washIn)
+      }
+      glowMat.current.opacity = glowOp
     }
     // Walk drawers: no PointLights — emissive tray + plane only (instrument fps)
     if (hiLightA.current) {
@@ -859,11 +884,23 @@ function Drawer({
       hiLightA.current.visible = featureFill && opened
     }
     if (hiLightB.current) {
-      hiLightB.current.intensity = featureFill && opened ? (emptyGlow ? 3.6 : 2.4) * glow * amt : 0
+      let hiB = featureFill && opened ? (emptyGlow ? 3.6 : 2.4) * glow * amt : 0
+      if (spill && hiB > 0) {
+        const b = reduced ? 1 : revealBlend
+        const washIn = THREE.MathUtils.smoothstep(b, REVEAL_NEST_HOLD * 0.9, 1)
+        hiB *= THREE.MathUtils.lerp(0.55, 1, washIn)
+      }
+      hiLightB.current.intensity = hiB
       hiLightB.current.visible = featureFill && opened
     }
     if (hiLightC.current) {
-      hiLightC.current.intensity = emptyGlow && opened ? 4.2 * amt : 0
+      let hiC = emptyGlow && opened ? 4.2 * amt : 0
+      if (spill && hiC > 0) {
+        const b = reduced ? 1 : revealBlend
+        const washIn = THREE.MathUtils.smoothstep(b, REVEAL_NEST_HOLD * 0.9, 1)
+        hiC *= THREE.MathUtils.lerp(0.45, 1, washIn)
+      }
+      hiLightC.current.intensity = hiC
       hiLightC.current.visible = emptyGlow && opened
     }
     if (surgeLight.current) {
@@ -1052,9 +1089,9 @@ const DIVE_MOUTH = backWallDrawerMouth(DIVE_CABINET, DIVE_DRAWER)
  * Mid-reveal: looking down into the already-open tray so the nested constellation reads as drawer light.
  * Camera arrives here as the sky finishes nesting — drawer must already be open.
  */
-const SKY_NEST = new THREE.Vector3(ENTRY_MOUTH.x, ENTRY_MOUTH.y + 0.06, ENTRY_MOUTH.z - 0.48)
-/** Tray is ~2.1 × 0.88; keep nested disc inside the drawer lip. */
-const SKY_NEST_SCALE = 0.028
+const SKY_NEST = new THREE.Vector3(ENTRY_MOUTH.x, ENTRY_MOUTH.y + 0.1, ENTRY_MOUTH.z - 0.48)
+/** Tray is ~2.1 × 0.88; size so individual crystals still read as a disc of points. */
+const SKY_NEST_SCALE = 0.052
 const REVEAL_OVER = {
   pos: new THREE.Vector3(ENTRY_MOUTH.x + 0.02, ENTRY_MOUTH.y + 2.65, ENTRY_MOUTH.z + 0.95),
   look: SKY_NEST.clone(),
@@ -1098,6 +1135,8 @@ let hallWalkActive = false
 const REVEAL_ENTER_SEC = 5.4
 /** 0→this: shrink sky into tray + camera to overhead open-drawer view. */
 const REVEAL_NEST_FRAC = 0.48
+/** Hold nest scale into the pullback so the disc of crystals stays readable. */
+const REVEAL_NEST_HOLD = 0.64
 
 /**
  * Shared 0–1 progress for sky→reveal (nest → drawer pull-back).
@@ -1165,9 +1204,14 @@ function ConstellationSky({
         ref.current.position.lerpVectors(SKY_ORIGIN, SKY_NEST, e)
         ref.current.scale.setScalar(THREE.MathUtils.lerp(1, SKY_NEST_SCALE, e))
         ref.current.visible = true
+      } else if (b <= REVEAL_NEST_HOLD) {
+        // Hold at nest size while the camera starts the pull-out — crystals stay readable
+        ref.current.position.copy(SKY_NEST)
+        ref.current.scale.setScalar(SKY_NEST_SCALE)
+        ref.current.visible = true
       } else {
-        // Pull-out: constellation becomes tray spark, then yields to empty glow
-        const e = easeInOutCubic((b - REVEAL_NEST_FRAC) / (1 - REVEAL_NEST_FRAC))
+        // Late pull-out: constellation becomes tray spark, then yields to empty glow
+        const e = easeInOutCubic((b - REVEAL_NEST_HOLD) / (1 - REVEAL_NEST_HOLD))
         ref.current.position.copy(SKY_NEST)
         const s = THREE.MathUtils.lerp(SKY_NEST_SCALE, 0.001, e)
         ref.current.scale.setScalar(Math.max(0.001, s))
