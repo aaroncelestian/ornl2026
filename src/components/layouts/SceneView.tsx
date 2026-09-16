@@ -153,7 +153,15 @@ function beatForSlide(slide: Slide, live?: SceneBeat) {
   return live && slide.scene?.includes(live) ? live : undefined
 }
 
-export function SceneView({ slide, active }: { slide: Slide; active: boolean }) {
+export function SceneView({
+  slide,
+  active,
+  copyActive = true,
+}: {
+  slide: Slide
+  active: boolean
+  copyActive?: boolean
+}) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
   const liveBeat = beatForSlide(slide, scene.beat)
@@ -169,9 +177,12 @@ export function SceneView({ slide, active }: { slide: Slide; active: boolean }) 
   const marks = layers.flatMap((layer) => layer.marks ?? [])
   const callouts = beat?.callouts ?? []
   const videoHolds = layers.some((layer) => layer.holds?.length || layer.scaleBar)
+  const showCopy =
+    copyActive &&
+    Boolean(beat?.kicker || beat?.title || beat?.subtitle || beat?.bullets?.length)
   const copy = (
     <AnimatePresence mode="wait">
-      {(beat?.kicker || beat?.title || beat?.subtitle || beat?.bullets?.length) && (
+      {showCopy && (
         <motion.div
           key={beat?.id ?? 'copy'}
           className={hasPlate ? styles.stageCopy : styles.voidInner}
