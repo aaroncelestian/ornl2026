@@ -211,7 +211,7 @@ export const slides: Slide[] = [
     yaw: 1,
     exitHold: 1,
     notes:
-      'Museum collections as blueprints for engineered materials. Not display cases. Not nostalgia. A searchable library of framework topologies whose selectivity had to be rediscovered under synthetic control before it became deployable.',
+      'Museum collections are blueprints for engineered materials — not display cases, not nostalgia. They are a searchable library of framework topologies whose selectivity had to be rediscovered under synthetic control before it became deployable.',
   },
   {
     id: 'open-zoom',
@@ -237,7 +237,7 @@ export const slides: Slide[] = [
         subtitle: 'Solar cells · 2009',
         layers: ['sky'],
         notes:
-          'Start here — every physicist in the room already speaks this name. Gustav Rose, 1839, Urals, named for Lev Perovski. Halide perovskite solar cells from 2009 (Kojima). The mineralogist named the architecture. Industry showed up speaking the name as if it were a materials term. Hold the close-up, then pull.',
+          'Every physicist in the room already speaks this name. Gustav Rose, 1839, Urals, named the mineral for Lev Perovski. Halide perovskite solar cells arrived in 2009 (Kojima). The mineralogist named the architecture; industry later spoke the name as if it were a materials term all along.',
       },
       {
         id: 'sky',
@@ -245,7 +245,7 @@ export const slides: Slide[] = [
         title: 'Minerals are in\nnearly everything.',
         layers: ['sky'],
         notes:
-          'Pull out into the full constellation. Names the room already uses show up first — zeolite → molecular sieves; olivine → LiFePO₄; fluorite → YSZ; garnet → YIG then LLZO; stibnite → thin-film PV — then a hundred more across energy, medicine, optics, sieves, electronics, structure. Tiny labels on purpose. Invite a click; Esc or empty click pulls back. Spinel waits for Act I.',
+          'The view opens into a full constellation. Familiar names appear first — zeolite → molecular sieves; olivine → LiFePO₄; fluorite → YSZ; garnet → YIG then LLZO; stibnite → thin-film PV — then a hundred more across energy, medicine, optics, sieves, electronics, and structure. Minerals are already in nearly everything. Spinel waits for Act I.',
       },
       {
         id: 'reveal',
@@ -253,7 +253,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'Constellation shrinks into the already-open glowing drawer while the camera zooms out onto it. Stars fade early (no scale-collapse). Then pull out of that drawer — not the full hall yet.',
+          'The constellation shrinks into one already-open glowing drawer. The stars fade before the scale can collapse. What looked like a sky of materials resolves into a single tray — not yet the full hall.',
       },
       {
         id: 'cabinets',
@@ -261,7 +261,7 @@ export const slides: Slide[] = [
         title: 'Not a warehouse.',
         layers: ['sky'],
         notes:
-          'Now pull further into the aisle / full room from that glowing empty tray. A wall of closed drawers beyond it. Cabinets. Specimens with provenance.',
+          'Further out: the aisle, the full room, that glowing empty tray. Beyond it, a wall of closed drawers. Cabinets. Specimens with provenance. Not a warehouse.',
       },
       {
         id: 'instrument',
@@ -269,7 +269,7 @@ export const slides: Slide[] = [
         title: '150,000 specimens.\nA materials library.',
         layers: ['sky'],
         notes:
-          'Walk the aisle from where we entered — rightward along the row. Drawers open and close as we pass. Stop at a different glowing drawer — looking in. Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented. Comparative depth is the point: when a channel geometry shows up in one place, ask whether related topologies elsewhere already solved a neighboring problem.',
+          'Along the aisle, drawers open and close as we pass, and another glowing drawer comes into view. Natural History Museum of Los Angeles County — more than 150,000 mineral specimens, provenance-documented. Comparative depth is the point: when a channel geometry shows up in one place, ask whether related topologies elsewhere already solved a neighboring problem.',
       },
       {
         id: 'turn',
@@ -277,19 +277,19 @@ export const slides: Slide[] = [
         title: 'The next sorbent\nis already in a drawer.',
         layers: ['sky'],
         notes:
-          'Hold on the glowing drawer — stop and look. The job is mechanism now, not vastness. One drawer holds a universe of topologies; we’re going into three of them: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017).',
+          'The job is mechanism now, not vastness. One drawer holds a universe of topologies; three of them carry this talk: spinel → λ-MnO₂ DLE (J. Raman 2026); zirconosilicate → Lokelma (PLoS ONE 2024); rowleyite cages → drug delivery (Am. Mineral. 2017). The next sorbent is already in a drawer.',
       },
       {
         id: 'dive',
         label: 'Dive',
         layers: ['sky'],
         notes:
-          'Pan up, then fall into the light — into the soul of the museum. Let the drawer take us into Act I.',
+          'The view rises, then falls into the light — into the soul of the museum. The drawer opens Act I.',
       },
     ],
     exitHold: 0.4,
     notes:
-      'Cinematic open: perovskite → constellation → one drawer reveal → cabinets → instrument → drawer dive into Act I.',
+      'The open is one continuous argument: perovskite, then a constellation of minerals already underwriting materials, then one drawer, then cabinets and the instrument of the collection — and a dive into Act I.',
   },
 
   // ── 01 Spinel → DLE ───────────────────────────────────
@@ -348,7 +348,7 @@ export const slides: Slide[] = [
         title: 'Not the mineral.\nThe structure.',
         layers: ['spinel'],
         notes:
-          'Look at this spinel. Nobody accessioned it as battery feedstock. Natural AB₂O₄ spinels already know how to host a small cation in tetrahedral interstices — selective, reversible, geometrically fussy. The engineered rebuild is Li₄Mn₅O₁₂ spinel (λ-MnO₂ after H⁺ priming). We take the structure, not the hand specimen, and put it under synthetic control.',
+          'Nobody accessioned this spinel as battery feedstock. Natural AB₂O₄ spinels already know how to host a small cation in tetrahedral interstices — selective, reversible, geometrically fussy. The engineered rebuild is Li₄Mn₅O₁₂ spinel (λ-MnO₂ after H⁺ priming). The structure is the product, not the hand specimen — and it goes under synthetic control.',
       },
       {
         id: 'lattice',
@@ -357,7 +357,7 @@ export const slides: Slide[] = [
         title: 'MnO₆ builds the cage.',
         layers: ['lmo'],
         notes:
-          'Real CIF: sixteen MnO₆ octahedra in the conventional cell. Edge- and face-sharing Mn octahedra make the spinel framework — the Mn₄O₄ cubane units whose A₁g stretch the Raman tracks. Drag to orbit.',
+          'From the real CIF: sixteen MnO₆ octahedra in the conventional cell. Edge- and face-sharing Mn octahedra make the spinel framework — the Mn₄O₄ cubane units whose A₁g stretch Raman spectroscopy tracks.',
       },
       {
         id: 'voids',
@@ -366,7 +366,7 @@ export const slides: Slide[] = [
         title: 'The voids are the product.',
         layers: ['lmo'],
         notes:
-          'Ball-and-stick Mn–O with the crystallographic 8a→16c→8a Li path as open tubes — no cubic shell on the cell faces. That tunnel geometry is the product.',
+          'Ball-and-stick Mn–O shows the crystallographic 8a→16c→8a Li path as open tubes — no cubic shell on the cell faces. That tunnel geometry is the product.',
       },
       {
         id: '8a',
@@ -375,21 +375,21 @@ export const slides: Slide[] = [
         title: 'H-Li Exchange',
         layers: ['lmo'],
         notes:
-          'One beat, two motions. Acid prime: protons enter the 8a→16c pores and sit on framework oxygen — the OH vector points into the tetrahedral 8a cavity. The cubane no longer breathes as one. Raman does not blank — A₁g goes broad (about 2× the Li-exchanged width) and walks ~20 cm⁻¹ down. Then Li lands in 8a first — stable, back-exchangeable, no Mn loss yet. A₁g walks ~20 cm⁻¹ back up and HWHM halves as each inbound Li pushes the priming H out the same channel.',
+          'Acid priming comes first: protons enter the 8a→16c pores and sit on framework oxygen — the OH vector points into the tetrahedral 8a cavity. The cubane no longer breathes as one. Raman does not blank — A₁g goes broad (about 2× the Li-exchanged width) and walks ~20 cm⁻¹ down. Then Li lands in 8a first — stable, back-exchangeable, no Mn loss yet. A₁g walks ~20 cm⁻¹ back up and HWHM halves as each inbound Li pushes the priming H out the same channel.',
       },
       {
         id: 'li-return',
         label: 'Li returns',
         layers: ['raman'],
         notes:
-          'Start H-form: cubane is there, A₁g is muted. First Li into 8a jumps A₁g 645→657 and narrows it — the cubane breathes again; back-exchangeable, no Mn loss yet. More Li forces the next step: Li into the cubane interior (8b). Local Oh breaks — four Mn–O environments are no longer equivalent — A₁g splits and F₂g turns on. That spectral rewrite is the same strain that ejects Mn. IC shows Mn leaching; after many full cycles there is less and less LMO. XRD can still look ordered while the lattice is dissolving from the cubane out.',
+          'In the H-form the cubane is still there, but A₁g is muted. The first Li into 8a jumps A₁g 645→657 and narrows it — the cubane breathes again; back-exchangeable, no Mn loss yet. More Li forces the next step: Li into the cubane interior (8b). Local Oh breaks — four Mn–O environments are no longer equivalent — A₁g splits and F₂g turns on. That spectral rewrite is the same strain that ejects Mn. Ion chromatography shows Mn leaching; after many full cycles there is less and less LMO. XRD can still look ordered while the lattice is dissolving from the cubane out.',
       },
       {
         id: 'al-doped',
         label: 'Al-doped',
         layers: ['raman'],
         notes:
-          'Same experiment, Al in the spinel — 0.1 wt% Al. Scrub hours of ion exchange — A₁g barely moves. No split, no F₂g surge. Aluminum blocks the cubane over-exchange site that undoped LMO overloads, so Mn stays put and the lattice holds. Partial load and Al doping are two ways to the same durability: do not open the dissolve step.',
+          'The same experiment with aluminum in the spinel — 0.1 wt% Al — tells a different story. After hours of ion exchange, A₁g barely moves. No split, no F₂g surge. Aluminum blocks the cubane over-exchange site that undoped LMO overloads, so Mn stays put and the lattice holds. Partial load and Al doping are two paths to the same durability: never open the dissolve step.',
       },
       {
         id: 'cloud',
@@ -398,7 +398,7 @@ export const slides: Slide[] = [
         title: 'Why spinel wins.\nWhy LiMn?',
         layers: ['plume'],
         notes:
-          'The question this plot answers. Spinel is not a brand preference — it is a geometry that can enforce three filters at once: interstitial size, charge density, and hydration-shell stripping. Among candidate sorbents, soft lattices fail that trio. Lithium manganese oxide — Li₄Mn₅O₁₂ / λ-MnO₂ — is the engineered answer because its tetrahedral 8a sites can host Li⁺ only after those filters fire.',
+          'This plot answers why spinel wins. It is not a brand preference — it is a geometry that can enforce three filters at once: interstitial size, charge density, and hydration-shell stripping. Among candidate sorbents, soft lattices fail that trio. Lithium manganese oxide — Li₄Mn₅O₁₂ / λ-MnO₂ — is the engineered answer because its tetrahedral 8a sites can host Li⁺ only after those filters fire.',
       },
       {
         id: 'gate',
@@ -407,7 +407,7 @@ export const slides: Slide[] = [
         title: 'Size alone\ndoes not pick Li.',
         layers: ['plume'],
         notes:
-          'Most porous materials — zeolites, MOFs, soft ion exchangers — open channels that admit Na⁺, Ca²⁺, Mg²⁺ as easily as lithium. Selectivity collapses. The cloud is noisy: soft peaks, weak discrimination. Watch the dashed mark at 0.76 Å — that is Li⁺’s Shannon radius, not a claim that radius matching is enough. Size is one filter. Charge and hydration stripping still have to work.',
+          'Most porous materials — zeolites, MOFs, soft ion exchangers — open channels that admit Na⁺, Ca²⁺, Mg²⁺ as easily as lithium. Selectivity collapses. The cloud is noisy: soft peaks, weak discrimination. The dashed mark at 0.76 Å is Li⁺’s Shannon radius — not a claim that radius matching is enough. Size is one filter. Charge and hydration stripping still have to work.',
       },
       {
         id: 'spinel-peak',
@@ -425,7 +425,7 @@ export const slides: Slide[] = [
         title: 'That trio leaves\nLi⁺ almost alone.',
         layers: ['plume'],
         notes:
-          'Same three filters against real brine competitors. Shannon ionic radii (CN=6, Abulafia / Shannon 1976 Ionic Radius column): Li⁺ 0.76 Å, Mg²⁺ 0.72, Na⁺ 1.02, Ca²⁺ 1.00, K⁺ 1.38. Yes — Mg²⁺ is slightly smaller than Li⁺; that is the table, not a typo. Crystal radii on that page are larger by ~0.14 Å but keep the same order. Size alone would let Mg in. Charge density and hydration-shell stripping are what reject it at the 8a gate. That is why a spinel can still pull Li out of desalination reject and geothermal brine — Na and Mg dominate the soup; size, charge, and desolvation decide who enters.',
+          'Those same three filters face real brine competitors. Shannon ionic radii (CN=6, Abulafia / Shannon 1976 Ionic Radius column): Li⁺ 0.76 Å, Mg²⁺ 0.72, Na⁺ 1.02, Ca²⁺ 1.00, K⁺ 1.38. Yes — Mg²⁺ is slightly smaller than Li⁺; that is the table, not a typo. Crystal radii on that page are larger by ~0.14 Å but keep the same order. Size alone would let Mg in. Charge density and hydration-shell stripping are what reject it at the 8a gate. That is why a spinel can still pull Li out of desalination reject and geothermal brine — Na and Mg dominate the soup; size, charge, and desolvation decide who enters.',
       },
       {
         id: 'brine',
@@ -434,7 +434,7 @@ export const slides: Slide[] = [
         title: 'Desalination already\nconcentrated the brine.',
         layers: ['cycle'],
         notes:
-          'Process side. The plant already did the hard work. Reject brine is sitting there. Not a new pit. Not a new evaporative field. The lithium is in a liquid we already make. That helix on the rail is the Materials Genome idea — composition and structure searched with a natural prior.',
+          'On the process side, the plant already did the hard work. Reject brine is sitting there — not a new pit, not a new evaporative field. The lithium is in a liquid we already make. The Materials Genome idea rides alongside: composition and structure searched with a natural prior.',
       },
       {
         id: 'absorb',
@@ -443,7 +443,7 @@ export const slides: Slide[] = [
         title: 'The spinel takes\nthe lithium.',
         layers: ['cycle'],
         notes:
-          'Li₄Mn₅O₁₂ — selective uptake by size, charge, and hydration-shell stripping. Characterization punchline from the 2026 paper: as-synthesized LMO has good XRD and good Raman; H-exchanged keeps good XRD but Raman is basically gone; as Li goes back in, XRD stays good and the Raman pattern returns — changed. Larger or more tightly hydrated seawater cations do not clear the 8a gate.',
+          'The spinel takes the lithium. Li₄Mn₅O₁₂ — selective uptake by size, charge, and hydration-shell stripping. Characterization punchline from the 2026 paper: as-synthesized LMO has good XRD and good Raman; H-exchanged keeps good XRD but Raman is basically gone; as Li goes back in, XRD stays good and the Raman pattern returns — changed. Larger or more tightly hydrated seawater cations do not clear the 8a gate.',
       },
       {
         id: 'air',
@@ -452,7 +452,7 @@ export const slides: Slide[] = [
         title: 'The acid comes\nfrom the air.',
         layers: ['cycle'],
         notes:
-          'Process story: CO₂ / dilute acid strip closes the loop without evaporative ponds. Lab reality from the paper: HCl priming populates exchange sites with H⁺; dilute acid elution recovers lithium fast. The geometry is still the point — reversible H⁺/Li⁺ exchange in a spinel lattice that already knew which cation fits.',
+          'The acid can come from the air. CO₂ / dilute acid strip closes the loop without evaporative ponds. Lab reality from the paper: HCl priming populates exchange sites with H⁺; dilute acid elution recovers lithium fast. The geometry is still the point — reversible H⁺/Li⁺ exchange in a spinel lattice that already knew which cation fits.',
       },
       {
         id: 'product',
@@ -461,7 +461,7 @@ export const slides: Slide[] = [
         title: 'Li₂CO₃.\nBattery-ready feedstock.',
         layers: ['cycle'],
         notes:
-          'The wash is also the product. Lithium carbonate — the feedstock battery plants already know. Loop closed at the molecule the supply chain already buys.',
+          'The wash is also the product. Lithium carbonate — the feedstock battery plants already know. The loop closes at the molecule the supply chain already buys.',
       },
       {
         id: 'award',
@@ -471,7 +471,7 @@ export const slides: Slide[] = [
         subtitle: 'ORNL · Element3 · museum mineralogy on the team.',
         layers: ['cycle'],
         notes:
-          'R&D World. Global competition. The stamp matters here because this room knows what it takes to move a sorbent from a diffraction pattern to a deployable extraction media. The museum was on the team because someone had spent years watching how natural structures already solve selective uptake.',
+          'R&D 100, 2024 — a global competition, and the stamp matters in this room. Moving a sorbent from a diffraction pattern to deployable extraction media is hard. The museum was on the team because someone had spent years watching how natural structures already solve selective uptake.',
       },
       {
         id: 'recycle',
@@ -480,7 +480,7 @@ export const slides: Slide[] = [
         title: 'The spinel comes back.',
         layers: ['cycle'],
         notes:
-          'Recyclable sorbent — empty spinel back to brine. Act I closes on the loop: geometry in, Li₂CO₃ out, lattice reusable. Same selectivity logic does not stop at lithium.',
+          'The spinel comes back — empty lattice returned to brine. Act I closes on the loop: geometry in, Li₂CO₃ out, lattice reusable. The same selectivity logic does not stop at lithium.',
       },
     ],
   },
@@ -494,7 +494,7 @@ export const slides: Slide[] = [
     ghostNum: '02',
     title: 'Unrelated frameworks.\nOne channel answer.',
     notes:
-      'Case two: zirconosilicates and titanosilicates converging on K⁺-selective channels. Natural lineage first. Synthetic cubic zirconium silicate — ZS-9 / CZS-(Na,H), marketed as Lokelma — under pharmaceutical control second. Mechanism paper: Lively & Celestian, PLoS ONE 2024 — in situ XRD + Raman on the exchange path.',
+      'Case two: zirconosilicates and titanosilicates converging on K⁺-selective channels. Natural lineage first; synthetic cubic zirconium silicate — ZS-9 / CZS-(Na,H), marketed as Lokelma — under pharmaceutical control second. Mechanism paper: Lively & Celestian, PLoS ONE 2024 — in situ XRD + Raman on the exchange path.',
   },
   {
     id: 'lokelma',
@@ -539,7 +539,7 @@ export const slides: Slide[] = [
         title: 'Nobody bought this\nas medicine.',
         layers: ['zeolite'],
         notes:
-          'Acquired for channel structure and mineralogical completeness. Not as a hyperkalemia program. The specimen is the class. The drug is what happens when you rebuild the class under GMP.',
+          'This specimen was acquired for channel structure and mineralogical completeness — not as a hyperkalemia program. The specimen is the class. The drug is what happens when that class is rebuilt under GMP.',
       },
       {
         id: 'cloud',
@@ -548,7 +548,7 @@ export const slides: Slide[] = [
         title: 'Natural names barely\nmove the literature.',
         layers: ['lineage'],
         notes:
-          'Same axis for all. Mineral names stay on the floor: sitinakite, georgechaoite, umbite. Zorite is shown with its known industrial alias ETS-4. Georgechaoite has no trade name. Umbite may have one; we do not know it, so it stays mineral-only. SZC / ZS-9 / Lokelma already leaves the floor — that is the curve that detonates.',
+          'On the same axis, mineral names stay on the floor: sitinakite, georgechaoite, umbite. Zorite appears with its known industrial alias ETS-4. Georgechaoite has no trade name. Umbite may have one; until it is known, it stays mineral-only. SZC / ZS-9 / Lokelma already leaves the floor — that is the curve that detonates.',
       },
       {
         id: 'sitinakite',
@@ -557,7 +557,7 @@ export const slides: Slide[] = [
         title: 'Same lineage.\nMineral name. Then trade name.',
         layers: ['lineage'],
         notes:
-          'Split sitinakite from CST / ETS-10. The mineral name barely registers. Crystalline silicotitanate and ETS-10 — the industrial rebuild — carry the literature. That is the point: collections preserve the teacher; deployment happens under the trade name. Zorite → ETS-4 is the same pattern, already lumped. Georgechaoite never got a product name. The Zr product that did is SZC / ZS-9 / Lokelma.',
+          'Sitinakite and CST / ETS-10 split apart on the plot. The mineral name barely registers. Crystalline silicotitanate and ETS-10 — the industrial rebuild — carry the literature. That is the point: collections preserve the teacher; deployment happens under the trade name. Zorite → ETS-4 is the same pattern. Georgechaoite never got a product name. The Zr product that did is SZC / ZS-9 / Lokelma.',
       },
       {
         id: 'precedents',
@@ -575,7 +575,7 @@ export const slides: Slide[] = [
         title: 'Crystal radii mislead.\nHydrated sizes decide.',
         layers: ['gate'],
         notes:
-          'Throw out Shannon radii as the decision rule. Each cation sits inside an H₂O shell — color is hydration energy, warmer where more energy is needed to shed waters. Li⁺ is the contrast: crystal core 0.76 Å, hydrated radius ~3.40 Å. Mg²⁺ and Ca²⁺ are expensive to desolvate; K⁺ and Cs⁺ are cheaper. Against a ~3 Å hydrated filter that is the real size story. Crystallographic 7MR comes next.',
+          'Shannon radii are the wrong decision rule here. Each cation sits inside an H₂O shell — color is hydration energy, warmer where more energy is needed to shed waters. Li⁺ is the contrast: crystal core 0.76 Å, hydrated radius ~3.40 Å. Mg²⁺ and Ca²⁺ are expensive to desolvate; K⁺ and Cs⁺ are cheaper. Against a ~3 Å hydrated filter, that is the real size story. The crystallographic 7MR comes next.',
       },
       {
         id: 'k',
@@ -584,7 +584,7 @@ export const slides: Slide[] = [
         title: 'K⁺ is the cargo.',
         layers: ['structure'],
         notes:
-          'Hold here. Potassium sits in the channels of the real ZS-9 cell from CZS-K.cif. In the clinic it is captured in the gut lumen — never in blood, never on kidney tissue. The rings come next; the cargo is first.',
+          'Potassium sits in the channels of the real ZS-9 cell from CZS-K.cif. In the clinic it is captured in the gut lumen — never in blood, never on kidney tissue. The rings come next; the cargo is first.',
       },
       {
         id: 'pore',
@@ -593,7 +593,7 @@ export const slides: Slide[] = [
         title: 'A 7-ring window.\nBuilt like a K⁺ channel.',
         layers: ['structure'],
         notes:
-          'Now the crystallographic aperture — the previous beat was only the hydrated filter. Everything else dims: seven-membered rings — four SiO₄ and three ZrO₆ — own the stage as the free window. Same geometric idea as a biological K⁺ channel. O–O axes ~6.5 × 5 Å; effective hydrated cutoff stays ~3 Å. Partial protonation opens the 7MR and locks K⁺ in.',
+          'The crystallographic aperture takes over — the previous frame was only the hydrated filter. Seven-membered rings — four SiO₄ and three ZrO₆ — form the free window. Same geometric idea as a biological K⁺ channel. O–O axes ~6.5 × 5 Å; effective hydrated cutoff stays ~3 Å. Partial protonation opens the 7MR and locks K⁺ in.',
       },
       {
         id: 'gut',
@@ -602,7 +602,7 @@ export const slides: Slide[] = [
         title: 'Not blood.\nNot kidney.\nGut.',
         layers: ['structure'],
         notes:
-          'Drag to orbit. Lokelma never leaves the intestine. Clinical trials brought hyperkalemic patients back toward normal within hours. Site of action is as structural as the pore.',
+          'Lokelma never leaves the intestine. Clinical trials brought hyperkalemic patients back toward normal within hours. Site of action is as structural as the pore.',
       },
       {
         id: 'protons',
@@ -611,7 +611,7 @@ export const slides: Slide[] = [
         title: 'Protons point\nat the empty site.',
         layers: ['structure'],
         notes:
-          'Still the CIF — now with H entering. Hydroxyls on bridging O1 of ZrO₆ point into the 7MR, toward the site K⁺ wants. Bond-valence puts H there; neutron work is next.',
+          'Still the CIF, now with hydrogen entering. Hydroxyls on bridging O1 of ZrO₆ point into the 7MR, toward the site K⁺ wants. Bond-valence puts H there; neutron work is next.',
       },
       {
         id: 'lock',
@@ -620,7 +620,7 @@ export const slides: Slide[] = [
         title: 'They bend.\nThey leave.\nK stays.',
         layers: ['structure'],
         notes:
-          'Watch the cell open, then lock. H leaves; K stays. Hydration energy favors K over Na (−321 vs −405 kJ/mol). That lock is crystallography, not a marketing claim.',
+          'The cell opens, then locks. H leaves; K stays. Hydration energy favors K over Na (−321 vs −405 kJ/mol). That lock is crystallography, not a marketing claim.',
       },
       {
         id: 'patients',
@@ -630,7 +630,7 @@ export const slides: Slide[] = [
         subtitle: 'On the order of 3 million patients.',
         layers: ['structure'],
         notes:
-          'Close the Act II loop. Hydration energy already favored K over Na (−321 vs −405 kJ/mol); the lock is crystallography. Rebuild that channel under pharmaceutical control and the clinic sees it as Lokelma — gut lumen only, never blood or kidney. On the order of 3 million patients. The mineral invented the selectivity; the drug is the controlled rebuild.',
+          'Act II closes on the same lock. Hydration energy already favored K over Na (−321 vs −405 kJ/mol); the lock is crystallography. Rebuild that channel under pharmaceutical control and the clinic sees it as Lokelma — gut lumen only, never blood or kidney. On the order of 3 million patients. The mineral invented the selectivity; the drug is the controlled rebuild.',
       },
     ],
   },
@@ -644,7 +644,7 @@ export const slides: Slide[] = [
     ghostNum: '03',
     title: 'A new mineral\nis a new material.',
     notes:
-      'Case three: rowleyite — Kampf, Cooper, Nash, Cerling, Marty, Hummer, Celestian, Rose & Trebisky, American Mineralogist 2017. Vanadium-phosphate polyoxovanadate framework; among the most porous crystalline frameworks known. Cage and channel architecture invites host–guest thinking. The specimen is the blueprint. Any drug-delivery scaffold has to be synthetic.',
+      'Case three: rowleyite — Kampf, Cooper, Nash, Cerling, Marty, Hummer, Celestian, Rose & Trebisky, American Mineralogist 2017. A vanadium-phosphate polyoxovanadate framework; among the most porous crystalline frameworks known. Cage and channel architecture invites host–guest thinking. The specimen is the blueprint. Any drug-delivery scaffold has to be synthetic.',
   },
   {
     id: 'rowleyite',
@@ -693,7 +693,7 @@ export const slides: Slide[] = [
         title: 'The useful part\nis the hole.',
         layers: ['density'],
         notes:
-          'Bigger glow means more empty. Rowleyite at FD 9.8 — lowest natural crystalline framework. The empty volume is the scientific object; window geometry comes next when we orbit the void map.',
+          'Bigger glow means more empty. Rowleyite sits at FD 9.8 — the lowest natural crystalline framework. The empty volume is the scientific object; window geometry comes next on the void map.',
       },
       {
         id: 'voids-view',
@@ -702,7 +702,7 @@ export const slides: Slide[] = [
         title: 'Cages you can\norbit.',
         layers: ['voids'],
         notes:
-          'Drag the void map. Salt-templated small cages (~4.1 Å access) and open large cages through 12MR windows (~9.7 Å) — the geometry the glow just named as empty volume.',
+          'The void map resolves the empty volume into architecture: salt-templated small cages (~4.1 Å access) and open large cages through 12MR windows (~9.7 Å).',
       },
       {
         id: 'cargo',
@@ -712,7 +712,7 @@ export const slides: Slide[] = [
         layers: ['voids'],
         guests: true,
         notes:
-          'Doxorubicin, vincristine, cisplatin, temozolomide — placed as guests on the near face. Not in the 2017 mineral paper: a materials hypothesis built on that porosity. The mineral is the scaffold idea, not the drug.',
+          'Doxorubicin, vincristine, cisplatin, temozolomide — four guests on one scaffold idea. Not in the 2017 mineral paper: a materials hypothesis built on that porosity. The mineral is the scaffold idea, not the drug.',
       },
       {
         id: 'mismatch',
@@ -721,7 +721,7 @@ export const slides: Slide[] = [
         title: 'Acid opens\nthe cage.',
         layers: ['fit'],
         notes:
-          'Hypothesis, not the 2017 mineral paper. Cargo sits in the large cage. Acid docks H⁺ on the V–P framework. Vanadium groups leave first and the cage opens; cargo follows — only at acidic sites (e.g. a tumor microenvironment). The drugs do not need acid to be pharmacologically active; acid is the scaffold trigger. 4.1 Å is the salt-template window, not the drug host.',
+          'A hypothesis, not the 2017 mineral paper. Cargo sits in the large cage. Acid docks H⁺ on the V–P framework. Vanadium groups leave first and the cage opens; cargo follows — only at acidic sites (e.g. a tumor microenvironment). The drugs do not need acid to be pharmacologically active; acid is the scaffold trigger. 4.1 Å is the salt-template window, not the drug host.',
       },
       {
         id: 'scaffold',
@@ -730,7 +730,7 @@ export const slides: Slide[] = [
         title: 'Delivery is\nreverse exchange.',
         layers: ['fit'],
         notes:
-          'Same geometry, engineered. Load the guest into a synthetic large-cage analog → hold → trigger by pH / ion exchange → V first, then cargo. You will not put an Arizona hand-specimen into a ward. Same pattern as Lokelma and λ-MnO₂: mineral is the mechanism sketch.',
+          'Same geometry, engineered. Load the guest into a synthetic large-cage analog, hold it, then trigger by pH or ion exchange — vanadium first, then cargo. An Arizona hand-specimen will not go into a ward. Same pattern as Lokelma and λ-MnO₂: the mineral is the mechanism sketch.',
       },
     ],
   },
@@ -759,7 +759,7 @@ export const slides: Slide[] = [
         title: 'Same sky.',
         layers: ['sky'],
         notes:
-          'Bookend. We opened in this sky — minerals already underwriting advanced materials. Three cases later, the map means something. No bullet recap. Let the room see the field again.',
+          'We opened in this sky — minerals already underwriting advanced materials. Three cases later, the map means something. No bullet recap: the field speaks for itself.',
       },
       {
         id: 'spinel',
@@ -767,7 +767,7 @@ export const slides: Slide[] = [
         title: 'Spinel → λ-MnO₂.',
         layers: ['sky'],
         notes:
-          'Interior of the known sky. Geometry we already walked — interstitial sites as a design brief; DLE as the engineered rebuild. One bright point among peers that industry already speaks.',
+          'Inside the known sky sits geometry already walked — interstitial sites as a design brief; DLE as the engineered rebuild. One bright point among peers that industry already speaks.',
       },
       {
         id: 'fringe',
@@ -775,7 +775,7 @@ export const slides: Slide[] = [
         title: 'We walked\nthe fringe.',
         layers: ['sky'],
         notes:
-          'Camera to the rim. Zirconosilicate teachers — sitinakite, georgechaoite, umbite, zorite — that became Lokelma under pharmaceutical control. Rowleyite — cage scaffold still unfinished. These are edge cases of the collection→materials idea, not the center of the catalog.',
+          'At the rim: zirconosilicate teachers — sitinakite, georgechaoite, umbite, zorite — that became Lokelma under pharmaceutical control. Rowleyite — cage scaffold still unfinished. These are edge cases of the collection→materials idea, not the center of the catalog.',
       },
       {
         id: 'beyond',
@@ -783,7 +783,7 @@ export const slides: Slide[] = [
         title: 'Unfinished problems\nalready crystallized.',
         layers: ['sky'],
         notes:
-          'Look past the edge. More galaxies — topologies the collection still holds that need mechanism work. Instruments finish the sentence; they do not invent the geometry from nothing. Concrete asks for this room live in conversation: operando brine on LMO, neutrons on CZS hydroxyls, synthetic rowleyite analogs with release specs.',
+          'Past the edge: more galaxies — topologies the collection still holds that need mechanism work. Instruments finish the sentence; they do not invent the geometry from nothing. Concrete asks for this room live in conversation: operando brine on LMO, neutrons on CZS hydroxyls, synthetic rowleyite analogs with release specs.',
       },
       {
         id: 'thanks',
@@ -792,10 +792,10 @@ export const slides: Slide[] = [
         title: 'Still in the drawers.',
         layers: ['sky'],
         notes:
-          'Thank you. Happy to talk museum science — spinel operando work, zirconium silicate neutrons, rowleyite analogs, or querying the collection against a selectivity target. aaroncelestian.github.io/MineralSciences',
+          'Thank you. Still in the drawers — and happy to talk museum science: spinel operando work, zirconium silicate neutrons, rowleyite analogs, or querying the collection against a selectivity target. aaroncelestian.github.io/MineralSciences',
       },
     ],
     notes:
-      'Constellation bookend: same sky → spinel interior → Lokelma teachers + rowleyite on the fringe → galaxies beyond → thank you.',
+      'The close returns to the same sky: spinel in the known interior, Lokelma’s teachers and rowleyite on the fringe, galaxies beyond — then thank you.',
   },
 ]

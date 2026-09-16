@@ -360,7 +360,7 @@ export function printDocumentHtml() {
     parts.push(`</ul></div>`)
     if (beat.notes) {
       const noteHtml = esc(beat.notes).replace(/\n/g, '<br>')
-      parts.push(`<div class="notesCol"><h4>Say</h4><p>${noteHtml}</p></div>`)
+      parts.push(`<div class="notesCol"><h4>Story</h4><p>${noteHtml}</p></div>`)
     }
     parts.push(`</div></section>`)
   }
@@ -368,8 +368,8 @@ export function printDocumentHtml() {
   const missing = beats.length - shotSet.size
   const lede =
     shotSet.size > 0
-      ? `Speaker script with captured slide previews (${shotSet.size} of ${beats.length} beats).${missing > 0 ? ` Run npm run previews to refresh missing captures.` : ''}`
-      : 'Speaker script. Slide captures are missing — with the deck running, run npm run previews, then reopen this view.'
+      ? `Narrative script with captured slide previews (${shotSet.size} of ${beats.length} beats).${missing > 0 ? ` Run npm run previews to refresh missing captures.` : ''}`
+      : 'Narrative script. Slide captures are missing — with the deck running, run npm run previews, then reopen this view.'
 
   return `<!doctype html>
 <html lang="en">
@@ -378,7 +378,7 @@ export function printDocumentHtml() {
   <meta name="color-scheme" content="light only">
   <meta name="theme-color" content="#ffffff">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${esc(SCRIPT_TITLE)} — speaker script</title>
+  <title>${esc(SCRIPT_TITLE)} — narrative script</title>
   <link rel="stylesheet" href="./fonts/fonts.css">
   <style>${PRINT_CSS}</style>
 </head>
@@ -438,7 +438,7 @@ export function writePrintDocument(win: Window) {
   win.focus()
 }
 
-/** Opens the speaker script — copy for an AI, or print / save as PDF. */
+/** Opens the narrative script — copy for an AI, or print / save as PDF. */
 export function openPrintView() {
   const win = window.open('', 'dallas-print')
   if (win) {

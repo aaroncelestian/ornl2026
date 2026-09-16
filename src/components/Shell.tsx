@@ -648,8 +648,8 @@ export function Shell() {
             type="button"
             className={styles.fullscreenBtn}
             aria-pressed={notesOpen}
-            aria-label={notesOpen ? 'Hide speaker notes' : 'Show speaker notes'}
-            title="Speaker notes (N)"
+            aria-label={notesOpen ? 'Hide narrative notes' : 'Show narrative notes'}
+            title="Narrative notes (N)"
             onClick={() => setNotesOpen((open) => !open)}
           >
             Notes
@@ -660,7 +660,7 @@ export function Shell() {
             type="button"
             className={styles.fullscreenBtn}
             onClick={() => openPrintView()}
-            aria-label="Open speaker script"
+            aria-label="Open narrative script"
             title="Print script — copy for AI or save as PDF"
           >
             Print
@@ -682,12 +682,12 @@ export function Shell() {
       </div>
 
       {!stageMode && notesOpen && (
-        <aside className={styles.notes} aria-label="Speaker notes">
+        <aside className={styles.notes} aria-label="Narrative notes">
           <h2 className={styles.notesTitle}>
             {scene.beat ? `${slide.label} · ${scene.beat.label}` : slide.label}
           </h2>
           <p className={styles.notesBody}>
-            {spokenAlt(slide, scene.beat) || 'No spoken notes on this beat.'}
+            {spokenAlt(slide, scene.beat) || 'No narrative on this beat.'}
           </p>
         </aside>
       )}
