@@ -34,7 +34,7 @@ export function chapterTitle(id: ChapterId) {
   return CHAPTER_HEAD[id]
 }
 
-/** Spoken notes are the accessible description for whatever is on screen. */
+/** Narrative notes are the accessible description for whatever is on screen. */
 export function spokenAlt(slide: Slide, beat?: Pick<SceneBeat, 'notes'> | null): string {
   return (beat?.notes ?? slide.notes ?? '').trim()
 }
@@ -413,7 +413,7 @@ export function scriptMarkdown(): string {
   const parts = [
     `# ${SCRIPT_TITLE}`,
     '',
-    'Speaker script. Each beat lists what is on the projection, then a short description of what is said.',
+    'Narrative script. Each beat lists what is on the projection, then the story that beat tells on its own.',
     '',
   ]
 

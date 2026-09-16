@@ -34,7 +34,7 @@ npm run stage
 | `Home` / `End` | First / last |
 | `P` | Open stage window (share this in Zoom) |
 | `Esc` or `P` again | Leave stage |
-| Print button | Speaker script — copy for an AI, or print / save as PDF |
+| Print button | Narrative script — copy for an AI, or print / save as PDF |
 | `Shift+F` | Native fullscreen (breaks Zoom window-share) |
 | `H` | Lokelma H/K exchange (on structure beats) |
 | `1`–`9` | Jump to scene beat N |
