@@ -148,7 +148,7 @@ function inHallPhase(phase: Phase) {
 }
 
 function skyVisiblePhase(phase: Phase) {
-  // Open: constellation through sky + reveal nest. Close: full sky bookend.
+  // Open: constellation through sky + reveal fade. Close: full sky bookend.
   return (
     phase === 'peri' ||
     phase === 'peers' ||
@@ -451,11 +451,12 @@ function MineralBody({
   const isPeer = body.tier === 'peer'
   const close = closeSkyPhase(phase)
   const inSky = phase === 'peri' || phase === 'peers' || phase === 'sky' || close
-  const nesting = phase === 'reveal'
+  // Reveal keeps sky look (labels + crystals) while the group fades — no nest shrink
+  const fadingSky = phase === 'reveal'
+  const skyLook = inSky || fadingSky
 
-  // Keep crystals alive during reveal so they can nest into the open drawer
   const visible =
-    nesting ||
+    fadingSky ||
     (inSky &&
       (focused ||
         lit ||
@@ -466,12 +467,12 @@ function MineralBody({
         close))
 
   const showMoons =
-    inSky &&
+    skyLook &&
     (focused ||
       lit ||
       (phase === 'peri' && isHero) ||
       (phase === 'peers' && (isHero || isPeer)) ||
-      (phase === 'sky' && (isHero || isPeer)) ||
+      ((phase === 'sky' || fadingSky) && (isHero || isPeer)) ||
       (phase === 'return' && (isHero || isPeer)))
 
   const moonCount =
@@ -482,50 +483,39 @@ function MineralBody({
         : 3
 
   const showLabel =
-    inSky &&
+    skyLook &&
+    !(fadingSky && revealBlend > 0.38) &&
     (focused ||
       lit ||
       (phase === 'peri' && isHero) ||
       (phase === 'peers' && (isHero || isPeer)) ||
-      (phase === 'sky' && (isHero || isPeer)) ||
+      ((phase === 'sky' || fadingSky) && (isHero || isPeer)) ||
       (phase === 'return' && (isHero || isPeer)))
 
   const showCrystal =
-    nesting ||
+    fadingSky ||
     (inSky && (focused || lit || isHero || isPeer || phase === 'sky' || close))
 
-  const scaleMul = nesting
-    ? isHero
-      ? 1.9
-      : isPeer
-        ? 2.25
-        : 2.8
-    : focused
-      ? 1.35
-      : lit
-        ? 1.28
-        : dimField && !lit
-          ? 0.82
-          : 1
-  const emissive = nesting
-    ? isHero
-      ? 1.45
-      : isPeer
-        ? 1.25
-        : 0.95
-    : focused
-      ? 0.95
-      : lit
-        ? phase === 'beyond' || phase === 'thanks'
-          ? 0.55
-          : 1.05
-        : dimField
-          ? 0.06
-          : isHero
-            ? 0.7
-            : isPeer
-              ? 0.55
-              : 0.28
+  const scaleMul = focused
+    ? 1.35
+    : lit
+      ? 1.28
+      : dimField && !lit
+        ? 0.82
+        : 1
+  const emissive = focused
+    ? 0.95
+    : lit
+      ? phase === 'beyond' || phase === 'thanks'
+        ? 0.55
+        : 1.05
+      : dimField
+        ? 0.06
+        : isHero
+          ? 0.7
+          : isPeer
+            ? 0.55
+            : 0.28
 
   useFrame((_, dt) => {
     if (!root.current || reduced || !visible) return
@@ -613,9 +603,9 @@ function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
     if (!group.current) return
     const target = show ? 1 : 0
     if (phase === 'reveal') {
-      // Hall comes in early so the open drawer exists before the camera arrives
+      // Hall fades in as we approach the drawer — keep sky lighting early
       const b = reduced ? 1 : revealBlend
-      appear.current = reduced ? 1 : THREE.MathUtils.smoothstep(b, 0, 0.2)
+      appear.current = reduced ? 1 : THREE.MathUtils.smoothstep(b, 0.28, 0.62)
     } else {
       appear.current = reduced
         ? target
@@ -798,9 +788,8 @@ function Drawer({
     (isEntry && (phase === 'reveal' || phase === 'cabinets')) ||
     (isDive && (phase === 'instrument' || phase === 'turn' || phase === 'dive'))
   const spill = phase === 'reveal' && isEntry
-  const emptyGlow = isEntry && (phase === 'reveal' || phase === 'cabinets')
   const surge = phase === 'dive' && isDive
-  const glow = surge ? 1.7 : emptyGlow ? 1.45 : highlight && isDive ? 1.35 : 1
+  const glow = surge ? 1.7 : spill ? 1.15 : highlight && isDive ? 1.35 : 1
   /** Feature drawers keep crystals + lights; aisle-walk drawers stay emissive-only. */
   const featureFill = highlight
 
@@ -823,7 +812,7 @@ function Drawer({
     }
     let target = want ? (highlight ? (spill ? 1.15 : 1.05) : 0.72) : 0
     if (spill) {
-      // Already open before overhead arrival — opening mid-shot kills the nest effect
+      // Already open so the zoom lands on a lit tray with specimens
       target = 1.15
       if (pull.current < target * 0.95) {
         pull.current = reduced ? target : Math.max(pull.current, target * 0.98)
@@ -869,52 +858,53 @@ function Drawer({
 
     if (fillRef.current) fillRef.current.visible = opened
     if (glowMat.current) {
-      let glowOp = (highlight ? 0.28 : 0.12) * Math.min(1.4, glow) * amt
+      let glowOp = (highlight ? 0.18 : 0.12) * Math.min(1.25, glow) * amt
       if (spill) {
-        // Soften tray wash while the nested constellation is still the subject
+        // Keep tray readable — specimens first, wash second
         const b = reduced ? 1 : revealBlend
-        const washIn = THREE.MathUtils.smoothstep(b, REVEAL_NEST_HOLD * 0.9, 1)
-        glowOp *= THREE.MathUtils.lerp(0.28, 1, washIn)
+        const washIn = THREE.MathUtils.smoothstep(b, 0.25, 0.7)
+        glowOp *= THREE.MathUtils.lerp(0.25, 0.7, washIn)
       }
       glowMat.current.opacity = glowOp
     }
     // Walk drawers: no PointLights — emissive tray + plane only (instrument fps)
     if (hiLightA.current) {
-      hiLightA.current.intensity = featureFill && opened ? 3.2 * glow * amt : 0
+      hiLightA.current.intensity = featureFill && opened ? (spill ? 1.6 : 3.2) * glow * amt : 0
       hiLightA.current.visible = featureFill && opened
     }
     if (hiLightB.current) {
-      let hiB = featureFill && opened ? (emptyGlow ? 3.6 : 2.4) * glow * amt : 0
+      let hiB = featureFill && opened ? (spill ? 1.8 : 2.4) * glow * amt : 0
       if (spill && hiB > 0) {
         const b = reduced ? 1 : revealBlend
-        const washIn = THREE.MathUtils.smoothstep(b, REVEAL_NEST_HOLD * 0.9, 1)
-        hiB *= THREE.MathUtils.lerp(0.55, 1, washIn)
+        const washIn = THREE.MathUtils.smoothstep(b, 0.25, 0.7)
+        hiB *= THREE.MathUtils.lerp(0.45, 1, washIn)
       }
       hiLightB.current.intensity = hiB
       hiLightB.current.visible = featureFill && opened
     }
     if (hiLightC.current) {
-      let hiC = emptyGlow && opened ? 4.2 * amt : 0
+      // Spill drawer keeps an extra mouth light so we can zoom to it
+      let hiC = spill && opened ? 1.8 * amt : 0
       if (spill && hiC > 0) {
         const b = reduced ? 1 : revealBlend
-        const washIn = THREE.MathUtils.smoothstep(b, REVEAL_NEST_HOLD * 0.9, 1)
-        hiC *= THREE.MathUtils.lerp(0.45, 1, washIn)
+        const washIn = THREE.MathUtils.smoothstep(b, 0.2, 0.6)
+        hiC *= THREE.MathUtils.lerp(0.35, 1, washIn)
       }
       hiLightC.current.intensity = hiC
-      hiLightC.current.visible = emptyGlow && opened
+      hiLightC.current.visible = spill && opened
     }
     if (surgeLight.current) {
       surgeLight.current.intensity = surge && opened ? 5.5 * amt : 0
       surgeLight.current.visible = surge && opened
     }
     if (gemLight.current) {
-      gemLight.current.intensity = featureFill && !emptyGlow && opened ? 2.8 * glow * amt : 0
-      gemLight.current.visible = featureFill && !emptyGlow && opened
+      gemLight.current.intensity = featureFill && opened ? 2.8 * glow * amt : 0
+      gemLight.current.visible = featureFill && opened
     }
   })
 
   const specimens = useMemo(() => {
-    if (!featureFill || emptyGlow) return []
+    if (!featureFill) return []
     return Array.from({ length: 5 }, (_, i) => {
       const u = hash01(`d${seed}-${i}`)
       const colors = ['#e8b86a', '#7ec4a8', '#8eb4d8', '#d4a574', '#9bc48a']
@@ -924,10 +914,10 @@ function Drawer({
         z: -0.12,
         color: colors[i % colors.length],
         habit: (['octa', 'cube', 'hexprism', 'dodeca', 'needle'] as Habit[])[i % 5],
-        s: 0.08 + u * 0.045,
+        s: 0.14 + u * 0.06,
       }
     })
-  }, [seed, featureFill, emptyGlow])
+  }, [seed, featureFill])
 
   const W = 2.12
   const D = 0.88
@@ -1000,10 +990,10 @@ function Drawer({
               position={[0, 0.35, 0.55]}
               color="#ffe6a8"
               intensity={0}
-              distance={emptyGlow ? 12 : 8}
+              distance={spill ? 12 : 8}
               decay={1.2}
             />
-            {emptyGlow && (
+            {spill && (
               <pointLight
                 ref={hiLightC}
                 position={[0, 0.25, 1.1]}
@@ -1085,19 +1075,7 @@ function backWallDrawerMouth(cabinetIndex: number, drawerIndex: number) {
 const ENTRY_MOUTH = backWallDrawerMouth(ENTRY_CABINET, ENTRY_DRAWER)
 const DIVE_MOUTH = backWallDrawerMouth(DIVE_CABINET, DIVE_DRAWER)
 
-/**
- * Mid-reveal: looking down into the already-open tray so the nested constellation reads as drawer light.
- * Camera arrives here as the sky finishes nesting — drawer must already be open.
- */
-const SKY_NEST = new THREE.Vector3(ENTRY_MOUTH.x, ENTRY_MOUTH.y + 0.1, ENTRY_MOUTH.z - 0.48)
-/** Tray is ~2.1 × 0.88; size so individual crystals still read as a disc of points. */
-const SKY_NEST_SCALE = 0.052
-const REVEAL_OVER = {
-  pos: new THREE.Vector3(ENTRY_MOUTH.x + 0.02, ENTRY_MOUTH.y + 2.65, ENTRY_MOUTH.z + 0.95),
-  look: SKY_NEST.clone(),
-}
-
-/** End of reveal: pulled out of that drawer — cabinet face readable, not full hall. */
+/** Reveal settle: facing the open drawer with fixed specimens — not the full hall. */
 const REVEAL_OUT = {
   pos: new THREE.Vector3(ENTRY_MOUTH.x + 0.25, ENTRY_MOUTH.y + 1.35, ENTRY_MOUTH.z + 6.2),
   look: new THREE.Vector3(ENTRY_MOUTH.x, ENTRY_MOUTH.y + 0.15, ENTRY_MOUTH.z),
@@ -1129,17 +1107,13 @@ const WALK_END = {
 let hallWalkX = 0
 let hallWalkActive = false
 /**
- * sky→reveal: nest constellation into the open drawer while zooming out, then pull back.
- * One continuous morph — not dissolve-then-cut.
+ * sky→reveal: zoom from constellation to the open drawer light.
+ * Constellation keeps its look and fades; drawer already holds fixed specimens.
  */
-const REVEAL_ENTER_SEC = 5.4
-/** 0→this: shrink sky into tray + camera to overhead open-drawer view. */
-const REVEAL_NEST_FRAC = 0.48
-/** Hold nest scale into the pullback so the disc of crystals stays readable. */
-const REVEAL_NEST_HOLD = 0.64
+const REVEAL_ENTER_SEC = 3.6
 
 /**
- * Shared 0–1 progress for sky→reveal (nest → drawer pull-back).
+ * Shared 0–1 progress for sky→reveal zoom.
  * Driven by CameraRig during the enter path; held at 1 while reveal is settled.
  */
 let revealBlend = 0
@@ -1175,7 +1149,7 @@ function setGroupFade(root: THREE.Object3D, fade: number) {
   })
 }
 
-/** Nest constellation into the open tray, then tuck away as we pull out. */
+/** Keep constellation fixed in sky space; fade it out as we zoom to the drawer. */
 function ConstellationSky({
   phase,
   reduced,
@@ -1194,29 +1168,19 @@ function ConstellationSky({
       ref.current.position.copy(SKY_ORIGIN)
       ref.current.scale.setScalar(1)
       ref.current.visible = true
+      setGroupFade(ref.current, 1)
       return
     }
 
     if (phase === 'reveal') {
       const b = reduced ? 1 : revealBlend
-      if (b <= REVEAL_NEST_FRAC) {
-        const e = easeInOutCubic(Math.min(1, b / REVEAL_NEST_FRAC))
-        ref.current.position.lerpVectors(SKY_ORIGIN, SKY_NEST, e)
-        ref.current.scale.setScalar(THREE.MathUtils.lerp(1, SKY_NEST_SCALE, e))
-        ref.current.visible = true
-      } else if (b <= REVEAL_NEST_HOLD) {
-        // Hold at nest size while the camera starts the pull-out — crystals stay readable
-        ref.current.position.copy(SKY_NEST)
-        ref.current.scale.setScalar(SKY_NEST_SCALE)
-        ref.current.visible = true
-      } else {
-        // Late pull-out: constellation becomes tray spark, then yields to empty glow
-        const e = easeInOutCubic((b - REVEAL_NEST_HOLD) / (1 - REVEAL_NEST_HOLD))
-        ref.current.position.copy(SKY_NEST)
-        const s = THREE.MathUtils.lerp(SKY_NEST_SCALE, 0.001, e)
-        ref.current.scale.setScalar(Math.max(0.001, s))
-        ref.current.visible = s > 0.01
-      }
+      // Stay in place early; cut once the drawer is the subject (Html labels
+      // won't re-render from revealBlend alone, so visibility must go false).
+      const cut = easeInOutCubic(Math.min(1, b / 0.55))
+      ref.current.position.copy(SKY_ORIGIN)
+      ref.current.scale.setScalar(1)
+      ref.current.visible = cut < 0.92
+      setGroupFade(ref.current, 1 - cut * 0.85)
       return
     }
 
@@ -1248,8 +1212,8 @@ function SkyStars({ phase, reduced }: { phase: Phase; reduced: boolean }) {
     }
     if (nesting) {
       const b = reduced ? 1 : revealBlend
-      // Gone by mid-nest so only crystal bodies shrink into the drawer
-      const u = Math.min(1, b / (REVEAL_NEST_FRAC * 0.55))
+      // Stars fade early while labeled crystals linger a beat longer
+      const u = Math.min(1, b / 0.45)
       const fade = 1 - easeInOutCubic(u)
       ref.current.scale.setScalar(1)
       ref.current.visible = fade > 0.02
@@ -1537,7 +1501,7 @@ function CameraRig({
         toLook.current.copy(DIVE_PLUNGE.look)
         easeDur.current = CAM_EASE_SEC
       } else if (phase === 'reveal' && prevPhase.current === 'sky') {
-        // Nest constellation into already-open drawer while zooming out, then pull back
+        // Zoom from constellation to the open drawer light
         revealEnter.current = true
         revealBlend = reduced ? 1 : 0
         fromLook.current.set(0, 0.2, 0)
@@ -1651,20 +1615,10 @@ function CameraRig({
       revealClock.current += dt
       const t = Math.min(1, revealClock.current / REVEAL_ENTER_SEC)
       revealBlend = t
-
-      if (t <= REVEAL_NEST_FRAC) {
-        // Sky → overhead open drawer: constellation nests in lockstep
-        const v = easeInOutCubic(t / REVEAL_NEST_FRAC)
-        camera.position.lerpVectors(fromPos.current, REVEAL_OVER.pos, v)
-        look.current.lerpVectors(fromLook.current, REVEAL_OVER.look, v)
-        persp.fov = THREE.MathUtils.lerp(baseFov.current, 42, v)
-      } else {
-        // Pull back from the open tray so the cabinet face reads
-        const v = easeInOutCubic((t - REVEAL_NEST_FRAC) / (1 - REVEAL_NEST_FRAC))
-        camera.position.lerpVectors(REVEAL_OVER.pos, REVEAL_OUT.pos, v)
-        look.current.lerpVectors(REVEAL_OVER.look, REVEAL_OUT.look, v)
-        persp.fov = THREE.MathUtils.lerp(42, 38, v)
-      }
+      const v = easeInOutCubic(t)
+      camera.position.lerpVectors(fromPos.current, REVEAL_OUT.pos, v)
+      look.current.lerpVectors(fromLook.current, REVEAL_OUT.look, v)
+      persp.fov = THREE.MathUtils.lerp(baseFov.current, 40, v)
       persp.updateProjectionMatrix()
       progress.current = t
       if (t >= 1) {
@@ -1765,8 +1719,8 @@ function Atmosphere({ phase, reduced }: { phase: Phase; reduced: boolean }) {
 
     if (phase === 'reveal') {
       const b = reduced ? 1 : revealBlend
-      // Sky → hall as the nested drawer comes into view (no full-screen tray wash)
-      const u = easeInOutCubic(Math.min(1, b / REVEAL_NEST_FRAC))
+      // Sky → hall as we arrive at the drawer (keep night sky early)
+      const u = easeInOutCubic(Math.min(1, Math.max(0, (b - 0.22) / 0.58)))
       COL_BG.copy(COL_SKY).lerp(COL_HALL, u)
       COL_FOG.copy(COL_SKY).lerp(COL_FOG_HALL, u)
       near = THREE.MathUtils.lerp(14, 16, u)
@@ -1804,6 +1758,61 @@ function Atmosphere({ phase, reduced }: { phase: Phase; reduced: boolean }) {
   return <fog attach="fog" args={['#030303', 14, 44]} />
 }
 
+function SceneKeyLights({ phase, reduced }: { phase: Phase; reduced: boolean }) {
+  const amb = useRef<THREE.AmbientLight>(null)
+  const dir = useRef<THREE.DirectionalLight>(null)
+  const fill = useRef<THREE.PointLight>(null)
+  const mouth = useRef<THREE.PointLight>(null)
+
+  useFrame(() => {
+    const inHall = inHallPhase(phase)
+    let hallU = 0
+    if (phase === 'dive') hallU = 1
+    else if (phase === 'reveal') {
+      const b = reduced ? 1 : revealBlend
+      hallU = easeInOutCubic(Math.min(1, Math.max(0, (b - 0.22) / 0.58)))
+    } else if (inHall) hallU = 1
+
+    if (amb.current) {
+      amb.current.intensity =
+        phase === 'dive' ? 0.5 : THREE.MathUtils.lerp(0.22, 0.38, hallU)
+    }
+    if (dir.current) {
+      dir.current.intensity =
+        phase === 'dive' ? 1.15 : THREE.MathUtils.lerp(0.62, 0.95, hallU)
+    }
+    if (fill.current) {
+      fill.current.intensity =
+        phase === 'dive' ? 1.1 : THREE.MathUtils.lerp(0.45, 0.7, hallU)
+    }
+    if (mouth.current) {
+      const show = phase === 'reveal' || phase === 'cabinets'
+      const b = reduced ? 1 : revealBlend
+      const mouthU =
+        phase === 'cabinets' ? 1 : show ? THREE.MathUtils.smoothstep(b, 0.05, 0.45) : 0
+      mouth.current.intensity = 1.6 * mouthU
+      mouth.current.visible = mouthU > 0.02
+    }
+  })
+
+  return (
+    <>
+      <ambientLight ref={amb} intensity={0.22} />
+      <directionalLight ref={dir} position={[4, 8, 3]} intensity={0.62} color="#f2e6c8" />
+      <pointLight ref={fill} position={[0, 2, 2]} intensity={0.45} color="#e8b86a" distance={24} />
+      {(phase === 'reveal' || phase === 'cabinets') && (
+        <pointLight
+          ref={mouth}
+          position={ENTRY_MOUTH.toArray()}
+          intensity={0}
+          color="#fff0c0"
+          distance={16}
+        />
+      )}
+    </>
+  )
+}
+
 function Scene({
   active,
   phase,
@@ -1819,7 +1828,6 @@ function Scene({
   reduced: boolean
   onDiveProgress?: (wash: number, done: boolean) => void
 }) {
-  const inHall = inHallPhase(phase)
   const [camSettled, setCamSettled] = useState(true)
   const canOrbit = phase === 'sky' || phase === 'peers'
   const orbit = active && canOrbit && !focusId && !reduced && camSettled
@@ -1834,23 +1842,8 @@ function Scene({
   return (
     <>
       <Atmosphere phase={phase} reduced={reduced} />
-      <ambientLight
-        intensity={phase === 'dive' ? 0.5 : inHall ? 0.38 : 0.22}
-      />
-      <directionalLight
-        position={[4, 8, 3]}
-        intensity={phase === 'dive' ? 1.15 : inHall ? 0.95 : 0.62}
-        color="#f2e6c8"
-      />
-      <pointLight
-        position={[0, 2, 2]}
-        intensity={phase === 'dive' ? 1.1 : inHall ? 0.7 : 0.45}
-        color="#e8b86a"
-        distance={24}
-      />
-      {(phase === 'reveal' || phase === 'cabinets') && (
-        <pointLight position={ENTRY_MOUTH.toArray()} intensity={3.4} color="#fff0c0" distance={16} />
-      )}
+      <SceneKeyLights phase={phase} reduced={reduced} />
+
       {(phase === 'instrument' || phase === 'turn' || phase === 'dive') && (
         <pointLight
           position={DIVE_MOUTH.toArray()}
@@ -1880,7 +1873,7 @@ function Scene({
         onDiveProgress={onDiveProgress}
       />
 
-      {/* Unmount sky after reveal nest so instrument/hall isn't paying for ~100 crystals */}
+      {/* Unmount sky after reveal fade so instrument/hall isn't paying for ~100 crystals */}
       {skyVisiblePhase(phase) && (
         <ConstellationSky phase={phase} reduced={reduced}>
           {BODIES.map((body) => (
@@ -2019,12 +2012,12 @@ export function MineralConstellation({ active, label }: { active: boolean; label
       )}
       {phase === 'reveal' && (
         <div className={styles.constellationHint} data-idle="">
-          Shrink into open drawer · pull out
+          Zoom to the open drawer
         </div>
       )}
       {phase === 'cabinets' && (
         <div className={styles.constellationHint} data-idle="">
-          Collection hall · one tray glowing
+          Collection hall · one tray open
         </div>
       )}
       {phase === 'instrument' && (
