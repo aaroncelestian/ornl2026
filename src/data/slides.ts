@@ -214,6 +214,60 @@ export const slides: Slide[] = [
       'Museum collections are blueprints for engineered materials — not display cases, not nostalgia. They are a searchable library of framework topologies whose selectivity had to be rediscovered under synthetic control before it became deployable.',
   },
   {
+    id: 'unearthed',
+    label: 'Unearthed',
+    chapter: 'open',
+    layout: 'stage',
+    clearPlate: true,
+    camera: 'hold',
+    layers: [
+      {
+        id: 'gallery',
+        kind: 'slideshow',
+        fit: 'contain',
+        dwellMs: [7000, 5500],
+        alt: 'Unearthed at NHM — preservation, Blue Cap, emerald, fluorite, gallery',
+        slides: [
+          {
+            src: asset('images/stibnite.jpg'),
+            alt: 'Wuning stibnite pocket, preserved',
+          },
+          {
+            src: asset('images/bluecap.jpg'),
+            alt: 'Blue Cap tourmaline on quartz, Tourmaline Queen mine',
+          },
+          {
+            src: asset('images/emerald.jpg'),
+            alt: 'Emerald crystal, Unearthed',
+          },
+          {
+            src: asset('images/fluorite.jpg'),
+            alt: 'Fluorite with calcite, documented locality',
+          },
+          {
+            src: asset('images/unearthed-gallery.jpg'),
+            alt: 'Unearthed gallery at NHMLAC',
+          },
+        ],
+      },
+    ],
+    scene: [
+      {
+        id: 'overview',
+        label: 'Overview',
+        kicker: 'Unearthed · NHMLAC',
+        title: 'The public face of\nthe same collection.',
+        subtitle: 'Raw Beauty · through April 2027',
+        layers: ['gallery'],
+        notes:
+          'Before we open the drawers: Unearthed: Raw Beauty — the current mineral exhibition at the Natural History Museum of Los Angeles County. Wuning stibnite: this pocket was preserved instead of ground for antimony. Crystallized gold is worth orders of magnitude above melt for the same reason — because it wasn\'t melted. Every exceptional specimen destroyed is an irretrievable loss; preservation against economic pressure is why a materials library can exist at all. Blue Cap — Tourmaline Queen, 1972, one pocket, never again. Size, form, matrix, and the manganese-to-iron–titanium shift stay in what we say, not wallpapered on the wall. Less label is more looking. Emerald: the exhibition\'s first instruction — the mineral stands alone as a finished aesthetic object, not an illustration of a principle. Fluorite from De\'an, Wushan: a named locality is a mark you can go back to. Undocumented material can still be beautiful; it can never become infrastructure. The gallery: nearly everything is on loan through April 2027. What the museum keeps isn\'t necessarily these objects — it\'s the practice of bringing exceptional borrowed material so visitors see the permanent collection differently. Same institution. Same discipline of keep, document, and look carefully. That practice is why the drawers behind this show are a searchable topology library — which is where we go next.',
+      },
+    ],
+    exitHold: 0.4,
+    notes:
+      'Unearthed at NHM overview: preservation, careful looking, provenance, and loans as the public face of the same collection we use as a materials library.',
+  },
+  {
     id: 'open-zoom',
     label: 'Pull back',
     chapter: 'open',
