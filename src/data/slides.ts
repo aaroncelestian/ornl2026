@@ -776,16 +776,7 @@ export const slides: Slide[] = [
         title: 'Acid opens\nthe cage.',
         layers: ['fit'],
         notes:
-          'A hypothesis, not the 2017 mineral paper. Cargo sits in the large cage. Acid docks H⁺ on the V–P framework. Vanadium groups leave first and the cage opens; cargo follows — only at acidic sites (e.g. a tumor microenvironment). The drugs do not need acid to be pharmacologically active; acid is the scaffold trigger. 4.1 Å is the salt-template window, not the drug host.',
-      },
-      {
-        id: 'scaffold',
-        label: 'Synthetic analog',
-        kicker: 'Blueprint → build',
-        title: 'Delivery is\nreverse exchange.',
-        layers: ['fit'],
-        notes:
-          'Same geometry, engineered. Load the guest into a synthetic large-cage analog, hold it, then trigger by pH or ion exchange — vanadium first, then cargo. An Arizona hand-specimen will not go into a ward. Same pattern as Lokelma and λ-MnO₂: the mineral is the mechanism sketch.',
+          'A hypothesis, not the 2017 mineral paper. Cargo sits in the large cage. Acid docks H⁺ on the V–P framework. Vanadium groups leave first and the cage opens; cargo follows — only at acidic sites (e.g. a tumor microenvironment). The drugs do not need acid to be pharmacologically active; acid is the scaffold trigger. 4.1 Å is the salt-template window, not the drug host. Delivery is reverse exchange under synthetic control — an Arizona hand-specimen will not go into a ward. Same pattern as Lokelma and λ-MnO₂: the mineral is the mechanism sketch.',
       },
     ],
   },
