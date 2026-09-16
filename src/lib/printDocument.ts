@@ -53,7 +53,7 @@ function slideCardHtml(beat: ScriptBeat, hasShot: boolean) {
   const img = card.image
   const shotSrc = hasShot ? absUrl(asset(previewPath(beat.index))) : null
   const parts: string[] = [
-    `<figure class="slideCard" data-layout="${esc(card.layout)}">`,
+    `<figure class="slideCard" data-layout="${esc(card.layout)}"${shotSrc ? ' data-shot="1"' : ''}>`,
     `<div class="slideFrame">`,
   ]
 
@@ -234,6 +234,14 @@ const PRINT_CSS = `
       linear-gradient(105deg, rgba(7,6,5,0.82) 0%, rgba(7,6,5,0.35) 42%, transparent 72%),
       linear-gradient(180deg, transparent 55%, rgba(7,6,5,0.55) 100%);
   }
+  /* Captures already include typography — the dark scrim is only for fallback cards. */
+  .slideCard[data-shot] .slideFrame::after {
+    content: none;
+    display: none;
+  }
+  .slideCard[data-shot] .slideMedia {
+    background: #000;
+  }
   .slideMotif {
     position: absolute;
     top: 10px;
@@ -331,6 +339,18 @@ const PRINT_CSS = `
       box-shadow: none;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+    }
+    /* Force PNG pixels into the PDF; without this Chrome often drops dark captures. */
+    .slideShot,
+    .slideMedia {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    /* Never print the fallback text scrim over a capture — it composites to black. */
+    .slideCard[data-shot] .slideFrame::after {
+      content: none !important;
+      display: none !important;
+      background: none !important;
     }
     .beat { break-inside: avoid; page-break-inside: avoid; }
   }
