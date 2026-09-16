@@ -1384,6 +1384,8 @@ function camEaseSec(from: Phase, to: Phase) {
   if ((from === 'reveal' && to === 'sky') || (from === 'cabinets' && to === 'reveal')) {
     return REVEAL_CAM_EASE_SEC
   }
+  // Peri close-up → constellation: longer dolly so the pullback reads as one zoom.
+  if (from === 'peri' && to === 'sky') return 3.35
   if (closeSkyPhase(from) || closeSkyPhase(to)) {
     return 2.9
   }
@@ -1427,6 +1429,8 @@ function CameraRig({
   const easeDur = useRef(CAM_EASE_SEC)
   const revealEnter = useRef(false)
   const walkActive = useRef(false)
+  /** peri→sky: hold look on perovskite through the dolly, then reframe late. */
+  const periZoomOut = useRef(false)
   const booted = useRef(false)
 
   useFrame((_, dt) => {
@@ -1475,6 +1479,7 @@ function CameraRig({
       walkClock.current = 0
       revealEnter.current = false
       walkActive.current = false
+      periZoomOut.current = false
       hallWalkActive = false
 
       if (focus) {
@@ -1503,7 +1508,23 @@ function CameraRig({
         toLook.current.copy(WALK_END.look)
         hallWalkX = camera.position.x
         easeDur.current = WALK_SEC
+      } else if (phase === 'sky' && prevPhase.current === 'peri') {
+        // Pull straight back along the peri line of sight, then settle into sky orbit.
+        // Avoid panning look to origin in lockstep — that slides perovskite off-center.
+        periZoomOut.current = true
+        const backX = camera.position.x - HERO.pos.x
+        const backZ = camera.position.z - HERO.pos.z
+        skyYaw.current = Math.atan2(
+          HERO.pos.x + backX * 6,
+          HERO.pos.z + backZ * 6,
+        )
+        if (!Number.isFinite(skyYaw.current)) skyYaw.current = Math.atan2(-9.6, 10.8)
+        const g = goalForPhase('sky', skyYaw.current)
+        toPos.current.copy(g.pos)
+        toLook.current.copy(g.look)
+        easeDur.current = camEaseSec('peri', 'sky')
       } else {
+        periZoomOut.current = false
         if (phase === 'sky') {
           skyYaw.current = Math.atan2(camera.position.x - 0, camera.position.z - 0)
           if (!Number.isFinite(skyYaw.current)) skyYaw.current = Math.atan2(-9.6, 10.8)
@@ -1644,7 +1665,8 @@ function CameraRig({
       }
     } else if (progress.current < 1) {
       hallWalkActive = phase === 'instrument'
-      if (!focus && (phase === 'sky' || phase === 'return') && !reduced) {
+      // Freeze orbit while dollying out of peri so the zoom reads as a straight pullback.
+      if (!focus && (phase === 'sky' || phase === 'return') && !reduced && !periZoomOut.current) {
         skyYaw.current -= dt * SKY_SPIN_RAD_PER_SEC
         const g = goalForPhase(phase === 'return' ? 'return' : 'sky', skyYaw.current)
         toPos.current.copy(g.pos)
@@ -1654,7 +1676,13 @@ function CameraRig({
       progress.current = Math.min(1, progress.current + dt / dur)
       const u = easeInOutCubic(progress.current)
       camera.position.lerpVectors(fromPos.current, toPos.current, u)
-      look.current.lerpVectors(fromLook.current, toLook.current, u)
+      if (periZoomOut.current) {
+        // Keep perovskite centered through most of the pullback; reframe to sky late.
+        const lookU = easeInOutCubic(Math.max(0, (progress.current - 0.58) / 0.42))
+        look.current.lerpVectors(fromLook.current, toLook.current, lookU)
+      } else {
+        look.current.lerpVectors(fromLook.current, toLook.current, u)
+      }
       if (phase === 'instrument') hallWalkX = camera.position.x
       const goalFov = phase === 'reveal' ? 42 : phase === 'turn' ? 38 : 42
       if (persp.fov !== goalFov) {
@@ -1662,6 +1690,7 @@ function CameraRig({
         persp.updateProjectionMatrix()
       }
       if (progress.current >= 1 && !settled.current) {
+        periZoomOut.current = false
         settled.current = true
         onSettle?.(true)
       }
