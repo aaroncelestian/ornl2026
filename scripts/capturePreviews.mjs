@@ -27,6 +27,11 @@ const browsers = [
   '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
   '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  '/usr/bin/google-chrome-stable',
+  '/usr/bin/google-chrome',
+  '/usr/local/bin/google-chrome',
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
 ]
 
 function chromePath() {
@@ -51,9 +56,15 @@ async function main() {
   await mkdir(outDir, { recursive: true })
 
   const executablePath = chromePath()
+  // Prefer a local Chrome if present; otherwise Playwright's bundled Chromium
+  // (needed on Linux CI / Cloud Agent VMs without a system browser).
   const browser = await chromium.launch({
     headless: true,
-    ...(executablePath ? { executablePath } : { channel: 'chrome' }),
+    ...(executablePath
+      ? { executablePath }
+      : process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+        ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+        : {}),
   })
 
   const page = await browser.newPage({
