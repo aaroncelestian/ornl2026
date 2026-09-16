@@ -789,7 +789,7 @@ function Drawer({
     (isDive && (phase === 'instrument' || phase === 'turn' || phase === 'dive'))
   const spill = phase === 'reveal' && isEntry
   const surge = phase === 'dive' && isDive
-  const glow = surge ? 1.7 : spill ? 1.45 : highlight && isDive ? 1.35 : 1
+  const glow = surge ? 1.7 : spill ? 1.15 : highlight && isDive ? 1.35 : 1
   /** Feature drawers keep crystals + lights; aisle-walk drawers stay emissive-only. */
   const featureFill = highlight
 
@@ -858,37 +858,37 @@ function Drawer({
 
     if (fillRef.current) fillRef.current.visible = opened
     if (glowMat.current) {
-      let glowOp = (highlight ? 0.28 : 0.12) * Math.min(1.4, glow) * amt
+      let glowOp = (highlight ? 0.18 : 0.12) * Math.min(1.25, glow) * amt
       if (spill) {
-        // Brighten tray as the camera arrives at the open drawer
+        // Keep tray readable — specimens first, wash second
         const b = reduced ? 1 : revealBlend
-        const washIn = THREE.MathUtils.smoothstep(b, 0.2, 0.65)
-        glowOp *= THREE.MathUtils.lerp(0.35, 1, washIn)
+        const washIn = THREE.MathUtils.smoothstep(b, 0.25, 0.7)
+        glowOp *= THREE.MathUtils.lerp(0.25, 0.7, washIn)
       }
       glowMat.current.opacity = glowOp
     }
     // Walk drawers: no PointLights — emissive tray + plane only (instrument fps)
     if (hiLightA.current) {
-      hiLightA.current.intensity = featureFill && opened ? 3.2 * glow * amt : 0
+      hiLightA.current.intensity = featureFill && opened ? (spill ? 1.6 : 3.2) * glow * amt : 0
       hiLightA.current.visible = featureFill && opened
     }
     if (hiLightB.current) {
-      let hiB = featureFill && opened ? (spill ? 3.2 : 2.4) * glow * amt : 0
+      let hiB = featureFill && opened ? (spill ? 1.8 : 2.4) * glow * amt : 0
       if (spill && hiB > 0) {
         const b = reduced ? 1 : revealBlend
-        const washIn = THREE.MathUtils.smoothstep(b, 0.2, 0.65)
-        hiB *= THREE.MathUtils.lerp(0.55, 1, washIn)
+        const washIn = THREE.MathUtils.smoothstep(b, 0.25, 0.7)
+        hiB *= THREE.MathUtils.lerp(0.45, 1, washIn)
       }
       hiLightB.current.intensity = hiB
       hiLightB.current.visible = featureFill && opened
     }
     if (hiLightC.current) {
       // Spill drawer keeps an extra mouth light so we can zoom to it
-      let hiC = spill && opened ? 3.6 * amt : 0
+      let hiC = spill && opened ? 1.8 * amt : 0
       if (spill && hiC > 0) {
         const b = reduced ? 1 : revealBlend
-        const washIn = THREE.MathUtils.smoothstep(b, 0.15, 0.55)
-        hiC *= THREE.MathUtils.lerp(0.4, 1, washIn)
+        const washIn = THREE.MathUtils.smoothstep(b, 0.2, 0.6)
+        hiC *= THREE.MathUtils.lerp(0.35, 1, washIn)
       }
       hiLightC.current.intensity = hiC
       hiLightC.current.visible = spill && opened
@@ -914,7 +914,7 @@ function Drawer({
         z: -0.12,
         color: colors[i % colors.length],
         habit: (['octa', 'cube', 'hexprism', 'dodeca', 'needle'] as Habit[])[i % 5],
-        s: 0.11 + u * 0.05,
+        s: 0.14 + u * 0.06,
       }
     })
   }, [seed, featureFill])
@@ -1174,12 +1174,13 @@ function ConstellationSky({
 
     if (phase === 'reveal') {
       const b = reduced ? 1 : revealBlend
-      // Stay in place with labels; fade as the drawer comes into view
-      const fade = 1 - easeInOutCubic(Math.min(1, b / 0.72))
+      // Stay in place early; cut once the drawer is the subject (Html labels
+      // won't re-render from revealBlend alone, so visibility must go false).
+      const cut = easeInOutCubic(Math.min(1, b / 0.55))
       ref.current.position.copy(SKY_ORIGIN)
       ref.current.scale.setScalar(1)
-      ref.current.visible = fade > 0.04
-      setGroupFade(ref.current, fade)
+      ref.current.visible = cut < 0.92
+      setGroupFade(ref.current, 1 - cut * 0.85)
       return
     }
 
@@ -1789,7 +1790,7 @@ function SceneKeyLights({ phase, reduced }: { phase: Phase; reduced: boolean }) 
       const b = reduced ? 1 : revealBlend
       const mouthU =
         phase === 'cabinets' ? 1 : show ? THREE.MathUtils.smoothstep(b, 0.05, 0.45) : 0
-      mouth.current.intensity = 3.4 * mouthU
+      mouth.current.intensity = 1.6 * mouthU
       mouth.current.visible = mouthU > 0.02
     }
   })
