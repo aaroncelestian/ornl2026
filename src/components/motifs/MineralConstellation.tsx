@@ -603,9 +603,9 @@ function CabinetsRoom({ phase, reduced }: { phase: Phase; reduced: boolean }) {
     if (!group.current) return
     const target = show ? 1 : 0
     if (phase === 'reveal') {
-      // Hall fades in as we approach the drawer — keep sky lighting early
+      // Hall under the sky early so cutting constellation never leaves a black void
       const b = reduced ? 1 : revealBlend
-      appear.current = reduced ? 1 : THREE.MathUtils.smoothstep(b, 0.28, 0.62)
+      appear.current = reduced ? 1 : THREE.MathUtils.smoothstep(b, 0.08, 0.4)
     } else {
       appear.current = reduced
         ? target
@@ -858,22 +858,21 @@ function Drawer({
 
     if (fillRef.current) fillRef.current.visible = opened
     if (glowMat.current) {
-      let glowOp = (highlight ? 0.18 : 0.12) * Math.min(1.25, glow) * amt
+      let glowOp = (highlight ? 0.12 : 0.1) * Math.min(1.15, glow) * amt
       if (spill) {
-        // Keep tray readable — specimens first, wash second
         const b = reduced ? 1 : revealBlend
-        const washIn = THREE.MathUtils.smoothstep(b, 0.25, 0.7)
-        glowOp *= THREE.MathUtils.lerp(0.25, 0.7, washIn)
+        const washIn = THREE.MathUtils.smoothstep(b, 0.3, 0.75)
+        glowOp *= THREE.MathUtils.lerp(0.2, 0.45, washIn)
       }
       glowMat.current.opacity = glowOp
     }
     // Walk drawers: no PointLights — emissive tray + plane only (instrument fps)
     if (hiLightA.current) {
-      hiLightA.current.intensity = featureFill && opened ? (spill ? 1.6 : 3.2) * glow * amt : 0
+      hiLightA.current.intensity = featureFill && opened ? (spill ? 1.05 : 3.2) * glow * amt : 0
       hiLightA.current.visible = featureFill && opened
     }
     if (hiLightB.current) {
-      let hiB = featureFill && opened ? (spill ? 1.8 : 2.4) * glow * amt : 0
+      let hiB = featureFill && opened ? (spill ? 1.1 : 2.4) * glow * amt : 0
       if (spill && hiB > 0) {
         const b = reduced ? 1 : revealBlend
         const washIn = THREE.MathUtils.smoothstep(b, 0.25, 0.7)
@@ -884,7 +883,7 @@ function Drawer({
     }
     if (hiLightC.current) {
       // Spill drawer keeps an extra mouth light so we can zoom to it
-      let hiC = spill && opened ? 1.8 * amt : 0
+      let hiC = spill && opened ? 0.95 * amt : 0
       if (spill && hiC > 0) {
         const b = reduced ? 1 : revealBlend
         const washIn = THREE.MathUtils.smoothstep(b, 0.2, 0.6)
@@ -1149,14 +1148,13 @@ function setGroupFade(root: THREE.Object3D, fade: number) {
   })
 }
 
-/** Keep constellation fixed in sky space; fade it out as we zoom to the drawer. */
+/** Keep constellation fixed in sky space until React unmounts mid-reveal. */
 function ConstellationSky({
   phase,
-  reduced,
   children,
 }: {
   phase: Phase
-  reduced: boolean
+  reduced?: boolean
   children: ReactNode
 }) {
   const ref = useRef<THREE.Group>(null)
@@ -1173,14 +1171,11 @@ function ConstellationSky({
     }
 
     if (phase === 'reveal') {
-      const b = reduced ? 1 : revealBlend
-      // Stay in place early; cut once the drawer is the subject (Html labels
-      // won't re-render from revealBlend alone, so visibility must go false).
-      const cut = easeInOutCubic(Math.min(1, b / 0.55))
+      // Stay opaque — React unmounts mid-zoom so drei Html labels die with the group
       ref.current.position.copy(SKY_ORIGIN)
       ref.current.scale.setScalar(1)
-      ref.current.visible = cut < 0.92
-      setGroupFade(ref.current, 1 - cut * 0.85)
+      ref.current.visible = true
+      setGroupFade(ref.current, 1)
       return
     }
 
@@ -1407,6 +1402,7 @@ function CameraRig({
   scripted,
   onSettle,
   onDiveProgress,
+  onRevealProgress,
 }: {
   phase: Phase
   focusId: string | null
@@ -1415,6 +1411,7 @@ function CameraRig({
   onSettle?: (settled: boolean) => void
   /** 0–1 wash coverage during the plunge (0 while panning). */
   onDiveProgress?: (wash: number, done: boolean) => void
+  onRevealProgress?: (blend: number) => void
 }) {
   const { camera } = useThree()
   const focus = BODIES.find((b) => b.id === focusId) ?? null
@@ -1564,12 +1561,19 @@ function CameraRig({
         look.current.copy(REVEAL_OUT.look)
         revealEnter.current = false
         revealBlend = 1
+        onRevealProgress?.(1)
         progress.current = 1
         settled.current = true
         onSettle?.(true)
       }
       if (phase === 'reveal' && !revealEnter.current) {
         revealBlend = 1
+        onRevealProgress?.(1)
+      }
+      if (phase !== 'reveal') {
+        onRevealProgress?.(
+          phase === 'sky' || phase === 'peri' || phase === 'peers' || closeSkyPhase(phase) ? 0 : 1,
+        )
       }
     }
 
@@ -1615,6 +1619,7 @@ function CameraRig({
       revealClock.current += dt
       const t = Math.min(1, revealClock.current / REVEAL_ENTER_SEC)
       revealBlend = t
+      onRevealProgress?.(t)
       const v = easeInOutCubic(t)
       camera.position.lerpVectors(fromPos.current, REVEAL_OUT.pos, v)
       look.current.lerpVectors(fromLook.current, REVEAL_OUT.look, v)
@@ -1624,6 +1629,7 @@ function CameraRig({
       if (t >= 1) {
         revealEnter.current = false
         revealBlend = 1
+        onRevealProgress?.(1)
         if (!settled.current) {
           settled.current = true
           onSettle?.(true)
@@ -1790,7 +1796,7 @@ function SceneKeyLights({ phase, reduced }: { phase: Phase; reduced: boolean }) 
       const b = reduced ? 1 : revealBlend
       const mouthU =
         phase === 'cabinets' ? 1 : show ? THREE.MathUtils.smoothstep(b, 0.05, 0.45) : 0
-      mouth.current.intensity = 1.6 * mouthU
+      mouth.current.intensity = 0.95 * mouthU
       mouth.current.visible = mouthU > 0.02
     }
   })
@@ -1829,6 +1835,8 @@ function Scene({
   onDiveProgress?: (wash: number, done: boolean) => void
 }) {
   const [camSettled, setCamSettled] = useState(true)
+  /** Unmount constellation mid-reveal so drei Html labels cannot linger over the hall. */
+  const [skyMounted, setSkyMounted] = useState(true)
   const canOrbit = phase === 'sky' || phase === 'peers'
   const orbit = active && canOrbit && !focusId && !reduced && camSettled
   const scripted = !orbit
@@ -1837,7 +1845,22 @@ function Scene({
 
   useEffect(() => {
     setCamSettled(reduced)
+    if (phase === 'sky' || phase === 'peri' || phase === 'peers') setSkyMounted(true)
+    if (phase === 'reveal' && reduced) setSkyMounted(false)
   }, [phase, focusId, reduced])
+
+  const onRevealProgress = useCallback(
+    (blend: number) => {
+      if (phase !== 'reveal') {
+        setSkyMounted(
+          phase === 'sky' || phase === 'peri' || phase === 'peers' || closeSkyPhase(phase),
+        )
+        return
+      }
+      setSkyMounted(blend < 0.48)
+    },
+    [phase],
+  )
 
   return (
     <>
@@ -1861,7 +1884,7 @@ function Scene({
         />
       )}
 
-      {skyVisiblePhase(phase) && <SkyStars phase={phase} reduced={reduced} />}
+      {skyVisiblePhase(phase) && skyMounted && <SkyStars phase={phase} reduced={reduced} />}
       <DistantGalaxies phase={phase} reduced={reduced} />
 
       <CameraRig
@@ -1871,10 +1894,11 @@ function Scene({
         scripted={scripted}
         onSettle={setCamSettled}
         onDiveProgress={onDiveProgress}
+        onRevealProgress={onRevealProgress}
       />
 
-      {/* Unmount sky after reveal fade so instrument/hall isn't paying for ~100 crystals */}
-      {skyVisiblePhase(phase) && (
+      {/* Unmount mid-reveal so Html labels die; hall is already under us */}
+      {skyVisiblePhase(phase) && skyMounted && (
         <ConstellationSky phase={phase} reduced={reduced}>
           {BODIES.map((body) => (
             <MineralBody
