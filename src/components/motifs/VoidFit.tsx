@@ -9,31 +9,15 @@ const CY = 230
 const R = 118
 const EASE = [0.16, 1, 0.3, 1] as const
 
-type Phase = 'mismatch' | 'synthetic' | 'other'
-
 type Step = { id: string; label: string; detail: string }
 
-/** 8.5 — hand-sketch sequence: hold → acid → V first → cargo. */
+/** Hand-sketch sequence: hold → acid → V first → cargo. */
 const ACID_STEPS: Step[] = [
   { id: 'hold', label: 'Hold', detail: 'Cargo in the large cage' },
   { id: 'acid', label: 'Acid', detail: 'H⁺ docks on the framework' },
   { id: 'v', label: 'V first', detail: 'Vanadium groups leave; cage opens' },
   { id: 'cargo', label: 'Cargo', detail: 'Only at acidic sites' },
 ]
-
-/** 8.6 — same geometry, engineered as reverse exchange. */
-const SYNTH_STEPS: Step[] = [
-  { id: 'load', label: 'Load', detail: 'Guest enters the large cage' },
-  { id: 'hold', label: 'Hold', detail: 'Templated until the trigger' },
-  { id: 'trigger', label: 'Trigger', detail: 'pH / exchange at the site' },
-  { id: 'release', label: 'Release', detail: 'V first, then cargo' },
-]
-
-function phaseForBeat(id?: string): Phase {
-  if (id === 'fit' || id === 'mismatch') return 'mismatch'
-  if (id === 'synthetic' || id === 'scaffold') return 'synthetic'
-  return 'other'
-}
 
 /** Open C-ring with the gap on the right (matches the sketch). */
 function openRingPath(cx: number, cy: number, r: number) {
@@ -63,14 +47,12 @@ const V_BITS = [
 export function VoidFit({ active, label }: { active: boolean; label?: string }) {
   const scene = useScene()
   const reduced = usePrefersReducedMotion()
-  const phase = phaseForBeat(scene.beat?.id)
-  const synthetic = phase === 'synthetic'
-  const steps = synthetic ? SYNTH_STEPS : ACID_STEPS
+  const steps = ACID_STEPS
   const [step, setStep] = useState(0)
 
   useEffect(() => {
     setStep(0)
-  }, [phase, active, steps.length])
+  }, [scene.beat?.id, active])
 
   // Manual advance: arrows / space step the animation before leaving the beat.
   useEffect(() => {
@@ -107,16 +89,12 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
 
   const current = steps[step]
 
-  // Shared stage logic mapped from the sketch
-  const loading = synthetic && step === 0
-  const acidOn = synthetic ? step >= 2 : step >= 1
-  const opened = synthetic ? step >= 3 : step >= 2
-  const vOut = synthetic ? step >= 3 : step >= 2
-  const cargoOut = synthetic ? step >= 3 : step >= 3
-  const vFlying = vOut && (synthetic || step >= 2)
-  const cargoFlying = cargoOut
+  const acidOn = step >= 1
+  const opened = step >= 2
+  const cargoFlying = step >= 3
+  const vFlying = step >= 2
 
-  const cargoX = loading ? CX - 200 : cargoFlying ? CX + 168 : CX
+  const cargoX = cargoFlying ? CX + 168 : CX
   const cargoY = cargoFlying ? CY + 36 : CY
 
   const go = (i: number) => setStep(Math.max(0, Math.min(steps.length - 1, i)))
@@ -136,9 +114,7 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
       }}
       aria-label={
         label ||
-        (synthetic
-          ? 'Synthetic analog: load, hold, acid trigger, V then cargo release. Click or press right to advance.'
-          : 'Acid opens the large cage: H⁺ docks, vanadium leaves first, then cargo. Click or press right to advance.')
+        'Acid opens the large cage: H⁺ docks, vanadium leaves first, then cargo. Click or press right to advance.'
       }
     >
       <svg viewBox="0 0 920 500" className={styles.theaterSvg} role="img">
@@ -343,7 +319,7 @@ export function VoidFit({ active, label }: { active: boolean; label?: string }) 
 
         {/* Live caption only — layout owns the slide title */}
         <motion.g
-          key={`${phase}-${current.id}`}
+          key={current.id}
           initial={reduced ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: active ? 1 : 0, y: 0 }}
           transition={{ duration: reduced ? 0 : 0.3 }}

@@ -273,11 +273,7 @@ export function onScreenLines(slide: Slide, beat?: SceneBeat): string[] {
         )
       }
       if (layer?.kind === 'motif' && layer.motif === 'void-fit') {
-        lines.push(
-          beat?.id === 'scaffold'
-            ? 'Motif: synthetic analog — load → hold → acid trigger → V then cargo'
-            : 'Motif: acid sketch — hold → H⁺ → V first → cargo (large cage)',
-        )
+        lines.push('Motif: acid sketch — hold → H⁺ → V first → cargo (large cage)')
       }
       if (layer?.kind === 'motif' && layer.motif === 'framework-lineage') {
         lines.push(
