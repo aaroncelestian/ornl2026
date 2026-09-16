@@ -274,6 +274,7 @@ export const slides: Slide[] = [
     layout: 'stage',
     clearPlate: true,
     camera: 'hold',
+    copySnap: true,
     layers: [
       {
         id: 'sky',

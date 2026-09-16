@@ -185,7 +185,7 @@ export function SlideView({
   const alt = say || slide.image?.alt || ''
 
   if (slide.scene) {
-    return <SceneView slide={slide} active={active} />
+    return <SceneView slide={slide} active={active} copyActive={copyActive} />
   }
 
   if (slide.layout === 'impact') {
