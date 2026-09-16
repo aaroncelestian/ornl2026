@@ -307,7 +307,7 @@ export const slides: Slide[] = [
         title: 'One drawer.',
         layers: ['sky'],
         notes:
-          'The constellation shrinks into one already-open glowing drawer. The stars fade before the scale can collapse. What looked like a sky of materials resolves into a single tray — not yet the full hall.',
+          'Zoom from the constellation to one already-open glowing drawer. Labels stay put until the sky fades; fixed mineral forms are already in the tray. What looked like a sky of materials resolves into a single drawer — not yet the full hall.',
       },
       {
         id: 'cabinets',
@@ -315,7 +315,7 @@ export const slides: Slide[] = [
         title: 'Not a warehouse.',
         layers: ['sky'],
         notes:
-          'Further out: the aisle, the full room, that glowing empty tray. Beyond it, a wall of closed drawers. Cabinets. Specimens with provenance. Not a warehouse.',
+          'Further out: the aisle, the full room, that open glowing tray with its specimens. Beyond it, a wall of closed drawers. Cabinets. Specimens with provenance. Not a warehouse.',
       },
       {
         id: 'instrument',
